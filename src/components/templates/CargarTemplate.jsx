@@ -3,7 +3,6 @@ import styled from "styled-components";
 import toast from "react-hot-toast";
 import { CargandoTransferencia } from "../moleculas/CargandoTransferencia";
 import { TransferenciaResultado } from "../organismos/TransferenciaResultado";
-import { extractTextFromPdf } from "../../utils/extractPdfText";
 import { procesarTransferenciaPdf } from "../../utils/parseTransferenciaPdf";
 import { procesarTransferenciaExcel } from "../../utils/parseTransferenciaExcel";
 
@@ -41,9 +40,15 @@ export function CargarTemplate() {
     setEstado("cargando");
 
     try {
-      const data = esPdf
-        ? await procesarTransferenciaPdf(file, extractTextFromPdf)
-        : await procesarTransferenciaExcel(file);
+      let data;
+
+      if (esPdf) {
+        const { extractTextFromPdf } = await import("../../utils/extractPdfText");
+        data = await procesarTransferenciaPdf(file, extractTextFromPdf);
+      } else {
+        data = await procesarTransferenciaExcel(file);
+      }
+
       setTransferencia(data);
 
       if (data.productos.length === 0) {
