@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "check-env": "node scripts/check-env.js",
     "test:supabase": "node scripts/test-supabase.js",
-    "prebuild": "node scripts/check-env.js",
+    "prebuild": "node scripts/check-env.js && node scripts/copy-pdf-worker.js",
+    "postinstall": "node scripts/copy-pdf-worker.js",
     "setup:supabase": "node scripts/setup-supabase.js"
   },
   "dependencies": {

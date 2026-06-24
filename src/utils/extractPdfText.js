@@ -1,9 +1,7 @@
 import * as pdfjsLib from "pdfjs-dist";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).href;
+const workerUrl = new URL("/pdf.worker.min.mjs", import.meta.env.BASE_URL).href;
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
 function sortItems(items) {
   return [...items]
