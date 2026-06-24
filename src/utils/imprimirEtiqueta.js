@@ -83,6 +83,12 @@ function buildProductoTopHtml(nombre, esPequena) {
   if (lineas.length === 0) return "";
 
   const clase = esPequena ? "producto-top-p" : "producto-top-m";
+
+  if (esPequena) {
+    const texto = lineas.map((l) => escaparHtml(l)).join("<br>");
+    return `<div class="${clase}">${texto}</div>`;
+  }
+
   const lineasHtml = lineas.map((l) => `<div>${escaparHtml(l)}</div>`).join("");
   return `<div class="${clase}">${lineasHtml}</div>`;
 }
@@ -195,6 +201,9 @@ function estilosEtiqueta(esPequena) {
       grid-template-rows: auto 1fr auto;
       gap: 0.15mm;
       align-content: stretch;
+      justify-items: stretch;
+      align-items: center;
+      text-align: center;
     }
 
     .producto-top-p {
@@ -208,13 +217,7 @@ function estilosEtiqueta(esPequena) {
       max-height: calc(6pt * 1.1 * 3);
       overflow: hidden;
       grid-row: 1;
-    }
-
-    .producto-top-p div {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.1;
+      justify-self: center;
     }
 
     .cuerpo-p {
@@ -228,6 +231,7 @@ function estilosEtiqueta(esPequena) {
       justify-content: center;
       container-type: size;
       padding: 0;
+      justify-self: center;
     }
 
     .qr-p {
@@ -238,6 +242,7 @@ function estilosEtiqueta(esPequena) {
       object-fit: contain;
       display: block;
       flex-shrink: 0;
+      margin: 0 auto;
     }
 
     @supports (width: 1cqw) {
@@ -254,6 +259,11 @@ function estilosEtiqueta(esPequena) {
       margin-top: 0;
       overflow: hidden;
       max-height: calc(11pt * 1.15);
+      width: 100%;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      justify-self: center;
     }
 
     .cod-p {
@@ -264,8 +274,17 @@ function estilosEtiqueta(esPequena) {
       line-height: 1.1;
       max-width: 100%;
     }
+
+    .cod-label-p {
+      text-align: center;
+    }
     `
         : `
+    .celda-m {
+      align-items: center;
+      text-align: center;
+    }
+
     .producto-top-m {
       text-align: center;
       font-weight: 700;
@@ -281,6 +300,8 @@ function estilosEtiqueta(esPequena) {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      text-align: center;
+      width: 100%;
     }
     `
     }
@@ -331,6 +352,7 @@ function estilosEtiqueta(esPequena) {
       font-size: ${esPequena ? "13pt" : "22pt"};
       font-weight: 700;
       letter-spacing: 0.03em;
+      text-align: center;
     }
   `;
 }
