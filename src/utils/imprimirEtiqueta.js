@@ -20,14 +20,14 @@ export async function generarQrDataUrl(codigo) {
   });
 }
 
-function dividirNombreProducto(nombre, maxLineas = 2) {
+function dividirNombreProducto(nombre, maxLineas = 2, maxCharsPorLinea = 22) {
   const palabras = String(nombre ?? "")
     .trim()
     .toUpperCase()
     .split(/\s+/)
     .filter(Boolean);
 
-  if (palabras.length === 0) return [""];
+  if (palabras.length === 0) return [];
 
   const lineas = [];
   let actual = "";
@@ -36,7 +36,7 @@ function dividirNombreProducto(nombre, maxLineas = 2) {
     const palabra = palabras[i];
     const candidato = actual ? `${actual} ${palabra}` : palabra;
 
-    if (candidato.length <= 22 || !actual) {
+    if (candidato.length <= maxCharsPorLinea || !actual) {
       actual = candidato;
     } else {
       lineas.push(actual);
@@ -51,6 +51,37 @@ function dividirNombreProducto(nombre, maxLineas = 2) {
 
   if (actual) lineas.push(actual);
   return lineas.slice(0, maxLineas);
+}
+
+function esNombreProductoVisible(nombre) {
+  const texto = String(nombre ?? "").trim();
+  if (!texto) return false;
+  return texto.toLowerCase() !== "solo codigo";
+}
+
+function buildProductoTopHtml(nombre, esPequena) {
+  if (!esNombreProductoVisible(nombre)) return "";
+
+  const lineas = dividirNombreProducto(
+    nombre,
+    esPequena ? 3 : 2,
+    esPequena ? 18 : 22
+  );
+
+  if (lineas.length === 0) return "";
+
+  const clase = esPequena ? "producto-top-p" : "producto-top-m";
+  const lineasHtml = lineas.map((l) => `<div>${escaparHtml(l)}</div>`).join("");
+  return `<div class="${clase}">${lineasHtml}</div>`;
+}
+
+function tamanoFuenteCodigoPequena(codigo) {
+  const longitud = String(codigo ?? "").length;
+  if (longitud <= 5) return "14pt";
+  if (longitud <= 7) return "12pt";
+  if (longitud <= 9) return "11pt";
+  if (longitud <= 11) return "10pt";
+  return "9pt";
 }
 
 function estilosEtiqueta(esPequena) {
@@ -138,7 +169,7 @@ function estilosEtiqueta(esPequena) {
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      overflow: hidden;
+      overflow: ${esPequena ? "visible" : "hidden"};
       flex-shrink: ${esPequena ? "1" : "0"};
       min-width: ${esPequena ? "0" : "auto"};
       background: #fff;
@@ -146,7 +177,38 @@ function estilosEtiqueta(esPequena) {
 
     ${
       esPequena
-        ? ""
+        ? `
+    .producto-top-p {
+      text-align: center;
+      font-weight: 700;
+      text-transform: uppercase;
+      line-height: 1.1;
+      font-size: 6pt;
+      margin-bottom: 0.8mm;
+      flex-shrink: 0;
+      width: 100%;
+    }
+
+    .producto-top-p div {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-height: 1.1;
+    }
+
+    .cod-bloque-p {
+      flex-wrap: wrap;
+      row-gap: 0.2mm;
+    }
+
+    .cod-p {
+      white-space: normal;
+      word-break: break-all;
+      text-align: center;
+      line-height: 1.05;
+      max-width: 100%;
+    }
+    `
         : `
     .producto-top-m {
       text-align: center;
@@ -174,12 +236,13 @@ function estilosEtiqueta(esPequena) {
       justify-content: center;
       flex: 1;
       min-height: 0;
-      overflow: hidden;
+      overflow: ${esPequena ? "visible" : "hidden"};
+      width: 100%;
     }
 
     .qr-${prefix} {
-      width: ${esPequena ? "15mm" : "32mm"};
-      height: ${esPequena ? "15mm" : "32mm"};
+      width: ${esPequena ? "11mm" : "32mm"};
+      height: ${esPequena ? "11mm" : "32mm"};
       object-fit: contain;
       display: block;
       flex-shrink: 0;
@@ -206,10 +269,9 @@ function estilosEtiqueta(esPequena) {
     }
 
     .cod-${prefix} {
-      font-size: ${esPequena ? "17pt" : "22pt"};
+      font-size: ${esPequena ? "13pt" : "22pt"};
       font-weight: 700;
-      white-space: nowrap;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
     }
   `;
 }
@@ -218,14 +280,10 @@ export function buildEtiquetaMarkup(producto, tipo, qrDataUrl) {
   const esPequena = tipo === TIPOS_ETIQUETA.PEQUENA;
   const prefix = esPequena ? "p" : "m";
   const { codigo, producto: nombre } = producto;
-
-  const productoHtml = esPequena
-    ? ""
-    : (() => {
-        const lineas = dividirNombreProducto(nombre);
-        const lineasHtml = lineas.map((l) => `<div>${escaparHtml(l)}</div>`).join("");
-        return `<div class="producto-top-m">${lineasHtml}</div>`;
-      })();
+  const productoHtml = buildProductoTopHtml(nombre, esPequena);
+  const estiloCodigo = esPequena
+    ? ` style="font-size:${tamanoFuenteCodigoPequena(codigo)}"`
+    : "";
 
   return `
     ${productoHtml}
@@ -234,7 +292,7 @@ export function buildEtiquetaMarkup(producto, tipo, qrDataUrl) {
     </div>
     <div class="cod-bloque-${prefix}">
       <span class="cod-label-${prefix}">Código</span>
-      <span class="cod-${prefix}">${escaparHtml(codigo)}</span>
+      <span class="cod-${prefix}"${estiloCodigo}>${escaparHtml(codigo)}</span>
     </div>
   `;
 }

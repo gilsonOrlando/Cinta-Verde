@@ -4,8 +4,6 @@ import toast from "react-hot-toast";
 import { TIPOS_ETIQUETA } from "../../utils/imprimirEtiqueta";
 import { PreviewEtiquetaModal } from "../modals/PreviewEtiquetaModal";
 
-const PRODUCTO_SOLO_CODIGO = "Solo codigo";
-
 export function TransferenciaResultado({ data, nombreArchivo }) {
   const { numero, bodegaOrigen, bodegaDestino, productos } = data;
   const [tipoEtiqueta, setTipoEtiqueta] = useState(TIPOS_ETIQUETA.PEQUENA);
@@ -13,6 +11,7 @@ export function TransferenciaResultado({ data, nombreArchivo }) {
   const [previewLote, setPreviewLote] = useState(false);
   const [productosList, setProductosList] = useState(productos);
   const [codigoManual, setCodigoManual] = useState("");
+  const [productoManual, setProductoManual] = useState("");
 
   useEffect(() => {
     setProductosList(productos);
@@ -30,20 +29,28 @@ export function TransferenciaResultado({ data, nombreArchivo }) {
 
   const handleCrearCodigo = () => {
     const codigo = codigoManual.trim();
+    const producto = productoManual.trim();
+
     if (!codigo) {
       toast.error("Ingresa un código.");
       return;
     }
 
+    if (!producto) {
+      toast.error("Ingresa el nombre del producto.");
+      return;
+    }
+
     setProductosList((prev) => [
       ...prev,
-      { codigo, producto: PRODUCTO_SOLO_CODIGO, cantidad: 1 },
+      { codigo, producto, cantidad: 1 },
     ]);
     setCodigoManual("");
+    setProductoManual("");
     toast.success("Etiqueta agregada a la tabla.");
   };
 
-  const handleCodigoKeyDown = (event) => {
+  const handleManualKeyDown = (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
       handleCrearCodigo();
@@ -118,23 +125,28 @@ export function TransferenciaResultado({ data, nombreArchivo }) {
             </RadioOption>
           </RadioGroup>
 
-          {tipoEtiqueta === TIPOS_ETIQUETA.PEQUENA && (
-            <ManualCodigo>
-              <ManualLabel>Agregar solo con código</ManualLabel>
-              <ManualFila>
-                <InputCodigo
-                  type="text"
-                  value={codigoManual}
-                  onChange={(event) => setCodigoManual(event.target.value)}
-                  onKeyDown={handleCodigoKeyDown}
-                  placeholder="Ingresa el código"
-                />
-                <BtnCrear type="button" onClick={handleCrearCodigo}>
-                  Crear
-                </BtnCrear>
-              </ManualFila>
-            </ManualCodigo>
-          )}
+          <ManualCodigo>
+            <ManualLabel>Generar etiqueta solo con código</ManualLabel>
+            <ManualGrid>
+              <InputCodigo
+                type="text"
+                value={codigoManual}
+                onChange={(event) => setCodigoManual(event.target.value)}
+                onKeyDown={handleManualKeyDown}
+                placeholder="Código"
+              />
+              <InputProducto
+                type="text"
+                value={productoManual}
+                onChange={(event) => setProductoManual(event.target.value)}
+                onKeyDown={handleManualKeyDown}
+                placeholder="Nombre del producto"
+              />
+              <BtnCrear type="button" onClick={handleCrearCodigo}>
+                Crear
+              </BtnCrear>
+            </ManualGrid>
+          </ManualCodigo>
         </SelectorTipo>
 
         {productosList.length === 0 ? (
@@ -335,16 +347,19 @@ const ManualLabel = styled.p`
   font-weight: 600;
 `;
 
-const ManualFila = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+const ManualGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(180px, 2fr) auto;
   gap: 10px;
   align-items: center;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const InputCodigo = styled.input`
-  flex: 1;
-  min-width: 180px;
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -357,6 +372,8 @@ const InputCodigo = styled.input`
     box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.15);
   }
 `;
+
+const InputProducto = styled(InputCodigo)``;
 
 const BtnCrear = styled.button`
   border: 1px solid #e53935;
