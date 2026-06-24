@@ -89,11 +89,11 @@ function buildProductoTopHtml(nombre, esPequena) {
 
 function tamanoFuenteCodigoPequena(codigo) {
   const longitud = String(codigo ?? "").length;
-  if (longitud <= 5) return "8pt";
-  if (longitud <= 7) return "7pt";
-  if (longitud <= 9) return "6.5pt";
-  if (longitud <= 11) return "6pt";
-  return "5.5pt";
+  if (longitud <= 5) return "11pt";
+  if (longitud <= 7) return "10pt";
+  if (longitud <= 9) return "9pt";
+  if (longitud <= 11) return "8pt";
+  return "7pt";
 }
 
 function estilosEtiqueta(esPequena) {
@@ -190,17 +190,24 @@ function estilosEtiqueta(esPequena) {
     ${
       esPequena
         ? `
+    .celda-p {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 0.15mm;
+      align-content: stretch;
+    }
+
     .producto-top-p {
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
       line-height: 1.1;
       font-size: 6pt;
-      margin-bottom: 0.4mm;
       flex-shrink: 0;
       width: 100%;
       max-height: calc(6pt * 1.1 * 3);
       overflow: hidden;
+      grid-row: 1;
     }
 
     .producto-top-p div {
@@ -210,19 +217,52 @@ function estilosEtiqueta(esPequena) {
       line-height: 1.1;
     }
 
+    .cuerpo-p {
+      grid-row: 2;
+      min-height: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      container-type: size;
+      padding: 0;
+    }
+
+    .qr-p {
+      width: 10mm;
+      height: 10mm;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    @supports (width: 1cqw) {
+      .qr-p {
+        width: min(100cqw, 100cqh, 11mm);
+        height: min(100cqw, 100cqh, 11mm);
+      }
+    }
+
     .cod-bloque-p {
-      flex-wrap: wrap;
-      row-gap: 0.1mm;
-      margin-top: 0.3mm;
+      grid-row: 3;
+      flex-wrap: nowrap;
+      row-gap: 0;
+      margin-top: 0;
+      overflow: hidden;
+      max-height: calc(11pt * 1.15);
     }
 
     .cod-p {
-      white-space: normal;
-      word-break: break-all;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       text-align: center;
-      line-height: 1;
+      line-height: 1.1;
       max-width: 100%;
-      font-size: 8pt;
     }
     `
         : `
@@ -250,18 +290,18 @@ function estilosEtiqueta(esPequena) {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex: 1 1 auto;
+      flex: ${esPequena ? "none" : "1 1 auto"};
       min-height: 0;
       overflow: hidden;
       width: 100%;
-      padding: 0.2mm 0;
+      padding: ${esPequena ? "0" : "0.2mm 0"};
     }
 
     .qr-${prefix} {
-      width: ${esPequena ? "8mm" : "32mm"};
-      height: ${esPequena ? "8mm" : "32mm"};
-      max-width: 100%;
-      max-height: 100%;
+      width: ${esPequena ? "auto" : "32mm"};
+      height: ${esPequena ? "auto" : "32mm"};
+      max-width: ${esPequena ? "100%" : "none"};
+      max-height: ${esPequena ? "100%" : "none"};
       object-fit: contain;
       display: block;
       flex-shrink: 0;
