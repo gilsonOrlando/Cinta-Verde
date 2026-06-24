@@ -1,22 +1,33 @@
 import { createClient } from "@supabase/supabase-js";
+import {
+  esSupabaseUrlValida,
+  normalizarSupabaseKey,
+  normalizarSupabaseUrl,
+} from "../utils/normalizarSupabaseEnv";
 
-const supabaseUrl = import.meta.env.VITE_APP_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_APP_SUPABASE_ANON_KEY;
+const supabaseUrl = normalizarSupabaseUrl(import.meta.env.VITE_APP_SUPABASE_URL);
+const supabaseAnonKey = normalizarSupabaseKey(import.meta.env.VITE_APP_SUPABASE_ANON_KEY);
 
-export const supabaseConfigurado = Boolean(supabaseUrl && supabaseAnonKey);
+export const supabaseConfigurado = Boolean(
+  supabaseUrl && supabaseAnonKey && esSupabaseUrlValida(supabaseUrl)
+);
 
 if (!supabaseConfigurado) {
   console.error(
-    "[Supabase] Faltan VITE_APP_SUPABASE_URL o VITE_APP_SUPABASE_ANON_KEY. " +
-      "Configura .env.local para desarrollo."
+    "[Supabase] Configuración inválida. Usa VITE_APP_SUPABASE_URL sin /rest/v1 " +
+      "y VITE_APP_SUPABASE_ANON_KEY (anon public)."
   );
 }
 
-export const supabase = createClient(supabaseUrl ?? "", supabaseAnonKey ?? "");
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function verificarConexionSupabase() {
   if (!supabaseConfigurado) {
-    return { ok: false, error: "Faltan variables de entorno de Supabase." };
+    return {
+      ok: false,
+      error:
+        "URL o clave de Supabase inválidas. La URL debe ser https://xxx.supabase.co sin /rest/v1.",
+    };
   }
 
   const { error } = await supabase.auth.getSession();

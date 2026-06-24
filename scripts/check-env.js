@@ -23,6 +23,18 @@ cargarEnvLocal();
 
 const required = ["VITE_APP_SUPABASE_URL", "VITE_APP_SUPABASE_ANON_KEY"];
 
+for (const key of required) {
+  if (process.env[key]) {
+    process.env[key] = process.env[key].trim().replace(/^["']|["']$/g, "");
+  }
+}
+
+if (process.env.VITE_APP_SUPABASE_URL) {
+  process.env.VITE_APP_SUPABASE_URL = process.env.VITE_APP_SUPABASE_URL
+    .replace(/\/+$/, "")
+    .replace(/\/rest\/v1$/i, "");
+}
+
 const missing = required.filter((key) => !process.env[key]);
 
 if (missing.length > 0) {

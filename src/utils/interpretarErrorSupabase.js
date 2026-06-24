@@ -16,6 +16,13 @@ export function interpretarErrorSupabase(error) {
   const mensaje = String(error.message ?? error.details ?? "");
   const texto = `${codigo} ${mensaje}`.toLowerCase();
 
+  if (codigo === "PGRST125" || texto.includes("invalid path specified in request url")) {
+    return (
+      "URL de Supabase incorrecta en Render. Debe ser solo " +
+      "https://tu-proyecto.supabase.co (sin /rest/v1 al final)."
+    );
+  }
+
   if (
     codigo === "PGRST205" ||
     texto.includes("could not find the table") ||
