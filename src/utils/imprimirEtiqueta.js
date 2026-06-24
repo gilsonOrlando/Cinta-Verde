@@ -186,26 +186,29 @@ function estilosEtiqueta(esPequena) {
       padding: ${esPequena ? "0.8mm 1mm" : "1.5mm 2mm"};
       display: flex;
       flex-direction: column;
-      justify-content: flex-start;
+      align-items: center;
+      justify-content: center;
       overflow: hidden;
       flex-shrink: ${esPequena ? "1" : "0"};
       min-width: ${esPequena ? "0" : "auto"};
       background: #fff;
+      text-align: center;
+    }
+
+    .etiqueta-inner-${prefix} {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: ${esPequena ? "flex-start" : "center"};
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      gap: ${esPequena ? "0.15mm" : "1mm"};
     }
 
     ${
       esPequena
         ? `
-    .celda-p {
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      gap: 0.15mm;
-      align-content: stretch;
-      justify-items: stretch;
-      align-items: center;
-      text-align: center;
-    }
-
     .producto-top-p {
       text-align: center;
       font-weight: 700;
@@ -216,84 +219,20 @@ function estilosEtiqueta(esPequena) {
       width: 100%;
       max-height: calc(6pt * 1.1 * 3);
       overflow: hidden;
-      grid-row: 1;
-      justify-self: center;
-    }
-
-    .cuerpo-p {
-      grid-row: 2;
-      min-height: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      container-type: size;
-      padding: 0;
-      justify-self: center;
-    }
-
-    .qr-p {
-      width: 10mm;
-      height: 10mm;
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      display: block;
-      flex-shrink: 0;
-      margin: 0 auto;
-    }
-
-    @supports (width: 1cqw) {
-      .qr-p {
-        width: min(100cqw, 100cqh, 11mm);
-        height: min(100cqw, 100cqh, 11mm);
-      }
-    }
-
-    .cod-bloque-p {
-      grid-row: 3;
-      flex-wrap: nowrap;
-      row-gap: 0;
-      margin-top: 0;
-      overflow: hidden;
-      max-height: calc(11pt * 1.15);
-      width: 100%;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      justify-self: center;
-    }
-
-    .cod-p {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      text-align: center;
-      line-height: 1.1;
-      max-width: 100%;
-    }
-
-    .cod-label-p {
-      text-align: center;
+      align-self: center;
     }
     `
         : `
-    .celda-m {
-      align-items: center;
-      text-align: center;
-    }
-
     .producto-top-m {
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
       line-height: 1.15;
       font-size: 9pt;
-      margin-bottom: 1mm;
       flex-shrink: 0;
+      width: 100%;
       word-break: break-word;
+      align-self: center;
     }
 
     .producto-top-m div {
@@ -311,21 +250,40 @@ function estilosEtiqueta(esPequena) {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex: ${esPequena ? "none" : "1 1 auto"};
+      flex: ${esPequena ? "1 1 0" : "1 1 auto"};
       min-height: 0;
       overflow: hidden;
       width: 100%;
-      padding: ${esPequena ? "0" : "0.2mm 0"};
+      padding: 0;
+      align-self: center;
     }
 
     .qr-${prefix} {
-      width: ${esPequena ? "auto" : "32mm"};
-      height: ${esPequena ? "auto" : "32mm"};
-      max-width: ${esPequena ? "100%" : "none"};
-      max-height: ${esPequena ? "100%" : "none"};
+      width: ${esPequena ? "10mm" : "32mm"};
+      height: ${esPequena ? "10mm" : "32mm"};
+      max-width: 100%;
+      max-height: 100%;
       object-fit: contain;
       display: block;
       flex-shrink: 0;
+      margin: 0 auto;
+    }
+
+    ${
+      esPequena
+        ? `
+    .cuerpo-p {
+      container-type: size;
+    }
+
+    @supports (width: 1cqw) {
+      .qr-p {
+        width: min(100cqw, 100cqh, 11mm);
+        height: min(100cqw, 100cqh, 11mm);
+      }
+    }
+    `
+        : ""
     }
 
     .cod-bloque-${prefix} {
@@ -338,6 +296,8 @@ function estilosEtiqueta(esPequena) {
       margin-top: ${esPequena ? "0" : "auto"};
       width: 100%;
       line-height: 1;
+      text-align: center;
+      align-self: center;
     }
 
     .cod-label-${prefix} {
@@ -346,12 +306,36 @@ function estilosEtiqueta(esPequena) {
       text-transform: uppercase;
       letter-spacing: 0.04em;
       flex-shrink: 0;
+      text-align: center;
     }
 
     .cod-${prefix} {
       font-size: ${esPequena ? "13pt" : "22pt"};
       font-weight: 700;
       letter-spacing: 0.03em;
+      text-align: center;
+    }
+
+    ${
+      esPequena
+        ? `
+    .cod-p {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.1;
+      max-width: 100%;
+      text-align: center;
+    }
+    `
+        : ""
+    }
+
+    .etiqueta-inner-${prefix} .producto-top-${prefix},
+    .etiqueta-inner-${prefix} .cuerpo-${prefix},
+    .etiqueta-inner-${prefix} .cod-bloque-${prefix} {
+      margin-left: auto;
+      margin-right: auto;
       text-align: center;
     }
   `;
@@ -367,13 +351,15 @@ export function buildEtiquetaMarkup(producto, tipo, qrDataUrl) {
     : "";
 
   return `
-    ${productoHtml}
-    <div class="cuerpo-${prefix}">
-      <img class="qr-${prefix}" src="${qrDataUrl}" alt="QR ${escaparHtml(codigo)}" />
-    </div>
-    <div class="cod-bloque-${prefix}">
-      <span class="cod-label-${prefix}">Código</span>
-      <span class="cod-${prefix}"${estiloCodigo}>${escaparHtml(codigo)}</span>
+    <div class="etiqueta-inner-${prefix}">
+      ${productoHtml}
+      <div class="cuerpo-${prefix}">
+        <img class="qr-${prefix}" src="${qrDataUrl}" alt="QR ${escaparHtml(codigo)}" />
+      </div>
+      <div class="cod-bloque-${prefix}">
+        <span class="cod-label-${prefix}">Código</span>
+        <span class="cod-${prefix}"${estiloCodigo}>${escaparHtml(codigo)}</span>
+      </div>
     </div>
   `;
 }
