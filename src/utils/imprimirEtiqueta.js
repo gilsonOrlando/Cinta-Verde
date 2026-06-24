@@ -20,6 +20,13 @@ export async function generarQrDataUrl(codigo) {
   });
 }
 
+function truncarLinea(texto, maxChars) {
+  const limpio = String(texto ?? "").trim();
+  if (limpio.length <= maxChars) return limpio;
+  if (maxChars <= 1) return "…";
+  return `${limpio.slice(0, maxChars - 1)}…`;
+}
+
 function dividirNombreProducto(nombre, maxLineas = 2, maxCharsPorLinea = 22) {
   const palabras = String(nombre ?? "")
     .trim()
@@ -33,23 +40,28 @@ function dividirNombreProducto(nombre, maxLineas = 2, maxCharsPorLinea = 22) {
   let actual = "";
 
   for (let i = 0; i < palabras.length; i++) {
-    const palabra = palabras[i];
+    const palabra = truncarLinea(palabras[i], maxCharsPorLinea);
     const candidato = actual ? `${actual} ${palabra}` : palabra;
 
     if (candidato.length <= maxCharsPorLinea || !actual) {
       actual = candidato;
     } else {
-      lineas.push(actual);
+      lineas.push(truncarLinea(actual, maxCharsPorLinea));
       actual = palabra;
+
+      if (lineas.length >= maxLineas) break;
     }
 
     if (lineas.length === maxLineas - 1) {
-      actual = palabras.slice(i).join(" ");
+      actual = truncarLinea(palabras.slice(i).join(" "), maxCharsPorLinea);
       break;
     }
   }
 
-  if (actual) lineas.push(actual);
+  if (lineas.length < maxLineas && actual) {
+    lineas.push(truncarLinea(actual, maxCharsPorLinea));
+  }
+
   return lineas.slice(0, maxLineas);
 }
 
@@ -169,7 +181,7 @@ function estilosEtiqueta(esPequena) {
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      overflow: ${esPequena ? "visible" : "hidden"};
+      overflow: hidden;
       flex-shrink: ${esPequena ? "1" : "0"};
       min-width: ${esPequena ? "0" : "auto"};
       background: #fff;
@@ -187,12 +199,14 @@ function estilosEtiqueta(esPequena) {
       margin-bottom: 0.8mm;
       flex-shrink: 0;
       width: 100%;
+      max-height: calc(6pt * 1.1 * 3);
+      overflow: hidden;
     }
 
     .producto-top-p div {
-      white-space: normal;
-      word-break: break-word;
-      overflow-wrap: anywhere;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       line-height: 1.1;
     }
 
@@ -236,7 +250,7 @@ function estilosEtiqueta(esPequena) {
       justify-content: center;
       flex: 1;
       min-height: 0;
-      overflow: ${esPequena ? "visible" : "hidden"};
+      overflow: hidden;
       width: 100%;
     }
 
