@@ -89,11 +89,11 @@ function buildProductoTopHtml(nombre, esPequena) {
 
 function tamanoFuenteCodigoPequena(codigo) {
   const longitud = String(codigo ?? "").length;
-  if (longitud <= 5) return "14pt";
-  if (longitud <= 7) return "12pt";
-  if (longitud <= 9) return "11pt";
-  if (longitud <= 11) return "10pt";
-  return "9pt";
+  if (longitud <= 5) return "8pt";
+  if (longitud <= 7) return "7pt";
+  if (longitud <= 9) return "6.5pt";
+  if (longitud <= 11) return "6pt";
+  return "5.5pt";
 }
 
 function estilosEtiqueta(esPequena) {
@@ -196,7 +196,7 @@ function estilosEtiqueta(esPequena) {
       text-transform: uppercase;
       line-height: 1.1;
       font-size: 6pt;
-      margin-bottom: 0.8mm;
+      margin-bottom: 0.4mm;
       flex-shrink: 0;
       width: 100%;
       max-height: calc(6pt * 1.1 * 3);
@@ -212,15 +212,17 @@ function estilosEtiqueta(esPequena) {
 
     .cod-bloque-p {
       flex-wrap: wrap;
-      row-gap: 0.2mm;
+      row-gap: 0.1mm;
+      margin-top: 0.3mm;
     }
 
     .cod-p {
       white-space: normal;
       word-break: break-all;
       text-align: center;
-      line-height: 1.05;
+      line-height: 1;
       max-width: 100%;
+      font-size: 8pt;
     }
     `
         : `
@@ -248,15 +250,18 @@ function estilosEtiqueta(esPequena) {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex: 1;
+      flex: 1 1 auto;
       min-height: 0;
       overflow: hidden;
       width: 100%;
+      padding: 0.2mm 0;
     }
 
     .qr-${prefix} {
-      width: ${esPequena ? "11mm" : "32mm"};
-      height: ${esPequena ? "11mm" : "32mm"};
+      width: ${esPequena ? "8mm" : "32mm"};
+      height: ${esPequena ? "8mm" : "32mm"};
+      max-width: 100%;
+      max-height: 100%;
       object-fit: contain;
       display: block;
       flex-shrink: 0;
@@ -267,9 +272,9 @@ function estilosEtiqueta(esPequena) {
       flex-direction: row;
       align-items: center;
       justify-content: center;
-      gap: ${esPequena ? "0.8mm" : "1.5mm"};
+      gap: ${esPequena ? "0.5mm" : "1.5mm"};
       flex-shrink: 0;
-      margin-top: auto;
+      margin-top: ${esPequena ? "0" : "auto"};
       width: 100%;
       line-height: 1;
     }
