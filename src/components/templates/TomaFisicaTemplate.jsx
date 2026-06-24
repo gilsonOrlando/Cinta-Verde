@@ -43,6 +43,13 @@ export function TomaFisicaTemplate() {
     setProyectoConsultado(null);
   };
 
+  const handleProyectoGuardado = () => {
+    setEstado("idle");
+    setArchivo(null);
+    setTomaFisica(null);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
   const handleFile = async (file) => {
     if (!file) return;
 
@@ -133,7 +140,11 @@ export function TomaFisicaTemplate() {
 
       {estado === "listo" && tomaFisica && (
         <>
-          <TomaFisicaResultado data={tomaFisica} nombreArchivo={archivo?.name} />
+          <TomaFisicaResultado
+            data={tomaFisica}
+            nombreArchivo={archivo?.name}
+            onProyectoGuardado={handleProyectoGuardado}
+          />
           <CambiarArchivo type="button" onClick={() => inputRef.current?.click()}>
             Cargar otro archivo
           </CambiarArchivo>

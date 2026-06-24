@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { PublicLayout } from "../hooks/PublicLayout";
 import { Home } from "../pages/Home";
 import { TomaFisica } from "../pages/TomaFisica";
@@ -22,6 +22,7 @@ export function MyRoutes() {
           </PublicLayout>
         }
       />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

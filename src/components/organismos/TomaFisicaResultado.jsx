@@ -1,16 +1,16 @@
 import { useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 import { CrearProyectoModal } from "../modals/CrearProyectoModal";
 import { CrearProyectoConProductos } from "../../supabase/crudProyectos";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 
-export function TomaFisicaResultado({ data, nombreArchivo }) {
+export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado }) {
   const { productos } = data;
   const [mostrarModal, setMostrarModal] = useState(false);
   const [guardando, setGuardando] = useState(false);
-  const [proyectoGuardado, setProyectoGuardado] = useState(null);
 
   const handleCrearProyecto = async ({ nombre, codigoAcceso }) => {
     if (!supabaseConfigurado) {
@@ -28,11 +28,27 @@ export function TomaFisicaResultado({ data, nombreArchivo }) {
         productos,
       });
 
-      setProyectoGuardado(resultado.proyecto);
       setMostrarModal(false);
-      toast.success(
-        `Proyecto "${resultado.proyecto.nombre}" guardado. Código móvil: ${resultado.proyecto.codigo_acceso}`
-      );
+
+      const { nombre: nombreProyecto, codigo_acceso: codigoMovil } = resultado.proyecto;
+      const nombreSeguro = String(nombreProyecto)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      await Swal.fire({
+        title: "Proyecto guardado",
+        html: `
+          <p style="margin:0 0 12px">El proyecto <strong>${nombreSeguro}</strong> se guardó correctamente.</p>
+          <p style="margin:0 0 8px;color:#666;font-size:0.95rem">Código de acceso para la app móvil:</p>
+          <p style="margin:0;font-size:1.6rem;font-weight:700;font-family:Consolas,monospace;letter-spacing:0.12em;color:#e65100">${codigoMovil}</p>
+        `,
+        icon: "success",
+        confirmButtonText: "Entendido",
+        confirmButtonColor: "#e53935",
+      });
+
+      onProyectoGuardado?.();
     } catch (error) {
       console.error(error);
       if (error.message === "CODIGO_ACCESO_DUPLICADO") {
@@ -58,15 +74,9 @@ export function TomaFisicaResultado({ data, nombreArchivo }) {
                 ? "1 producto encontrado"
                 : `${productos.length} productos encontrados`}
             </span>
-            {proyectoGuardado && (
-              <>
-                <BadgeProyecto>Proyecto guardado: {proyectoGuardado.nombre}</BadgeProyecto>
-                <BadgeCodigo>Código móvil: {proyectoGuardado.codigo_acceso}</BadgeCodigo>
-              </>
-            )}
           </TablaHeaderInfo>
 
-          {productos.length > 0 && !proyectoGuardado && (
+          {productos.length > 0 && (
             <BtnCrearProyecto type="button" onClick={() => setMostrarModal(true)}>
               Crear proyecto
             </BtnCrearProyecto>
@@ -160,30 +170,6 @@ const TablaHeaderInfo = styled.div`
     color: #888;
     font-size: 0.9rem;
   }
-`;
-
-const BadgeProyecto = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #e8f5e9;
-  color: #2e7d32;
-  font-size: 0.82rem;
-  font-weight: 600;
-`;
-
-const BadgeCodigo = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #fff3e0;
-  color: #e65100;
-  font-size: 0.82rem;
-  font-weight: 700;
-  font-family: "Consolas", "Courier New", monospace;
-  letter-spacing: 0.06em;
 `;
 
 const BtnCrearProyecto = styled.button`
