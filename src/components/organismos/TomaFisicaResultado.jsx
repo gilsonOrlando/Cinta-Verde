@@ -3,6 +3,8 @@ import styled from "styled-components";
 import toast from "react-hot-toast";
 import { CrearProyectoModal } from "../modals/CrearProyectoModal";
 import { CrearProyectoConProductos } from "../../supabase/crudProyectos";
+import { supabaseConfigurado } from "../../supabase/supabase.config";
+import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 
 export function TomaFisicaResultado({ data, nombreArchivo }) {
   const { productos } = data;
@@ -11,6 +13,11 @@ export function TomaFisicaResultado({ data, nombreArchivo }) {
   const [proyectoGuardado, setProyectoGuardado] = useState(null);
 
   const handleCrearProyecto = async ({ nombre, codigoAcceso }) => {
+    if (!supabaseConfigurado) {
+      toast.error(interpretarErrorSupabase());
+      return;
+    }
+
     setGuardando(true);
 
     try {
@@ -32,7 +39,7 @@ export function TomaFisicaResultado({ data, nombreArchivo }) {
         toast.error("Ese código de acceso ya existe. Elige otro o genera uno nuevo.");
         return;
       }
-      toast.error("No se pudo guardar el proyecto. Verifica la conexión con Supabase.");
+      toast.error(interpretarErrorSupabase(error));
     } finally {
       setGuardando(false);
     }

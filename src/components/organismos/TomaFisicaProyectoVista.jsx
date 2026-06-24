@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { ClipLoader } from "react-spinners";
 import { PreviewTomaFisicaModal } from "../modals/PreviewTomaFisicaModal";
 import { descargarPdfTomaFisica } from "../../utils/generarPdfTomaFisica";
+import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 import { formatearDiferencia, formatearFechaProyecto } from "../../utils/tomaFisicaReporte";
 import { calcularDiferenciaCantidades } from "../../utils/cantidadTexto";
 
@@ -130,7 +131,7 @@ export function TomaFisicaConsultaSection({ onConsultaExitosa }) {
       await onConsultaExitosa(codigo);
     } catch (error) {
       console.error(error);
-      toast.error("No se pudo consultar el proyecto.");
+      toast.error(interpretarErrorSupabase(error));
     } finally {
       setConsultando(false);
     }

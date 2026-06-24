@@ -26,6 +26,16 @@ const required = ["VITE_APP_SUPABASE_URL", "VITE_APP_SUPABASE_ANON_KEY"];
 const missing = required.filter((key) => !process.env[key]);
 
 if (missing.length > 0) {
+  const esRender = Boolean(process.env.RENDER);
+
+  if (esRender) {
+    console.error(
+      `[check-env] ERROR: faltan variables en Render: ${missing.join(", ")}. ` +
+        "Configúralas en Environment antes del build."
+    );
+    process.exit(1);
+  }
+
   console.warn(
     `[check-env] Variables faltantes: ${missing.join(", ")}. ` +
       "Configura .env.local para desarrollo."

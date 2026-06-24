@@ -8,6 +8,8 @@ import {
   TomaFisicaProyectoVista,
 } from "../organismos/TomaFisicaProyectoVista";
 import { ObtenerTomaFisicaPorCodigo } from "../../supabase/crudProyectos";
+import { supabaseConfigurado } from "../../supabase/supabase.config";
+import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 import { procesarTomaFisicaExcel } from "../../utils/parseTomaFisicaExcel";
 
 const ACCEPTED =
@@ -21,6 +23,11 @@ export function TomaFisicaTemplate() {
   const [proyectoConsultado, setProyectoConsultado] = useState(null);
 
   const handleConsulta = async (codigoAcceso) => {
+    if (!supabaseConfigurado) {
+      toast.error(interpretarErrorSupabase());
+      return;
+    }
+
     const resultado = await ObtenerTomaFisicaPorCodigo(codigoAcceso);
 
     if (!resultado) {

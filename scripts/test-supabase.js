@@ -27,29 +27,40 @@ if (!url || !key) {
   process.exit(1);
 }
 
-const respuesta = await fetch(`${url}/rest/v1/productos?select=id&limit=1`, {
-  headers: {
-    apikey: key,
-    Authorization: `Bearer ${key}`,
-  },
-});
+const headers = {
+  apikey: key,
+  Authorization: `Bearer ${key}`,
+};
 
-const texto = await respuesta.text();
-
-if (respuesta.ok) {
-  const data = JSON.parse(texto);
-  console.log("Conexión OK con Supabase.");
-  console.log("URL:", url);
-  console.log("Tabla productos:", Array.isArray(data) ? `${data.length} registro(s) de prueba` : data);
-  process.exit(0);
+async function probarTabla(nombre) {
+  const respuesta = await fetch(`${url}/rest/v1/${nombre}?select=id&limit=1`, { headers });
+  const texto = await respuesta.text();
+  return { nombre, status: respuesta.status, texto };
 }
 
-if (respuesta.status === 404 && texto.includes("productos")) {
-  console.log("Conexión OK con Supabase.");
-  console.log("URL:", url);
-  console.warn("La tabla 'productos' aún no existe. Créala en el panel si la necesitas.");
-  process.exit(0);
+const tablas = ["proyectos", "productos"];
+const resultados = await Promise.all(tablas.map(probarTabla));
+
+console.log("Conexión OK con Supabase.");
+console.log("URL:", url);
+
+let hayError = false;
+
+for (const { nombre, status, texto } of resultados) {
+  if (status === 200) {
+    const data = JSON.parse(texto);
+    console.log(`Tabla ${nombre}: OK (${Array.isArray(data) ? data.length : 0} registro(s) de prueba)`);
+    continue;
+  }
+
+  if (status === 404 && texto.includes(nombre)) {
+    console.warn(`Tabla ${nombre}: NO EXISTE. Ejecuta npm run setup:supabase`);
+    hayError = true;
+    continue;
+  }
+
+  console.error(`Tabla ${nombre}: error HTTP ${status}`, texto);
+  hayError = true;
 }
 
-console.error("Error HTTP", respuesta.status, texto);
-process.exit(1);
+process.exit(hayError ? 1 : 0);
