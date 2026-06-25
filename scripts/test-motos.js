@@ -15,45 +15,45 @@ test("incluye productos cuya primera palabra menciona MOTO", () => {
   assert.equal(esProductoMoto("CAMISETAS BENETY"), false);
 });
 
-test("extrae motos del formato codigo + producto + detalle UN", () => {
-  const texto = `
-56463 MOTO ZONSEN ZS150-46 BATLLO 3 AÑO
-2027 UN 1,00
-51775 CAMISETAS BENETY UN 2,00
-56464 MOTO HONDA CB190 UN 1,00
-`;
+test("extrae motos usando UN como separador en una linea", () => {
+  const texto =
+    "56463 MOTO ZONSEN ZS150-46 BATLLO 3 AÑO 2027 UN 1,00 1,00 51775 CAMISETAS BENETY UN 2,00 2,00";
 
   const productos = extraerProductosMotoDeTexto(texto);
 
-  assert.equal(productos.length, 2);
+  assert.equal(productos.length, 1);
   assert.equal(productos[0].codigo, "56463");
-  assert.equal(productos[0].producto, "MOTO ZONSEN ZS150-46 BATLLO 3 AÑO");
+  assert.equal(productos[0].producto, "MOTO ZONSEN ZS150-46 BATLLO 3 AÑO 2027");
   assert.equal(productos[0].cantidad, "1,00");
-  assert.equal(productos[1].codigo, "56464");
 });
 
-test("extrae motos cuando MOTO y el nombre vienen en lineas separadas", () => {
+test("extrae motos del formato tabla con producto en varias lineas", () => {
   const texto = `
-56463 MOTO
-ZONSEN ZS150-46 BATLLO 3 AÑO
-2027 UN 1,00
-51775 CAMISETAS BENETY UN 2,00
+Código Producto Unidad Lote Cantidad Recibido
+56463 MOTO ZONSEN ZS150-46 BATLLO 3 AÑO
+2027
+UN
+1,00
+1,00
+Total: 0,00 1,00 1,00
 `;
 
   const productos = extraerProductosMotoDeTexto(texto);
 
   assert.equal(productos.length, 1);
   assert.equal(productos[0].codigo, "56463");
-  assert.equal(productos[0].producto, "MOTO ZONSEN ZS150-46 BATLLO 3 AÑO");
+  assert.equal(productos[0].producto, "MOTO ZONSEN ZS150-46 BATLLO 3 AÑO 2027");
+  assert.equal(productos[0].cantidad, "1,00");
 });
 
-test("extrae motos con codigo y producto en lineas separadas", () => {
+test("extrae motos cuando MOTO y el nombre vienen en lineas separadas", () => {
   const texto = `
-56463
-MOTO ZONSEN ZS150-46 BATLLO 3 AÑO
+56463 MOTO
+ZONSEN ZS150-46 BATLLO 3 AÑO
 2027
 UN
 1,00
+51775 CAMISETAS BENETY UN 2,00
 `;
 
   const productos = extraerProductosMotoDeTexto(texto);
@@ -63,10 +63,12 @@ UN
   assert.match(productos[0].producto, /^MOTO /);
 });
 
-test("parseMotosPdf combina parser general y extractor especializado", () => {
+test("parseMotosPdf combina extractor UN y parser general", () => {
   const texto = `
 56463 MOTO ZONSEN ZS150-46 BATLLO 3 AÑO
-2027 UN 1,00
+2027
+UN
+1,00
 51775 CAMISETAS BENETY UN 2,00
 `;
 

@@ -1,8 +1,15 @@
+const PALABRAS_EXCLUIDAS =
+  /^(?:total|producto|c[oó]digo|unidad|lote|cantidad|recibido|descripci[oó]n)\b/i;
+
 function limpiarNombreProductoMoto(nombre) {
   let texto = String(nombre ?? "").trim();
   const conCodigo = texto.match(/^\d{4,6}\s+(.+)$/);
   if (conCodigo) texto = conCodigo[1].trim();
   return texto.replace(/\s+/g, " ");
+}
+
+function limpiarProductoMoto(nombre) {
+  return limpiarNombreProductoMoto(nombre);
 }
 
 export function esProductoMoto(valor) {
@@ -26,10 +33,11 @@ function combinarProductosMotos(listas) {
     for (const item of lista) {
       if (!item?.codigo || !item?.producto || !item?.cantidad) continue;
       if (!esProductoMoto(item)) continue;
+      if (PALABRAS_EXCLUIDAS.test(item.producto)) continue;
 
       mapa.set(item.codigo, {
         codigo: item.codigo,
-        producto: limpiarNombreProductoMoto(item.producto),
+        producto: limpiarProductoMoto(item.producto),
         cantidad: item.cantidad,
       });
     }
@@ -47,128 +55,91 @@ function normalizarTextoPdf(text) {
     .trim();
 }
 
-function limpiarProductoMoto(nombre) {
-  return limpiarNombreProductoMoto(nombre)
-    .replace(/\s+\d{4}\s*$/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
+function esLineaEncabezado(linea) {
+  return PALABRAS_EXCLUIDAS.test(linea) || /^inform$/i.test(linea);
 }
 
-function esLineaDetalleProducto(linea) {
-  return /(?:^|\s)(?:\d+\s+)?(?:DISCO\s*\(\d+\)\s+)?UN\s+[\d,]+/i.test(linea);
-}
-
-function extraerCantidadDeDetalle(linea) {
-  const match = String(linea ?? "").match(
-    /(?:\d+\s+)?(?:DISCO\s*\(\d+\)\s+)?UN\s+([\d,]+)/i
-  );
-  return match?.[1] ?? null;
-}
-
-function separarProductoYCantidadEnLinea(texto) {
-  const match = String(texto ?? "").match(/^(.+?)\s+UN\s+([\d,]+)(?:\s+[\d,]+)?$/i);
-  if (!match) {
-    return { producto: limpiarProductoMoto(texto), cantidad: null };
-  }
-
-  return {
-    producto: limpiarProductoMoto(match[1]),
-    cantidad: match[2],
+function crearRegistro(codigo, producto, cantidad) {
+  const item = {
+    codigo: String(codigo ?? "").trim(),
+    producto: limpiarProductoMoto(producto),
+    cantidad: String(cantidad ?? "").trim(),
   };
+
+  if (!item.codigo || !item.producto || !item.cantidad) return null;
+  if (esLineaEncabezado(item.producto)) return null;
+  return item;
 }
 
-function esInicioRegistroProducto(linea) {
-  return /^\d{4,6}(?:\s+.+)?$/.test(linea) && !esLineaDetalleProducto(linea);
-}
-
-function leerBloqueProducto(lineas, indiceInicial) {
-  const linea = lineas[indiceInicial];
-  if (!esInicioRegistroProducto(linea)) return null;
-
-  const soloCodigo = linea.match(/^(\d{4,6})$/);
-  const conTexto = linea.match(/^(\d{4,6})\s+(.+)$/);
-
-  const codigo = (soloCodigo || conTexto)[1];
-  const partes = conTexto ? [conTexto[2].trim()] : [];
-  let j = indiceInicial + 1;
-
-  if (conTexto) {
-    const enLinea = separarProductoYCantidadEnLinea(conTexto[2]);
-    if (enLinea.cantidad) {
-      return {
-        siguienteIndice: indiceInicial,
-        item: { codigo, producto: enLinea.producto, cantidad: enLinea.cantidad },
-      };
-    }
-  }
-
-  while (j < lineas.length) {
-    const siguiente = lineas[j];
-
-    if (esLineaDetalleProducto(siguiente)) break;
-    if (/^UN$/i.test(siguiente)) break;
-    if (/^\d{5,6}$/.test(siguiente)) break;
-    if (/^\d{4,6}\s+\S/.test(siguiente)) break;
-
-    partes.push(siguiente);
-    j++;
-  }
-
-  let cantidad = null;
-
-  if (j < lineas.length) {
-    if (/^UN$/i.test(lineas[j]) && /^[\d,]+$/.test(lineas[j + 1] ?? "")) {
-      cantidad = lineas[j + 1];
-    } else {
-      cantidad = extraerCantidadDeDetalle(lineas[j]);
-    }
-  }
-
-  const producto = limpiarProductoMoto(partes.join(" "));
-
-  if (!cantidad || !producto) {
-    return { siguienteIndice: j, item: null };
-  }
-
-  return {
-    siguienteIndice: j,
-    item: { codigo, producto, cantidad },
-  };
-}
-
-function extraerProductosMotoPorBloques(lineas) {
+/**
+ * Regla principal: cada registro termina en "UN cantidad".
+ * Estructura: [codigo] [nombre producto] [lote opcional] UN [cantidad] [recibido]
+ */
+function extraerRegistrosPorUnEnTexto(textoContinuo) {
   const productos = [];
+  const regex =
+    /(\d{4,6})\s+(.+?)(?:\s+\d+\s+(?:DISCO\s*\(\d+\)\s+)?)?\s+UN\s+([\d,]+)(?:\s+[\d,]+)?/gi;
 
-  for (let i = 0; i < lineas.length; i++) {
-    if (!esInicioRegistroProducto(lineas[i])) continue;
+  let match;
+  regex.lastIndex = 0;
 
-    const bloque = leerBloqueProducto(lineas, i);
-    if (!bloque) continue;
-
-    if (bloque.item && esProductoMoto(bloque.item)) {
-      productos.push(bloque.item);
-    }
-
-    i = Math.max(i, bloque.siguienteIndice);
+  while ((match = regex.exec(textoContinuo)) !== null) {
+    const item = crearRegistro(match[1], match[2], match[3]);
+    if (item) productos.push(item);
   }
 
   return productos;
 }
 
-function extraerProductosMotoPorRegex(textoUnaLinea) {
+function extraerRegistrosPorAnclasUn(lineas) {
   const productos = [];
-  const regexBloque =
-    /(\d{4,6})\s+((?:MOTO\S*)\s+.+?)(?:\s+\d{4})?\s+(?:\d+\s+(?:DISCO\s*\(\d+\)\s+)?)?UN\s+([\d,]+)(?:\s+[\d,]+)?/gi;
 
-  let match;
-  regexBloque.lastIndex = 0;
+  for (let i = 0; i < lineas.length; i++) {
+    const linea = lineas[i];
+    let cantidad = null;
+    let indiceUn = i;
 
-  while ((match = regexBloque.exec(textoUnaLinea)) !== null) {
-    productos.push({
-      codigo: match[1],
-      producto: limpiarProductoMoto(match[2]),
-      cantidad: match[3],
-    });
+    if (/^UN$/i.test(linea)) {
+      const posibleCantidad = lineas[i + 1] ?? "";
+      if (/^[\d,]+$/.test(posibleCantidad)) {
+        cantidad = posibleCantidad;
+      }
+    } else {
+      const detalle = linea.match(/\bUN\s+([\d,]+)/i);
+      if (detalle) cantidad = detalle[1];
+    }
+
+    if (!cantidad) continue;
+
+    const partes = [];
+    let codigo = null;
+
+    for (let j = indiceUn - 1; j >= 0; j--) {
+      const anterior = lineas[j];
+
+      if (esLineaEncabezado(anterior)) break;
+
+      const codigoConTexto = anterior.match(/^(\d{4,6})\s+(.+)$/);
+      if (codigoConTexto) {
+        codigo = codigoConTexto[1];
+        partes.unshift(codigoConTexto[2].trim());
+        break;
+      }
+
+      if (/^\d{4,6}$/.test(anterior)) {
+        codigo = anterior;
+        break;
+      }
+
+      if (/^\d{4,6}\s+\S/.test(anterior)) break;
+
+      partes.unshift(anterior);
+    }
+
+    if (!codigo || partes.length === 0) continue;
+
+    const item = crearRegistro(codigo, partes.join(" "), cantidad);
+    if (item) productos.push(item);
   }
 
   return productos;
@@ -176,15 +147,15 @@ function extraerProductosMotoPorRegex(textoUnaLinea) {
 
 export function extraerProductosMotoDeTexto(text) {
   const textoPlano = normalizarTextoPdf(text);
-  const textoUnaLinea = textoPlano.replace(/\n+/g, " ");
+  const textoContinuo = textoPlano.replace(/\n+/g, " ");
   const lineas = textoPlano
     .split(/\n+/)
     .map((linea) => linea.trim())
     .filter(Boolean);
 
   return combinarProductosMotos([
-    extraerProductosMotoPorRegex(textoUnaLinea),
-    extraerProductosMotoPorBloques(lineas),
+    extraerRegistrosPorUnEnTexto(textoContinuo),
+    extraerRegistrosPorAnclasUn(lineas),
   ]);
 }
 
@@ -194,7 +165,7 @@ export function obtenerProductosMotosDesdeTransferencia(productos) {
 
 export function obtenerProductosMotosDesdeTexto(text, productosTransferencia = []) {
   return combinarProductosMotos([
-    productosTransferencia,
     extraerProductosMotoDeTexto(text),
+    productosTransferencia,
   ]);
 }

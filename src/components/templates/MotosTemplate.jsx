@@ -69,8 +69,9 @@ export function MotosTemplate() {
         <UploadSection>
           <h1>Motos</h1>
           <p>
-            Carga un PDF para generar etiquetas medianas. Solo se listan productos cuya
-            primera palabra mencione <strong>MOTO</strong> (ej. MOTO, MOTOS, MOTOCICLETA).
+            Carga un PDF de transferencia. Cada registro se detecta por la palabra{" "}
+            <strong>UN</strong> (código + producto antes, cantidad después). Solo se
+            listan productos cuya primera palabra mencione <strong>MOTO</strong>.
           </p>
 
           <DropZone
