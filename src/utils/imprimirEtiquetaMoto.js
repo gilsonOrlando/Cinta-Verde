@@ -72,17 +72,17 @@ function dividirNombreProducto(nombre, maxLineas = 2, maxCharsPorLinea = 24) {
 
 function tamanoFuenteCam(valor) {
   const longitud = String(valor ?? "").length;
-  if (longitud <= 8) return "13pt";
-  if (longitud <= 10) return "11pt";
-  if (longitud <= 12) return "9.5pt";
-  return "8pt";
+  if (longitud <= 8) return "10pt";
+  if (longitud <= 10) return "8.5pt";
+  if (longitud <= 12) return "7.5pt";
+  return "6.5pt";
 }
 
 function tamanoFuenteFooter(valor) {
   const longitud = String(valor ?? "").length;
-  if (longitud <= 18) return "5.5pt";
-  if (longitud <= 22) return "5pt";
-  return "4.5pt";
+  if (longitud <= 18) return "7.2pt";
+  if (longitud <= 22) return "6.8pt";
+  return "6.2pt";
 }
 
 function estilosEtiquetaMoto() {
@@ -151,10 +151,10 @@ function estilosEtiquetaMoto() {
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 1.12;
-      font-size: 7.2pt;
+      line-height: 1.14;
+      font-size: 8.8pt;
       flex-shrink: 0;
-      margin-bottom: 1mm;
+      margin-bottom: 0.8mm;
     }
 
     .moto-header div {
@@ -165,17 +165,18 @@ function estilosEtiquetaMoto() {
 
     .moto-body {
       display: flex;
-      align-items: stretch;
-      gap: 1.5mm;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 1.8mm;
       flex: 1;
       min-height: 0;
-      margin-bottom: 1mm;
+      margin-bottom: 0.8mm;
     }
 
     .moto-izq {
       display: flex;
-      align-items: center;
-      gap: 0.6mm;
+      align-items: flex-start;
+      gap: 0.5mm;
       flex: 0 0 auto;
       min-width: 0;
     }
@@ -189,25 +190,30 @@ function estilosEtiquetaMoto() {
       text-transform: uppercase;
       line-height: 1;
       flex-shrink: 0;
+      margin-top: 2.1mm;
+      height: 19mm;
+      display: flex;
+      align-items: center;
     }
 
     .moto-qr-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.4mm;
+      gap: 0.3mm;
+      width: 19mm;
     }
 
     .moto-cod {
-      font-size: 5.5pt;
+      font-size: 6pt;
       font-weight: 700;
       letter-spacing: 0.02em;
       white-space: nowrap;
     }
 
     .moto-qr {
-      width: 21mm;
-      height: 21mm;
+      width: 19mm;
+      height: 19mm;
       object-fit: contain;
       display: block;
     }
@@ -220,13 +226,14 @@ function estilosEtiquetaMoto() {
     }
 
     .moto-mega-acceso {
-      font-size: 4.5pt;
+      font-size: 4pt;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
       text-align: center;
       color: #000;
-      line-height: 1.1;
+      line-height: 1.05;
+      max-width: 19mm;
     }
 
     @media print {
@@ -237,22 +244,26 @@ function estilosEtiquetaMoto() {
     }
 
     .moto-caja {
-      flex: 1;
-      min-width: 0;
+      width: 19mm;
+      height: 19mm;
+      flex: 0 0 19mm;
+      margin-top: 2.1mm;
       border: 0.4mm solid #000;
-      border-radius: 2mm;
+      border-radius: 1.8mm;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
     .moto-caja-header {
-      font-size: 5pt;
+      font-size: 4.2pt;
       font-weight: 600;
       text-align: center;
-      padding: 0.5mm 1mm;
+      padding: 0.35mm 0.5mm;
       border-bottom: 0.3mm solid #000;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.01em;
+      line-height: 1.1;
+      flex-shrink: 0;
     }
 
     .moto-caja-valor {
@@ -262,23 +273,27 @@ function estilosEtiquetaMoto() {
       justify-content: center;
       font-weight: 700;
       text-align: center;
-      padding: 0.5mm 1mm;
+      padding: 0.3mm 0.5mm;
       line-height: 1;
       word-break: break-all;
+      min-height: 0;
     }
 
     .moto-caja-agencia {
-      font-size: 5pt;
+      font-size: 4pt;
       text-align: right;
-      padding: 0.4mm 1.2mm 0.6mm;
+      padding: 0.25mm 0.6mm 0.35mm;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      flex-shrink: 0;
+      line-height: 1.1;
     }
 
     .moto-footer {
       flex-shrink: 0;
-      line-height: 1.2;
+      line-height: 1.22;
+      font-size: 7.2pt;
     }
 
     .moto-footer div {
