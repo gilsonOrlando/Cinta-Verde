@@ -124,11 +124,13 @@ export function DatosEtiquetaMotoModal({
     onConfirmar(datos);
   };
 
-  const enlaceMegaValido = esEnlaceMegaValido(linkMega);
-
   const handleAbrirMega = () => {
-    if (!abrirRepositorioMega(linkMega)) {
-      toast.error("Ingresa un enlace válido de MEGA para abrir el repositorio.");
+    const resultado = abrirRepositorioMega(linkMega);
+
+    if (resultado.usoFallback) {
+      toast("Copia el enlace de tu carpeta en MEGA y pégalo aquí al volver.", {
+        icon: "ℹ️",
+      });
     }
   };
 
@@ -172,15 +174,14 @@ export function DatosEtiquetaMotoModal({
                 <BtnAbrirMega
                   type="button"
                   onClick={handleAbrirMega}
-                  disabled={!enlaceMegaValido}
-                  title="Abrir repositorio MEGA"
+                  title="Abrir MEGA para copiar el enlace de tu carpeta"
                 >
                   Abrir MEGA
                 </BtnAbrirMega>
               </FilaEnlace>
               <Ayuda>
-                Pega el enlace de tu carpeta MEGA. El QR y el botón abrirán ese repositorio
-                al escanear o pulsar.
+                Pulsa <strong>Abrir MEGA</strong>, entra a tu carpeta, copia el enlace y pégalo
+                aquí. Ese enlace se usará en el QR de la etiqueta.
               </Ayuda>
             </Campo>
           </CamposComunes>
@@ -438,13 +439,8 @@ const BtnAbrirMega = styled.button`
   cursor: pointer;
   flex-shrink: 0;
 
-  &:hover:not(:disabled) {
+  &:hover {
     background: #ffebee;
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
   }
 `;
 

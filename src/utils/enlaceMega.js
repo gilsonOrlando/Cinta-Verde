@@ -1,3 +1,5 @@
+export const ENLACE_MEGA_INICIO = "https://mega.nz/fm";
+
 export function esEnlaceMegaValido(valor) {
   try {
     const url = new URL(String(valor ?? "").trim());
@@ -13,11 +15,8 @@ export function normalizarEnlaceMega(valor) {
 
 export function abrirRepositorioMega(valor) {
   const enlace = normalizarEnlaceMega(valor);
+  const destino = esEnlaceMegaValido(enlace) ? enlace : ENLACE_MEGA_INICIO;
 
-  if (!esEnlaceMegaValido(enlace)) {
-    return false;
-  }
-
-  window.open(enlace, "_blank", "noopener,noreferrer");
-  return true;
+  window.open(destino, "_blank", "noopener,noreferrer");
+  return { ok: true, usoFallback: !esEnlaceMegaValido(enlace) };
 }

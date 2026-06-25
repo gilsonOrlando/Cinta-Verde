@@ -97,8 +97,10 @@ export function PreviewEtiquetaModal({
   };
 
   const handleAbrirMega = () => {
-    if (!abrirRepositorioMega(datosEtiquetaMoto?.linkMega)) {
-      setError("No hay un enlace MEGA válido para abrir.");
+    const resultado = abrirRepositorioMega(datosEtiquetaMoto?.linkMega);
+
+    if (resultado.usoFallback) {
+      setError("No hay un enlace MEGA válido en la etiqueta.");
     }
   };
 
