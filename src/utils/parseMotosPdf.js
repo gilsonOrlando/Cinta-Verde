@@ -1,5 +1,5 @@
-import { parseTransferenciaPdf, procesarTransferenciaPdf } from "./parseTransferenciaPdf";
-import { obtenerProductosMotosDesdeTexto } from "./filtrarProductosMotos";
+import { parseTransferenciaPdf, procesarTransferenciaPdf } from "./parseTransferenciaPdf.js";
+import { obtenerProductosMotosDesdeTexto } from "./filtrarProductosMotos.js";
 
 export function parseMotosPdf(text) {
   const transferencia = parseTransferenciaPdf(text);
