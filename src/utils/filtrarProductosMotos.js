@@ -4,7 +4,7 @@ export function esProductoMoto(nombre) {
     .split(/\s+/)[0]
     ?.toUpperCase();
 
-  return primeraPalabra === "MOTO";
+  return Boolean(primeraPalabra?.startsWith("MOTO"));
 }
 
 export function filtrarProductosMotos(productos) {

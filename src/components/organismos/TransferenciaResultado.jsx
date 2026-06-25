@@ -51,7 +51,7 @@ export function TransferenciaResultado({
     }
 
     if (soloProductosMoto && !esProductoMoto(producto)) {
-      toast.error('El producto debe iniciar con la palabra "MOTO".');
+      toast.error('La primera palabra del producto debe mencionar "MOTO".');
       return;
     }
 
@@ -165,7 +165,7 @@ export function TransferenciaResultado({
                 onKeyDown={handleManualKeyDown}
                 placeholder={
                   soloProductosMoto
-                    ? "Nombre del producto (inicia con MOTO)"
+                    ? "Nombre del producto (primera palabra con MOTO)"
                     : "Nombre del producto"
                 }
               />

@@ -41,14 +41,14 @@ export function MotosTemplate() {
         setEstado("listo");
         toast.error(
           omitidos > 0
-            ? "No hay motos en el PDF. Solo se incluyen productos cuya primera palabra es MOTO."
+            ? "No hay motos en el PDF. Solo se incluyen productos cuya primera palabra menciona MOTO."
             : "No se detectaron productos. Revisa el formato del PDF."
         );
       } else {
         setEstado("listo");
         toast.success(`${productosMotos.length} moto(s) encontrada(s)`);
         if (omitidos > 0) {
-          toast(`${omitidos} producto(s) omitido(s) por no iniciar con MOTO.`, {
+          toast(`${omitidos} producto(s) omitido(s) por no mencionar MOTO en la primera palabra.`, {
             icon: "ℹ️",
           });
         }
@@ -69,7 +69,7 @@ export function MotosTemplate() {
           <h1>Motos</h1>
           <p>
             Carga un PDF para generar etiquetas medianas. Solo se listan productos cuya
-            primera palabra es <strong>MOTO</strong>.
+            primera palabra mencione <strong>MOTO</strong> (ej. MOTO, MOTOS, MOTOCICLETA).
           </p>
 
           <DropZone
