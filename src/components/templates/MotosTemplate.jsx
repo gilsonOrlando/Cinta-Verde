@@ -1,8 +1,13 @@
 import { useRef, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 import { CargandoTransferencia } from "../moleculas/CargandoTransferencia";
 import { TransferenciaResultado } from "../organismos/TransferenciaResultado";
+import {
+  diagnosticarCapturaMotos,
+  formatearDiagnosticoMotosHtml,
+} from "../../utils/filtrarProductosMotos";
 
 const ACCEPTED = ".pdf,application/pdf";
 
@@ -33,6 +38,16 @@ export function MotosTemplate() {
       const textoPdf = await extractTextFromPdf(file);
       const transferencia = parseTransferenciaPdf(textoPdf);
       const data = parseMotosPdf(textoPdf);
+
+      const diagnostico = diagnosticarCapturaMotos(textoPdf, transferencia.productos);
+
+      await Swal.fire({
+        title: "Diagnóstico de captura (Motos)",
+        html: formatearDiagnosticoMotosHtml(diagnostico),
+        width: 900,
+        confirmButtonText: "Continuar",
+        confirmButtonColor: "#e53935",
+      });
 
       setDatos(data);
 
