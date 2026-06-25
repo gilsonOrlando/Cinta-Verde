@@ -82,9 +82,9 @@ function tamanoFuenteCam(valor) {
 
 function tamanoFuenteFooter(valor) {
   const longitud = String(valor ?? "").length;
-  if (longitud <= 18) return "8.5pt";
-  if (longitud <= 22) return "8pt";
-  return "7.5pt";
+  if (longitud <= 18) return "10pt";
+  if (longitud <= 22) return "9.5pt";
+  return "9pt";
 }
 
 function estilosEtiquetaMoto() {
@@ -155,8 +155,8 @@ function estilosEtiquetaMoto() {
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 1.12;
-      font-size: 8.5pt;
+      line-height: 1.1;
+      font-size: 10pt;
       flex-shrink: 0;
       margin-bottom: 0.15mm;
       padding: 0 0.3mm;
@@ -317,7 +317,7 @@ function estilosEtiquetaMoto() {
     .moto-datos {
       flex-shrink: 0;
       line-height: 1.1;
-      font-size: 8.5pt;
+      font-size: 10pt;
       margin: 0;
       padding: 0.1mm 0.2mm 0;
       display: flex;
