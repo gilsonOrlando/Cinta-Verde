@@ -36,7 +36,9 @@ function dividirNombreProducto(nombre, maxLineas = 2, maxCharsPorLinea = 28) {
     .split(/\s+/)
     .filter(Boolean);
 
-  if (palabras.length === 0) return ["", ""];
+  if (palabras.length === 0) {
+    return Array.from({ length: maxLineas }, () => "");
+  }
 
   const lineas = [];
   let actual = "";
@@ -141,9 +143,10 @@ function estilosEtiquetaMoto() {
       max-height: 51mm;
       border: 0.45mm solid #000;
       border-radius: 2.5mm;
-      padding: 0.9mm 1.1mm 1.1mm;
+      padding: 0.9mm 1.1mm 1mm;
       display: flex;
       flex-direction: column;
+      gap: 0.35mm;
       overflow: hidden;
       background: #fff;
     }
@@ -152,11 +155,14 @@ function estilosEtiquetaMoto() {
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 1.1;
-      font-size: 10pt;
+      line-height: 1.12;
+      font-size: 8.5pt;
       flex-shrink: 0;
-      margin-bottom: 0.4mm;
+      margin-bottom: 0.15mm;
       padding: 0 0.3mm;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2mm;
     }
 
     .moto-header div {
@@ -186,7 +192,7 @@ function estilosEtiquetaMoto() {
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 23mm;
+      height: 21mm;
       margin-top: 2mm;
     }
 
@@ -195,11 +201,20 @@ function estilosEtiquetaMoto() {
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 0;
+      gap: 0.45mm;
+    }
+
+    .moto-qr-col {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35mm;
     }
 
     .moto-cod {
-      font-size: 11pt;
+      font-size: 10pt;
       font-weight: 700;
       letter-spacing: 0.02em;
       white-space: nowrap;
@@ -208,6 +223,7 @@ function estilosEtiquetaMoto() {
       line-height: 1.05;
       margin: 0;
       padding: 0;
+      width: 100%;
     }
 
     .moto-par {
@@ -219,10 +235,10 @@ function estilosEtiquetaMoto() {
     }
 
     .moto-qr-link {
-      flex: 1 1 0;
-      min-width: 0;
-      height: 23mm;
-      max-height: 23mm;
+      flex: 0 0 21mm;
+      width: 21mm;
+      height: 21mm;
+      max-height: 21mm;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -232,8 +248,8 @@ function estilosEtiquetaMoto() {
     }
 
     .moto-qr {
-      width: 23mm;
-      height: 23mm;
+      width: 21mm;
+      height: 21mm;
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
@@ -254,8 +270,8 @@ function estilosEtiquetaMoto() {
     .moto-caja {
       flex: 1 1 0;
       min-width: 0;
-      height: 23mm;
-      max-height: 23mm;
+      height: 21mm;
+      max-height: 21mm;
       border: 0.4mm solid #000;
       border-radius: 1.8mm;
       display: flex;
@@ -300,10 +316,13 @@ function estilosEtiquetaMoto() {
 
     .moto-datos {
       flex-shrink: 0;
-      line-height: 1.05;
+      line-height: 1.1;
       font-size: 8.5pt;
       margin: 0;
-      padding: 0 0.2mm;
+      padding: 0.1mm 0.2mm 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3mm;
     }
 
     .moto-datos div {
@@ -358,7 +377,7 @@ export async function generarQrDataUrlEnlace(enlace) {
 
 export function buildEtiquetaMotoMarkup(producto, datosMoto, qrDataUrl) {
   const { codigo, producto: nombre } = producto;
-  const [linea1, linea2] = dividirNombreProducto(nombre);
+  const [linea1, linea2, linea3] = dividirNombreProducto(nombre, 3, 26);
   const chasis = String(datosMoto?.chasis ?? "").trim().toUpperCase();
   const motor = String(datosMoto?.motor ?? "").trim().toUpperCase();
   const cam = String(datosMoto?.camCpmRamw ?? "").trim().toUpperCase();
@@ -371,27 +390,30 @@ export function buildEtiquetaMotoMarkup(producto, datosMoto, qrDataUrl) {
       <div class="moto-header">
         <div>${escaparHtml(linea1)}</div>
         <div>${escaparHtml(linea2)}</div>
+        <div>${escaparHtml(linea3)}</div>
       </div>
       <div class="moto-main">
         <div class="moto-factura">FACTURA</div>
         <div class="moto-centro">
           <div class="moto-par">
-            <a
-              class="moto-qr-link"
-              href="${enlaceMega}"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Abrir repositorio MEGA"
-            >
-              <img class="moto-qr" src="${qrDataUrl}" alt="QR acceso MEGA" />
-            </a>
+            <div class="moto-qr-col">
+              <a
+                class="moto-qr-link"
+                href="${enlaceMega}"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Abrir repositorio MEGA"
+              >
+                <img class="moto-qr" src="${qrDataUrl}" alt="QR acceso MEGA" />
+              </a>
+              <div class="moto-cod">COD. ${escaparHtml(codigo)}</div>
+            </div>
             <div class="moto-caja">
               <div class="moto-caja-header">CAM/CPN/RAMV</div>
               <div class="moto-caja-valor" style="font-size:${tamanoFuenteCam(cam)}">${escaparHtml(cam)}</div>
               <div class="moto-caja-agencia">${escaparHtml(agencia)}</div>
             </div>
           </div>
-          <div class="moto-cod">COD. ${escaparHtml(codigo)}</div>
           <div class="moto-datos">
             <div style="font-size:${tamanoFuenteFooter(chasis)}"><strong>CHASIS:</strong> ${escaparHtml(chasis)}</div>
             <div style="font-size:${tamanoFuenteFooter(motor)}"><strong>MOTOR:</strong> ${escaparHtml(motor)}</div>
