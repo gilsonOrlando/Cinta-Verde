@@ -29,7 +29,7 @@ function truncarLinea(texto, maxChars) {
   return `${limpio.slice(0, maxChars - 1)}…`;
 }
 
-function dividirNombreProducto(nombre, maxLineas = 2, maxCharsPorLinea = 24) {
+function dividirNombreProducto(nombre, maxLineas = 2, maxCharsPorLinea = 28) {
   const palabras = String(nombre ?? "")
     .trim()
     .toUpperCase()
@@ -72,17 +72,17 @@ function dividirNombreProducto(nombre, maxLineas = 2, maxCharsPorLinea = 24) {
 
 function tamanoFuenteCam(valor) {
   const longitud = String(valor ?? "").length;
-  if (longitud <= 8) return "11.5pt";
-  if (longitud <= 10) return "10pt";
-  if (longitud <= 12) return "8.5pt";
-  return "7.5pt";
+  if (longitud <= 8) return "13pt";
+  if (longitud <= 10) return "11pt";
+  if (longitud <= 12) return "9.5pt";
+  return "8.5pt";
 }
 
 function tamanoFuenteFooter(valor) {
   const longitud = String(valor ?? "").length;
-  if (longitud <= 18) return "8.5pt";
-  if (longitud <= 22) return "8pt";
-  return "7.5pt";
+  if (longitud <= 18) return "9pt";
+  if (longitud <= 22) return "8.5pt";
+  return "8pt";
 }
 
 function estilosEtiquetaMoto() {
@@ -140,7 +140,7 @@ function estilosEtiquetaMoto() {
       height: 51mm;
       border: 0.45mm solid #000;
       border-radius: 2.5mm;
-      padding: 1.4mm 1.6mm 1.2mm;
+      padding: 1mm 1.1mm 0.9mm;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -151,10 +151,11 @@ function estilosEtiquetaMoto() {
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 1.12;
-      font-size: 10pt;
+      line-height: 1.1;
+      font-size: 10.5pt;
       flex-shrink: 0;
-      margin-bottom: 0.6mm;
+      margin-bottom: 0.5mm;
+      padding: 0 0.3mm;
     }
 
     .moto-header div {
@@ -163,77 +164,81 @@ function estilosEtiquetaMoto() {
       text-overflow: ellipsis;
     }
 
-    .moto-body {
+    .moto-main {
       display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      gap: 1.5mm;
+      align-items: stretch;
+      gap: 0.6mm;
       flex: 1;
       min-height: 0;
-      margin-bottom: 0.5mm;
-    }
-
-    .moto-izq {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5mm;
-      flex: 0 0 auto;
-      min-width: 0;
+      width: 100%;
+      margin-bottom: 0.4mm;
     }
 
     .moto-factura {
       writing-mode: vertical-rl;
       transform: rotate(180deg);
-      font-size: 5pt;
+      font-size: 5.5pt;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       line-height: 1;
-      flex-shrink: 0;
-      margin-top: 2.4mm;
-      height: 22mm;
+      flex: 0 0 auto;
       display: flex;
       align-items: center;
+      justify-content: center;
+      align-self: stretch;
+      padding-top: 2.2mm;
     }
 
-    .moto-qr-wrap {
+    .moto-centro {
+      flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      align-items: center;
       gap: 0.25mm;
-      width: 22mm;
     }
 
     .moto-cod {
-      font-size: 6.2pt;
+      font-size: 6.8pt;
       font-weight: 700;
       letter-spacing: 0.02em;
       white-space: nowrap;
+      text-align: center;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .moto-par {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: stretch;
+      gap: 1.1mm;
+      width: 100%;
+    }
+
+    .moto-qr-link {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      cursor: pointer;
+      line-height: 0;
     }
 
     .moto-qr {
-      width: 22mm;
-      height: 22mm;
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
       object-fit: contain;
       display: block;
     }
 
-    .moto-qr-link {
-      display: block;
-      line-height: 0;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
     .moto-mega-acceso {
-      font-size: 3.5pt;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      text-align: center;
-      color: #000;
-      line-height: 1;
-      max-width: 22mm;
+      display: none;
     }
 
     @media print {
@@ -244,10 +249,8 @@ function estilosEtiquetaMoto() {
     }
 
     .moto-caja {
-      width: 22mm;
-      height: 22mm;
-      flex: 0 0 22mm;
-      margin-top: 2.4mm;
+      flex: 1 1 0;
+      min-width: 0;
       border: 0.4mm solid #000;
       border-radius: 1.8mm;
       display: flex;
@@ -256,13 +259,13 @@ function estilosEtiquetaMoto() {
     }
 
     .moto-caja-header {
-      font-size: 4.5pt;
+      font-size: 5pt;
       font-weight: 600;
       text-align: center;
-      padding: 0.35mm 0.5mm;
+      padding: 0.4mm 0.5mm;
       border-bottom: 0.3mm solid #000;
       letter-spacing: 0.01em;
-      line-height: 1.1;
+      line-height: 1.05;
       flex-shrink: 0;
     }
 
@@ -273,27 +276,28 @@ function estilosEtiquetaMoto() {
       justify-content: center;
       font-weight: 700;
       text-align: center;
-      padding: 0.3mm 0.5mm;
+      padding: 0.2mm 0.6mm;
       line-height: 1;
       word-break: break-all;
       min-height: 0;
     }
 
     .moto-caja-agencia {
-      font-size: 4pt;
+      font-size: 4.8pt;
       text-align: right;
-      padding: 0.25mm 0.6mm 0.35mm;
+      padding: 0.3mm 0.8mm 0.45mm;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       flex-shrink: 0;
-      line-height: 1.1;
+      line-height: 1.05;
     }
 
     .moto-footer {
       flex-shrink: 0;
-      line-height: 1.2;
-      font-size: 8.5pt;
+      line-height: 1.15;
+      font-size: 9pt;
+      padding: 0 0.2mm;
     }
 
     .moto-footer div {
@@ -360,11 +364,11 @@ export function buildEtiquetaMotoMarkup(producto, datosMoto, qrDataUrl) {
         <div>${escaparHtml(linea1)}</div>
         <div>${escaparHtml(linea2)}</div>
       </div>
-      <div class="moto-body">
-        <div class="moto-izq">
-          <div class="moto-factura">FACTURA</div>
-          <div class="moto-qr-wrap">
-            <div class="moto-cod">COD. ${escaparHtml(codigo)}</div>
+      <div class="moto-main">
+        <div class="moto-factura">FACTURA</div>
+        <div class="moto-centro">
+          <div class="moto-cod">COD. ${escaparHtml(codigo)}</div>
+          <div class="moto-par">
             <a
               class="moto-qr-link"
               href="${enlaceMega}"
@@ -374,13 +378,12 @@ export function buildEtiquetaMotoMarkup(producto, datosMoto, qrDataUrl) {
             >
               <img class="moto-qr" src="${qrDataUrl}" alt="QR acceso MEGA" />
             </a>
-            <div class="moto-mega-acceso">Toca o escanea → MEGA</div>
+            <div class="moto-caja">
+              <div class="moto-caja-header">CAM/CPN/RAMV</div>
+              <div class="moto-caja-valor" style="font-size:${tamanoFuenteCam(cam)}">${escaparHtml(cam)}</div>
+              <div class="moto-caja-agencia">${escaparHtml(agencia)}</div>
+            </div>
           </div>
-        </div>
-        <div class="moto-caja">
-          <div class="moto-caja-header">CAM/CPN/RAMV</div>
-          <div class="moto-caja-valor" style="font-size:${tamanoFuenteCam(cam)}">${escaparHtml(cam)}</div>
-          <div class="moto-caja-agencia">${escaparHtml(agencia)}</div>
         </div>
       </div>
       <div class="moto-footer">
