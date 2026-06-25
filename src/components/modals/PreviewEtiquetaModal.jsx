@@ -12,6 +12,7 @@ import {
   generarDocumentoEtiquetaMoto,
   generarDocumentoEtiquetasMotoLote,
 } from "../../utils/imprimirEtiquetaMoto";
+import { abrirRepositorioMega } from "../../utils/enlaceMega";
 
 export function PreviewEtiquetaModal({
   producto,
@@ -95,6 +96,14 @@ export function PreviewEtiquetaModal({
     }
   };
 
+  const handleAbrirMega = () => {
+    if (!abrirRepositorioMega(datosEtiquetaMoto?.linkMega)) {
+      setError("No hay un enlace MEGA válido para abrir.");
+    }
+  };
+
+  const linkMegaEtiqueta = datosEtiquetaMoto?.linkMega?.trim() ?? "";
+
   const titulo = esLote ? "Vista previa de etiquetas" : "Vista previa de etiqueta";
 
   const subtitulo = esLote
@@ -149,12 +158,19 @@ export function PreviewEtiquetaModal({
         </PreviewArea>
 
         <DialogFooter>
-          <BtnSecundario type="button" onClick={onClose}>
-            Cancelar
-          </BtnSecundario>
-          <BtnImprimir type="button" onClick={handleImprimir} disabled={cargando || !!error}>
-            Imprimir
-          </BtnImprimir>
+          {esEtiquetaMoto && linkMegaEtiqueta && (
+            <BtnMega type="button" onClick={handleAbrirMega} disabled={cargando}>
+              Abrir repositorio MEGA
+            </BtnMega>
+          )}
+          <AccionesDerecha>
+            <BtnSecundario type="button" onClick={onClose}>
+              Cancelar
+            </BtnSecundario>
+            <BtnImprimir type="button" onClick={handleImprimir} disabled={cargando || !!error}>
+              Imprimir
+            </BtnImprimir>
+          </AccionesDerecha>
         </DialogFooter>
       </Dialog>
     </Overlay>
@@ -255,11 +271,19 @@ const EstadoCentrado = styled.div`
 
 const DialogFooter = styled.div`
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 10px;
   padding: 14px 20px;
   border-top: 1px solid #eee;
   background: #fafafa;
+  flex-wrap: wrap;
+`;
+
+const AccionesDerecha = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
 `;
 
 const BtnBase = styled.button`
@@ -294,5 +318,15 @@ const BtnImprimir = styled(BtnBase)`
   &:hover:not(:disabled) {
     background: #c62828;
     border-color: #c62828;
+  }
+`;
+
+const BtnMega = styled(BtnBase)`
+  border: 1px solid #d32f2f;
+  background: #fff;
+  color: #d32f2f;
+
+  &:hover:not(:disabled) {
+    background: #ffebee;
   }
 `;

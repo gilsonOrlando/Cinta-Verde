@@ -198,6 +198,30 @@ function estilosEtiquetaMoto() {
       display: block;
     }
 
+    .moto-qr-link {
+      display: block;
+      line-height: 0;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .moto-mega-acceso {
+      font-size: 4.5pt;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      text-align: center;
+      color: #000;
+      line-height: 1.1;
+    }
+
+    @media print {
+      .moto-qr-link {
+        pointer-events: none;
+        cursor: default;
+      }
+    }
+
     .moto-caja {
       flex: 1;
       min-width: 0;
@@ -298,6 +322,8 @@ export function buildEtiquetaMotoMarkup(producto, datosMoto, qrDataUrl) {
   const motor = String(datosMoto?.motor ?? "").trim().toUpperCase();
   const cam = String(datosMoto?.camCpmRamw ?? "").trim().toUpperCase();
   const agencia = String(datosMoto?.agencia ?? "Ag. Catamayo").trim();
+  const linkMega = String(datosMoto?.linkMega ?? "").trim();
+  const enlaceMega = escaparHtml(linkMega);
 
   return `
     <div class="celda-moto">
@@ -310,7 +336,16 @@ export function buildEtiquetaMotoMarkup(producto, datosMoto, qrDataUrl) {
           <div class="moto-factura">FACTURA</div>
           <div class="moto-qr-wrap">
             <div class="moto-cod">COD. ${escaparHtml(codigo)}</div>
-            <img class="moto-qr" src="${qrDataUrl}" alt="QR acceso MEGA" />
+            <a
+              class="moto-qr-link"
+              href="${enlaceMega}"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Abrir repositorio MEGA"
+            >
+              <img class="moto-qr" src="${qrDataUrl}" alt="QR acceso MEGA" />
+            </a>
+            <div class="moto-mega-acceso">Toca o escanea → MEGA</div>
           </div>
         </div>
         <div class="moto-caja">

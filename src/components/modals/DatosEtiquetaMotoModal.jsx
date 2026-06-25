@@ -1,17 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
+import {
+  abrirRepositorioMega,
+  esEnlaceMegaValido,
+} from "../../utils/enlaceMega";
 
 const LINK_MEGA_EJEMPLO = "https://mega.nz/fm/KmpHEJLB";
-
-function esEnlaceValido(valor) {
-  try {
-    const url = new URL(valor.trim());
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
 
 function crearFilaVacia() {
   return { chasis: "", motor: "", camCpmRamw: "" };
@@ -78,7 +73,7 @@ export function DatosEtiquetaMotoModal({
     event.preventDefault();
 
     const enlace = linkMega.trim();
-    if (!esEnlaceValido(enlace)) {
+    if (!esEnlaceMegaValido(enlace)) {
       toast.error("Ingresa un enlace válido de MEGA (http o https).");
       return;
     }
@@ -128,6 +123,14 @@ export function DatosEtiquetaMotoModal({
     onConfirmar(datos);
   };
 
+  const enlaceMegaValido = esEnlaceMegaValido(linkMega);
+
+  const handleAbrirMega = () => {
+    if (!abrirRepositorioMega(linkMega)) {
+      toast.error("Ingresa un enlace válido de MEGA para abrir el repositorio.");
+    }
+  };
+
   const titulo = esLote ? "Datos para etiquetas de motos" : "Datos para etiqueta de moto";
   const subtitulo = esLote
     ? `${productos.length} producto(s) · el QR usará el mismo enlace MEGA`
@@ -154,17 +157,30 @@ export function DatosEtiquetaMotoModal({
 
         <Form onSubmit={validarYConfirmar}>
           <CamposComunes>
-            <Campo>
+            <Campo $anchoCompleto>
               <label htmlFor="link-mega">Enlace MEGA (QR de acceso)</label>
-              <input
-                id="link-mega"
-                type="url"
-                value={linkMega}
-                onChange={(event) => setLinkMega(event.target.value)}
-                placeholder={LINK_MEGA_EJEMPLO}
-                autoFocus
-              />
-              <Ayuda>El código QR apuntará a este repositorio, no al código del producto.</Ayuda>
+              <FilaEnlace>
+                <input
+                  id="link-mega"
+                  type="url"
+                  value={linkMega}
+                  onChange={(event) => setLinkMega(event.target.value)}
+                  placeholder={LINK_MEGA_EJEMPLO}
+                  autoFocus
+                />
+                <BtnAbrirMega
+                  type="button"
+                  onClick={handleAbrirMega}
+                  disabled={!enlaceMegaValido}
+                  title="Abrir repositorio MEGA"
+                >
+                  Abrir MEGA
+                </BtnAbrirMega>
+              </FilaEnlace>
+              <Ayuda>
+                Pega el enlace de tu carpeta MEGA. El QR y el botón abrirán ese repositorio
+                al escanear o pulsar.
+              </Ayuda>
             </Campo>
 
             <Campo>
@@ -353,12 +369,12 @@ const Form = styled.form`
 
 const CamposComunes = styled.div`
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   padding: 16px 20px 0;
 
-  @media (max-width: 720px) {
-    grid-template-columns: 1fr;
+  @media (min-width: 721px) {
+    grid-template-columns: 1.4fr 1fr;
   }
 `;
 
@@ -407,6 +423,43 @@ const Ayuda = styled.span`
   font-size: 0.75rem;
   color: #888;
   line-height: 1.35;
+`;
+
+const FilaEnlace = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  @media (max-width: 560px) {
+    flex-direction: column;
+  }
+`;
+
+const BtnAbrirMega = styled.button`
+  border: 1px solid #d32f2f;
+  background: #fff;
+  color: #d32f2f;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background: #ffebee;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 `;
 
 const TablaScroll = styled.div`
