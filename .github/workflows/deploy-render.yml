@@ -22,7 +22,11 @@ jobs:
           VITE_APP_SUPABASE_ANON_KEY: ${{ secrets.VITE_APP_SUPABASE_ANON_KEY }}
 
       - name: Disparar deploy en Render
-        if: ${{ secrets.RENDER_DEPLOY_HOOK != '' }}
-        run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
+          else
+            echo "RENDER_DEPLOY_HOOK no configurado; Render puede desplegar por webhook de GitHub."
+          fi
