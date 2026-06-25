@@ -6,9 +6,20 @@ import {
   generarDocumentoEtiquetasLote,
   getEtiquetaTipoLabel,
   imprimirDesdeIframe,
+  TIPOS_ETIQUETA,
 } from "../../utils/imprimirEtiqueta";
+import {
+  generarDocumentoEtiquetaMoto,
+  generarDocumentoEtiquetasMotoLote,
+} from "../../utils/imprimirEtiquetaMoto";
 
-export function PreviewEtiquetaModal({ producto, productos, tipo, onClose }) {
+export function PreviewEtiquetaModal({
+  producto,
+  productos,
+  tipo,
+  datosEtiquetaMoto,
+  onClose,
+}) {
   const iframeRef = useRef(null);
   const [html, setHtml] = useState("");
   const [cargando, setCargando] = useState(true);
@@ -16,6 +27,8 @@ export function PreviewEtiquetaModal({ producto, productos, tipo, onClose }) {
   const [resumenLote, setResumenLote] = useState(null);
 
   const esLote = Array.isArray(productos) && productos.length > 0;
+  const esEtiquetaMoto =
+    tipo === TIPOS_ETIQUETA.MEDIANA && Boolean(datosEtiquetaMoto);
 
   useEffect(() => {
     let activo = true;
@@ -27,7 +40,10 @@ export function PreviewEtiquetaModal({ producto, productos, tipo, onClose }) {
 
       try {
         if (esLote) {
-          const resultado = await generarDocumentoEtiquetasLote(productos, tipo);
+          const resultado = esEtiquetaMoto
+            ? await generarDocumentoEtiquetasMotoLote(productos, datosEtiquetaMoto)
+            : await generarDocumentoEtiquetasLote(productos, tipo);
+
           if (activo) {
             setHtml(resultado.html);
             setResumenLote({
@@ -36,8 +52,11 @@ export function PreviewEtiquetaModal({ producto, productos, tipo, onClose }) {
             });
           }
         } else {
-          const { html: documento } = await generarDocumentoEtiqueta(producto, tipo);
-          if (activo) setHtml(documento);
+          const resultado = esEtiquetaMoto
+            ? await generarDocumentoEtiquetaMoto(producto, datosEtiquetaMoto)
+            : await generarDocumentoEtiqueta(producto, tipo);
+
+          if (activo) setHtml(resultado.html);
         }
       } catch (err) {
         console.error(err);
@@ -51,7 +70,7 @@ export function PreviewEtiquetaModal({ producto, productos, tipo, onClose }) {
     return () => {
       activo = false;
     };
-  }, [producto, productos, tipo, esLote]);
+  }, [producto, productos, tipo, datosEtiquetaMoto, esLote, esEtiquetaMoto]);
 
   useEffect(() => {
     function handleKeyDown(event) {

@@ -5,7 +5,7 @@ export const TIPOS_ETIQUETA = {
   MEDIANA: "mediana",
 };
 
-function escaparHtml(texto) {
+export function escaparHtml(texto) {
   return String(texto ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

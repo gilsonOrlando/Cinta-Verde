@@ -3,6 +3,7 @@ import styled from "styled-components";
 import toast from "react-hot-toast";
 import { TIPOS_ETIQUETA } from "../../utils/imprimirEtiqueta";
 import { PreviewEtiquetaModal } from "../modals/PreviewEtiquetaModal";
+import { DatosEtiquetaMotoModal } from "../modals/DatosEtiquetaMotoModal";
 
 export function TransferenciaResultado({
   data,
@@ -16,6 +17,8 @@ export function TransferenciaResultado({
   );
   const [previewItem, setPreviewItem] = useState(null);
   const [previewLote, setPreviewLote] = useState(false);
+  const [datosEtiquetaMoto, setDatosEtiquetaMoto] = useState(null);
+  const [formMoto, setFormMoto] = useState(null);
   const [productosList, setProductosList] = useState(productos);
   const [codigoManual, setCodigoManual] = useState("");
   const [productoManual, setProductoManual] = useState("");
@@ -26,13 +29,52 @@ export function TransferenciaResultado({
 
   const handleImprimir = (item) => {
     setPreviewLote(false);
+    setDatosEtiquetaMoto(null);
+
+    if (soloEtiquetaMediana) {
+      setFormMoto({ modo: "single", item });
+      return;
+    }
+
     setPreviewItem(item);
   };
 
   const handleImprimirTodo = () => {
     setPreviewItem(null);
+    setDatosEtiquetaMoto(null);
+
+    if (soloEtiquetaMediana) {
+      setFormMoto({ modo: "lote", items: productosList });
+      return;
+    }
+
     setPreviewLote(true);
   };
+
+  const handleConfirmarDatosMoto = (datos) => {
+    const modo = formMoto?.modo;
+    const item = formMoto?.item;
+
+    setDatosEtiquetaMoto(datos);
+    setFormMoto(null);
+
+    if (modo === "lote") {
+      setPreviewLote(true);
+      return;
+    }
+
+    setPreviewItem(item ?? null);
+  };
+
+  const cerrarPreview = () => {
+    setPreviewItem(null);
+    setPreviewLote(false);
+    setDatosEtiquetaMoto(null);
+  };
+
+  const agenciaEtiqueta = bodegaDestino
+    ? bodegaDestino.replace(/^bodega\s+/i, "Ag. ").trim()
+    : "Ag. Catamayo";
 
   const handleCrearCodigo = () => {
     const codigo = codigoManual.trim();
@@ -202,11 +244,30 @@ export function TransferenciaResultado({
         )}
       </SeccionTabla>
 
+      {formMoto?.modo === "single" && (
+        <DatosEtiquetaMotoModal
+          producto={formMoto.item}
+          agencia={agenciaEtiqueta}
+          onConfirmar={handleConfirmarDatosMoto}
+          onClose={() => setFormMoto(null)}
+        />
+      )}
+
+      {formMoto?.modo === "lote" && (
+        <DatosEtiquetaMotoModal
+          productos={formMoto.items}
+          agencia={agenciaEtiqueta}
+          onConfirmar={handleConfirmarDatosMoto}
+          onClose={() => setFormMoto(null)}
+        />
+      )}
+
       {previewLote && (
         <PreviewEtiquetaModal
           productos={productosList}
           tipo={soloEtiquetaMediana ? TIPOS_ETIQUETA.MEDIANA : tipoEtiqueta}
-          onClose={() => setPreviewLote(false)}
+          datosEtiquetaMoto={soloEtiquetaMediana ? datosEtiquetaMoto : null}
+          onClose={cerrarPreview}
         />
       )}
 
@@ -214,7 +275,8 @@ export function TransferenciaResultado({
         <PreviewEtiquetaModal
           producto={previewItem}
           tipo={soloEtiquetaMediana ? TIPOS_ETIQUETA.MEDIANA : tipoEtiqueta}
-          onClose={() => setPreviewItem(null)}
+          datosEtiquetaMoto={soloEtiquetaMediana ? datosEtiquetaMoto : null}
+          onClose={cerrarPreview}
         />
       )}
     </Wrapper>
