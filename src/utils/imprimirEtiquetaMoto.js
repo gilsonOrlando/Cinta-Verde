@@ -8,6 +8,20 @@ import {
 
 export { parseCantidadEtiquetas };
 
+export function formatearAgenciaDesdeBodega(bodegaDestino) {
+  const texto = String(bodegaDestino ?? "").trim();
+  if (!texto) return "Ag. Catamayo";
+
+  let agencia = texto
+    .replace(/^bodega\s+(destino:?\s*)?/i, "")
+    .replace(/^destino:?\s*/i, "")
+    .trim();
+
+  if (!agencia) return "Ag. Catamayo";
+  if (/^ag\.?\s/i.test(agencia)) return agencia;
+  return `Ag. ${agencia}`;
+}
+
 function truncarLinea(texto, maxChars) {
   const limpio = String(texto ?? "").trim();
   if (limpio.length <= maxChars) return limpio;

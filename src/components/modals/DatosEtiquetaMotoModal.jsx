@@ -5,6 +5,7 @@ import {
   abrirRepositorioMega,
   esEnlaceMegaValido,
 } from "../../utils/enlaceMega";
+import { formatearAgenciaDesdeBodega } from "../../utils/imprimirEtiquetaMoto";
 
 const LINK_MEGA_EJEMPLO = "https://mega.nz/fm/KmpHEJLB";
 
@@ -15,7 +16,7 @@ function crearFilaVacia() {
 export function DatosEtiquetaMotoModal({
   producto,
   productos,
-  agencia = "Ag. Catamayo",
+  bodegaDestino,
   onConfirmar,
   onClose,
 }) {
@@ -44,8 +45,8 @@ export function DatosEtiquetaMotoModal({
   const [motor, setMotor] = useState("");
   const [camCpmRamw, setCamCpmRamw] = useState("");
   const [linkMega, setLinkMega] = useState("");
-  const [agenciaValor, setAgenciaValor] = useState(agencia);
   const [filas, setFilas] = useState(filasIniciales);
+  const agenciaEtiqueta = formatearAgenciaDesdeBodega(bodegaDestino);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -78,7 +79,7 @@ export function DatosEtiquetaMotoModal({
       return;
     }
 
-    const agenciaLimpia = agenciaValor.trim() || "Ag. Catamayo";
+    const agenciaLimpia = agenciaEtiqueta;
 
     if (esLote) {
       const items = filas.map((fila) => ({
@@ -181,17 +182,6 @@ export function DatosEtiquetaMotoModal({
                 Pega el enlace de tu carpeta MEGA. El QR y el botón abrirán ese repositorio
                 al escanear o pulsar.
               </Ayuda>
-            </Campo>
-
-            <Campo>
-              <label htmlFor="agencia-moto">Agencia</label>
-              <input
-                id="agencia-moto"
-                type="text"
-                value={agenciaValor}
-                onChange={(event) => setAgenciaValor(event.target.value)}
-                placeholder="Ag. Catamayo"
-              />
             </Campo>
           </CamposComunes>
 
@@ -368,14 +358,10 @@ const Form = styled.form`
 `;
 
 const CamposComunes = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   padding: 16px 20px 0;
-
-  @media (min-width: 721px) {
-    grid-template-columns: 1.4fr 1fr;
-  }
 `;
 
 const GridCampos = styled.div`

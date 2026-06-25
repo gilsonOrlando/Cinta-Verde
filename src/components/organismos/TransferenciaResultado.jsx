@@ -72,10 +72,6 @@ export function TransferenciaResultado({
     setDatosEtiquetaMoto(null);
   };
 
-  const agenciaEtiqueta = bodegaDestino
-    ? bodegaDestino.replace(/^bodega\s+/i, "Ag. ").trim()
-    : "Ag. Catamayo";
-
   const handleCrearCodigo = () => {
     const codigo = codigoManual.trim();
     const producto = productoManual.trim();
@@ -247,7 +243,7 @@ export function TransferenciaResultado({
       {formMoto?.modo === "single" && (
         <DatosEtiquetaMotoModal
           producto={formMoto.item}
-          agencia={agenciaEtiqueta}
+          bodegaDestino={bodegaDestino}
           onConfirmar={handleConfirmarDatosMoto}
           onClose={() => setFormMoto(null)}
         />
@@ -256,7 +252,7 @@ export function TransferenciaResultado({
       {formMoto?.modo === "lote" && (
         <DatosEtiquetaMotoModal
           productos={formMoto.items}
-          agencia={agenciaEtiqueta}
+          bodegaDestino={bodegaDestino}
           onConfirmar={handleConfirmarDatosMoto}
           onClose={() => setFormMoto(null)}
         />
