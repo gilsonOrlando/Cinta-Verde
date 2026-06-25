@@ -4,8 +4,10 @@ import toast from "react-hot-toast";
 import { CargandoTransferencia } from "../moleculas/CargandoTransferencia";
 import { TransferenciaResultado } from "../organismos/TransferenciaResultado";
 import { procesarTransferenciaPdf } from "../../utils/parseTransferenciaPdf";
+import { procesarTransferenciaExcel } from "../../utils/parseTransferenciaExcel";
 
-const ACCEPTED = ".pdf,application/pdf";
+const ACCEPTED =
+  ".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 export function MotosTemplate() {
   const inputRef = useRef(null);
@@ -17,8 +19,11 @@ export function MotosTemplate() {
     if (!file) return;
 
     const nombre = file.name.toLowerCase();
-    if (!nombre.endsWith(".pdf")) {
-      toast.error("Solo se permiten archivos PDF");
+    const esPdf = nombre.endsWith(".pdf");
+    const esExcel = nombre.endsWith(".xls") || nombre.endsWith(".xlsx");
+
+    if (!esPdf && !esExcel) {
+      toast.error("Solo se permiten archivos PDF o Excel");
       return;
     }
 
@@ -27,14 +32,20 @@ export function MotosTemplate() {
     setEstado("cargando");
 
     try {
-      const { extractTextFromPdf } = await import("../../utils/extractPdfText");
-      const data = await procesarTransferenciaPdf(file, extractTextFromPdf);
+      let data;
+
+      if (esPdf) {
+        const { extractTextFromPdf } = await import("../../utils/extractPdfText");
+        data = await procesarTransferenciaPdf(file, extractTextFromPdf);
+      } else {
+        data = await procesarTransferenciaExcel(file);
+      }
 
       setTransferencia(data);
 
       if (data.productos.length === 0) {
         setEstado("listo");
-        toast.error("No se detectaron productos. Revisa el formato del PDF.");
+        toast.error("No se detectaron productos. Revisa el formato del archivo.");
       } else {
         setEstado("listo");
         toast.success(`Transferencia procesada: ${data.productos.length} producto(s)`);
@@ -42,7 +53,7 @@ export function MotosTemplate() {
     } catch (error) {
       console.error(error);
       setEstado("error");
-      toast.error("No se pudo leer el PDF. Verifica el formato.");
+      toast.error("No se pudo leer el archivo. Verifica el formato.");
     }
   };
 
@@ -53,7 +64,7 @@ export function MotosTemplate() {
       {mostrarDropZone && (
         <UploadSection>
           <h1>Motos</h1>
-          <p>Selecciona un archivo PDF de transferencia bodega.</p>
+          <p>Selecciona un archivo PDF o Excel de transferencia bodega.</p>
 
           <DropZone
             type="button"
@@ -64,9 +75,9 @@ export function MotosTemplate() {
               handleFile(e.dataTransfer.files?.[0]);
             }}
           >
-            <strong>Arrastra aquí tu archivo PDF</strong>
+            <strong>Arrastra aquí tu archivo PDF o Excel</strong>
             <span>o haz clic para seleccionar</span>
-            <small>Formato: PDF</small>
+            <small>Formato: PDF, XLS, XLSX</small>
           </DropZone>
 
           <input
@@ -90,7 +101,7 @@ export function MotosTemplate() {
             tituloTabla="Motos"
           />
           <CambiarArchivo type="button" onClick={() => inputRef.current?.click()}>
-            Cargar otro PDF
+            Cargar otro archivo
           </CambiarArchivo>
           <input
             ref={inputRef}
