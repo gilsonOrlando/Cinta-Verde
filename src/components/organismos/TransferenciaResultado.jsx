@@ -2,11 +2,20 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
 import { TIPOS_ETIQUETA } from "../../utils/imprimirEtiqueta";
+import { esProductoMoto } from "../../utils/filtrarProductosMotos";
 import { PreviewEtiquetaModal } from "../modals/PreviewEtiquetaModal";
 
-export function TransferenciaResultado({ data, nombreArchivo }) {
+export function TransferenciaResultado({
+  data,
+  nombreArchivo,
+  soloEtiquetaMediana = false,
+  soloProductosMoto = false,
+  tituloTabla = "Productos",
+}) {
   const { numero, bodegaOrigen, bodegaDestino, productos } = data;
-  const [tipoEtiqueta, setTipoEtiqueta] = useState(TIPOS_ETIQUETA.PEQUENA);
+  const [tipoEtiqueta, setTipoEtiqueta] = useState(
+    soloEtiquetaMediana ? TIPOS_ETIQUETA.MEDIANA : TIPOS_ETIQUETA.PEQUENA
+  );
   const [previewItem, setPreviewItem] = useState(null);
   const [previewLote, setPreviewLote] = useState(false);
   const [productosList, setProductosList] = useState(productos);
@@ -38,6 +47,11 @@ export function TransferenciaResultado({ data, nombreArchivo }) {
 
     if (!producto) {
       toast.error("Ingresa el nombre del producto.");
+      return;
+    }
+
+    if (soloProductosMoto && !esProductoMoto(producto)) {
+      toast.error('El producto debe iniciar con la palabra "MOTO".');
       return;
     }
 
@@ -79,7 +93,7 @@ export function TransferenciaResultado({ data, nombreArchivo }) {
       <SeccionTabla>
         <TablaHeader>
           <TablaHeaderInfo>
-            <h2>Productos</h2>
+            <h2>{tituloTabla}</h2>
             <span>
               {productosList.length === 1
                 ? "1 producto encontrado"
@@ -94,36 +108,45 @@ export function TransferenciaResultado({ data, nombreArchivo }) {
         </TablaHeader>
 
         <SelectorTipo>
-          <SelectorLabel>Tipo de etiqueta</SelectorLabel>
-          <RadioGroup>
-            <RadioOption>
-              <input
-                type="radio"
-                name="tipo-etiqueta"
-                value={TIPOS_ETIQUETA.PEQUENA}
-                checked={tipoEtiqueta === TIPOS_ETIQUETA.PEQUENA}
-                onChange={() => setTipoEtiqueta(TIPOS_ETIQUETA.PEQUENA)}
-              />
-              <RadioText>
-                <strong>Pequeña</strong>
-                <span>105 × 28 mm · 3 por fila (márgenes 2 mm, separación 3 mm)</span>
-              </RadioText>
-            </RadioOption>
+          {soloEtiquetaMediana ? (
+            <EtiquetaFija>
+              <strong>Etiqueta mediana</strong>
+              <span>70 × 51 mm · 1 etiqueta por producto</span>
+            </EtiquetaFija>
+          ) : (
+            <>
+              <SelectorLabel>Tipo de etiqueta</SelectorLabel>
+              <RadioGroup>
+                <RadioOption>
+                  <input
+                    type="radio"
+                    name="tipo-etiqueta"
+                    value={TIPOS_ETIQUETA.PEQUENA}
+                    checked={tipoEtiqueta === TIPOS_ETIQUETA.PEQUENA}
+                    onChange={() => setTipoEtiqueta(TIPOS_ETIQUETA.PEQUENA)}
+                  />
+                  <RadioText>
+                    <strong>Pequeña</strong>
+                    <span>105 × 28 mm · 3 por fila (márgenes 2 mm, separación 3 mm)</span>
+                  </RadioText>
+                </RadioOption>
 
-            <RadioOption>
-              <input
-                type="radio"
-                name="tipo-etiqueta"
-                value={TIPOS_ETIQUETA.MEDIANA}
-                checked={tipoEtiqueta === TIPOS_ETIQUETA.MEDIANA}
-                onChange={() => setTipoEtiqueta(TIPOS_ETIQUETA.MEDIANA)}
-              />
-              <RadioText>
-                <strong>Mediana</strong>
-                <span>70 × 51 mm · 1 etiqueta</span>
-              </RadioText>
-            </RadioOption>
-          </RadioGroup>
+                <RadioOption>
+                  <input
+                    type="radio"
+                    name="tipo-etiqueta"
+                    value={TIPOS_ETIQUETA.MEDIANA}
+                    checked={tipoEtiqueta === TIPOS_ETIQUETA.MEDIANA}
+                    onChange={() => setTipoEtiqueta(TIPOS_ETIQUETA.MEDIANA)}
+                  />
+                  <RadioText>
+                    <strong>Mediana</strong>
+                    <span>70 × 51 mm · 1 etiqueta</span>
+                  </RadioText>
+                </RadioOption>
+              </RadioGroup>
+            </>
+          )}
 
           <ManualCodigo>
             <ManualLabel>Generar etiqueta solo con código</ManualLabel>
@@ -140,7 +163,11 @@ export function TransferenciaResultado({ data, nombreArchivo }) {
                 value={productoManual}
                 onChange={(event) => setProductoManual(event.target.value)}
                 onKeyDown={handleManualKeyDown}
-                placeholder="Nombre del producto"
+                placeholder={
+                  soloProductosMoto
+                    ? "Nombre del producto (inicia con MOTO)"
+                    : "Nombre del producto"
+                }
               />
               <BtnCrear type="button" onClick={handleCrearCodigo}>
                 Crear
@@ -189,7 +216,7 @@ export function TransferenciaResultado({ data, nombreArchivo }) {
       {previewLote && (
         <PreviewEtiquetaModal
           productos={productosList}
-          tipo={tipoEtiqueta}
+          tipo={soloEtiquetaMediana ? TIPOS_ETIQUETA.MEDIANA : tipoEtiqueta}
           onClose={() => setPreviewLote(false)}
         />
       )}
@@ -197,7 +224,7 @@ export function TransferenciaResultado({ data, nombreArchivo }) {
       {previewItem && (
         <PreviewEtiquetaModal
           producto={previewItem}
-          tipo={tipoEtiqueta}
+          tipo={soloEtiquetaMediana ? TIPOS_ETIQUETA.MEDIANA : tipoEtiqueta}
           onClose={() => setPreviewItem(null)}
         />
       )}
@@ -317,6 +344,22 @@ const RadioOption = styled.label`
 `;
 
 const RadioText = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  strong {
+    font-size: 0.95rem;
+    color: #222;
+  }
+
+  span {
+    font-size: 0.8rem;
+    color: #666;
+  }
+`;
+
+const EtiquetaFija = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2px;
