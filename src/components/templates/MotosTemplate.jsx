@@ -1,13 +1,9 @@
 import { useRef, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
-import Swal from "sweetalert2";
 import { CargandoTransferencia } from "../moleculas/CargandoTransferencia";
 import { TransferenciaResultado } from "../organismos/TransferenciaResultado";
-import {
-  diagnosticarCapturaMotos,
-  formatearDiagnosticoMotosHtml,
-} from "../../utils/filtrarProductosMotos";
+import { procesarTransferenciaPdf } from "../../utils/parseTransferenciaPdf";
 
 const ACCEPTED = ".pdf,application/pdf";
 
@@ -15,7 +11,7 @@ export function MotosTemplate() {
   const inputRef = useRef(null);
   const [estado, setEstado] = useState("idle");
   const [archivo, setArchivo] = useState(null);
-  const [datos, setDatos] = useState(null);
+  const [transferencia, setTransferencia] = useState(null);
 
   const handleFile = async (file) => {
     if (!file) return;
@@ -27,47 +23,21 @@ export function MotosTemplate() {
     }
 
     setArchivo(file);
-    setDatos(null);
+    setTransferencia(null);
     setEstado("cargando");
 
     try {
       const { extractTextFromPdf } = await import("../../utils/extractPdfText");
-      const { parseMotosPdf } = await import("../../utils/parseMotosPdf");
-      const { parseTransferenciaPdf } = await import("../../utils/parseTransferenciaPdf");
+      const data = await procesarTransferenciaPdf(file, extractTextFromPdf);
 
-      const textoPdf = await extractTextFromPdf(file);
-      const transferencia = parseTransferenciaPdf(textoPdf);
-      const data = parseMotosPdf(textoPdf);
-
-      const diagnostico = diagnosticarCapturaMotos(textoPdf, transferencia.productos);
-
-      await Swal.fire({
-        title: "Diagnóstico de captura (Motos)",
-        html: formatearDiagnosticoMotosHtml(diagnostico),
-        width: 900,
-        confirmButtonText: "Continuar",
-        confirmButtonColor: "#e53935",
-      });
-
-      setDatos(data);
-
-      const omitidos = transferencia.productos.length - data.productos.length;
+      setTransferencia(data);
 
       if (data.productos.length === 0) {
         setEstado("listo");
-        toast.error(
-          transferencia.productos.length > 0
-            ? "No hay motos en el PDF. Solo se incluyen productos cuya primera palabra menciona MOTO."
-            : "No se detectaron productos. Revisa el formato del PDF."
-        );
+        toast.error("No se detectaron productos. Revisa el formato del PDF.");
       } else {
         setEstado("listo");
-        toast.success(`${data.productos.length} moto(s) encontrada(s)`);
-        if (omitidos > 0) {
-          toast(`${omitidos} producto(s) omitido(s) por no mencionar MOTO en la primera palabra.`, {
-            icon: "ℹ️",
-          });
-        }
+        toast.success(`Transferencia procesada: ${data.productos.length} producto(s)`);
       }
     } catch (error) {
       console.error(error);
@@ -83,11 +53,7 @@ export function MotosTemplate() {
       {mostrarDropZone && (
         <UploadSection>
           <h1>Motos</h1>
-          <p>
-            Carga un PDF de transferencia. Cada registro se detecta por la palabra{" "}
-            <strong>UN</strong> (código + producto antes, cantidad después). Solo se
-            listan productos cuya primera palabra mencione <strong>MOTO</strong>.
-          </p>
+          <p>Selecciona un archivo PDF de transferencia bodega.</p>
 
           <DropZone
             type="button"
@@ -115,13 +81,12 @@ export function MotosTemplate() {
 
       {estado === "cargando" && <CargandoTransferencia />}
 
-      {estado === "listo" && datos && (
+      {estado === "listo" && transferencia && (
         <>
           <TransferenciaResultado
-            data={datos}
+            data={transferencia}
             nombreArchivo={archivo?.name}
             soloEtiquetaMediana
-            soloProductosMoto
             tituloTabla="Motos"
           />
           <CambiarArchivo type="button" onClick={() => inputRef.current?.click()}>

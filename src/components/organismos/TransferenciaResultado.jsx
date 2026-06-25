@@ -2,14 +2,12 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
 import { TIPOS_ETIQUETA } from "../../utils/imprimirEtiqueta";
-import { esProductoMoto } from "../../utils/filtrarProductosMotos";
 import { PreviewEtiquetaModal } from "../modals/PreviewEtiquetaModal";
 
 export function TransferenciaResultado({
   data,
   nombreArchivo,
   soloEtiquetaMediana = false,
-  soloProductosMoto = false,
   tituloTabla = "Productos",
 }) {
   const { numero, bodegaOrigen, bodegaDestino, productos } = data;
@@ -47,11 +45,6 @@ export function TransferenciaResultado({
 
     if (!producto) {
       toast.error("Ingresa el nombre del producto.");
-      return;
-    }
-
-    if (soloProductosMoto && !esProductoMoto(producto)) {
-      toast.error('La primera palabra del producto debe mencionar "MOTO".');
       return;
     }
 
@@ -163,11 +156,7 @@ export function TransferenciaResultado({
                 value={productoManual}
                 onChange={(event) => setProductoManual(event.target.value)}
                 onKeyDown={handleManualKeyDown}
-                placeholder={
-                  soloProductosMoto
-                    ? "Nombre del producto (primera palabra con MOTO)"
-                    : "Nombre del producto"
-                }
+                placeholder="Nombre del producto"
               />
               <BtnCrear type="button" onClick={handleCrearCodigo}>
                 Crear
