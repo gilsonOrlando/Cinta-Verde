@@ -3,8 +3,6 @@ import styled from "styled-components";
 import toast from "react-hot-toast";
 import { CargandoTransferencia } from "../moleculas/CargandoTransferencia";
 import { TransferenciaResultado } from "../organismos/TransferenciaResultado";
-import { procesarTransferenciaPdf } from "../../utils/parseTransferenciaPdf";
-import { filtrarProductosMotos } from "../../utils/filtrarProductosMotos";
 
 const ACCEPTED = ".pdf,application/pdf";
 
@@ -29,26 +27,29 @@ export function MotosTemplate() {
 
     try {
       const { extractTextFromPdf } = await import("../../utils/extractPdfText");
-      const data = await procesarTransferenciaPdf(file, extractTextFromPdf);
-      const productosMotos = filtrarProductosMotos(data.productos);
-      const datosFiltrados = { ...data, productos: productosMotos };
+      const { parseMotosPdf } = await import("../../utils/parseMotosPdf");
+      const { parseTransferenciaPdf } = await import("../../utils/parseTransferenciaPdf");
 
-      setDatos(datosFiltrados);
+      const textoPdf = await extractTextFromPdf(file);
+      const transferencia = parseTransferenciaPdf(textoPdf);
+      const data = parseMotosPdf(textoPdf);
 
-      const omitidos = data.productos.length - productosMotos.length;
+      setDatos(data);
 
-      if (productosMotos.length === 0) {
+      const omitidos = transferencia.productos.length - data.productos.length;
+
+      if (data.productos.length === 0) {
         setEstado("listo");
         toast.error(
-          omitidos > 0
-            ? "No hay motos en el PDF. Solo se incluyen productos cuya primera palabra menciona MOTO."
+          transferencia.productos.length > 0
+            ? "No hay motos en el PDF. Solo se incluyen productos cuya primera palabra es MOTO."
             : "No se detectaron productos. Revisa el formato del PDF."
         );
       } else {
         setEstado("listo");
-        toast.success(`${productosMotos.length} moto(s) encontrada(s)`);
+        toast.success(`${data.productos.length} moto(s) encontrada(s)`);
         if (omitidos > 0) {
-          toast(`${omitidos} producto(s) omitido(s) por no mencionar MOTO en la primera palabra.`, {
+          toast(`${omitidos} producto(s) omitido(s) por no iniciar con MOTO.`, {
             icon: "ℹ️",
           });
         }
@@ -69,7 +70,7 @@ export function MotosTemplate() {
           <h1>Motos</h1>
           <p>
             Carga un PDF para generar etiquetas medianas. Solo se listan productos cuya
-            primera palabra mencione <strong>MOTO</strong> (ej. MOTO, MOTOS, MOTOCICLETA).
+            primera palabra es <strong>MOTO</strong>.
           </p>
 
           <DropZone
