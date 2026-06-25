@@ -2,6 +2,8 @@ services:
   - type: web
     name: cinta-verde
     runtime: static
+    branch: main
+    autoDeploy: true
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
