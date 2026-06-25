@@ -169,9 +169,9 @@ function estilosEtiquetaMoto() {
       display: flex;
       align-items: flex-start;
       gap: 0.6mm;
-      flex: 0 0 auto;
+      flex: 1;
+      min-height: 0;
       width: 100%;
-      margin-bottom: 0.5mm;
     }
 
     .moto-factura {
@@ -195,25 +195,25 @@ function estilosEtiquetaMoto() {
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 0.2mm;
+      gap: 0;
     }
 
     .moto-cod {
-      font-size: 6.5pt;
+      font-size: 11pt;
       font-weight: 700;
       letter-spacing: 0.02em;
       white-space: nowrap;
       text-align: center;
       flex-shrink: 0;
-      line-height: 1;
+      line-height: 1.05;
+      margin: 0;
+      padding: 0;
     }
 
     .moto-par {
-      flex: 0 0 23mm;
-      height: 23mm;
-      max-height: 23mm;
+      flex: 0 0 auto;
       display: flex;
-      align-items: stretch;
+      align-items: flex-start;
       gap: 1mm;
       width: 100%;
     }
@@ -298,21 +298,23 @@ function estilosEtiquetaMoto() {
       line-height: 1.05;
     }
 
-    .moto-footer {
+    .moto-datos {
       flex-shrink: 0;
-      margin-top: auto;
-      line-height: 1.12;
+      line-height: 1.05;
       font-size: 8.5pt;
-      padding: 0 0.2mm 0.1mm;
+      margin: 0;
+      padding: 0 0.2mm;
     }
 
-    .moto-footer div {
+    .moto-datos div {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      margin: 0;
+      padding: 0;
     }
 
-    .moto-footer strong {
+    .moto-datos strong {
       font-weight: 700;
     }
 
@@ -373,7 +375,6 @@ export function buildEtiquetaMotoMarkup(producto, datosMoto, qrDataUrl) {
       <div class="moto-main">
         <div class="moto-factura">FACTURA</div>
         <div class="moto-centro">
-          <div class="moto-cod">COD. ${escaparHtml(codigo)}</div>
           <div class="moto-par">
             <a
               class="moto-qr-link"
@@ -390,11 +391,12 @@ export function buildEtiquetaMotoMarkup(producto, datosMoto, qrDataUrl) {
               <div class="moto-caja-agencia">${escaparHtml(agencia)}</div>
             </div>
           </div>
+          <div class="moto-cod">COD. ${escaparHtml(codigo)}</div>
+          <div class="moto-datos">
+            <div style="font-size:${tamanoFuenteFooter(chasis)}"><strong>CHASIS:</strong> ${escaparHtml(chasis)}</div>
+            <div style="font-size:${tamanoFuenteFooter(motor)}"><strong>MOTOR:</strong> ${escaparHtml(motor)}</div>
+          </div>
         </div>
-      </div>
-      <div class="moto-footer">
-        <div style="font-size:${tamanoFuenteFooter(chasis)}"><strong>CHASIS:</strong> ${escaparHtml(chasis)}</div>
-        <div style="font-size:${tamanoFuenteFooter(motor)}"><strong>MOTOR:</strong> ${escaparHtml(motor)}</div>
       </div>
     </div>
   `;
