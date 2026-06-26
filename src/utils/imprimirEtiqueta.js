@@ -95,11 +95,11 @@ function buildProductoTopHtml(nombre, esPequena) {
 
 function tamanoFuenteCodigoPequena(codigo) {
   const longitud = String(codigo ?? "").length;
-  if (longitud <= 5) return "14pt";
-  if (longitud <= 7) return "13pt";
-  if (longitud <= 9) return "12pt";
-  if (longitud <= 11) return "11pt";
-  return "10pt";
+  if (longitud <= 5) return "15pt";
+  if (longitud <= 7) return "14pt";
+  if (longitud <= 9) return "13pt";
+  if (longitud <= 11) return "12pt";
+  return "11pt";
 }
 
 function estilosEtiqueta(esPequena) {
@@ -319,7 +319,7 @@ function estilosEtiqueta(esPequena) {
     }
 
     .cod-${prefix} {
-      font-size: ${esPequena ? "16pt" : "29pt"};
+      font-size: ${esPequena ? "17pt" : "29pt"};
       font-weight: 700;
       letter-spacing: 0.03em;
       text-align: center;
