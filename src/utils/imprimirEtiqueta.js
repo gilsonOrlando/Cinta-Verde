@@ -259,8 +259,8 @@ function estilosEtiqueta(esPequena) {
     }
 
     .qr-${prefix} {
-      width: ${esPequena ? "8.5mm" : "27mm"};
-      height: ${esPequena ? "8.5mm" : "27mm"};
+      width: ${esPequena ? "8.5mm" : "24mm"};
+      height: ${esPequena ? "8.5mm" : "24mm"};
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
@@ -310,7 +310,7 @@ function estilosEtiqueta(esPequena) {
     }
 
     .cod-${prefix} {
-      font-size: ${esPequena ? "14pt" : "26pt"};
+      font-size: ${esPequena ? "14pt" : "29pt"};
       font-weight: 700;
       letter-spacing: 0.03em;
       text-align: center;
