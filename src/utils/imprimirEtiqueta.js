@@ -95,11 +95,11 @@ function buildProductoTopHtml(nombre, esPequena) {
 
 function tamanoFuenteCodigoPequena(codigo) {
   const longitud = String(codigo ?? "").length;
-  if (longitud <= 5) return "12pt";
-  if (longitud <= 7) return "11pt";
-  if (longitud <= 9) return "10pt";
-  if (longitud <= 11) return "9pt";
-  return "8pt";
+  if (longitud <= 5) return "13pt";
+  if (longitud <= 7) return "12pt";
+  if (longitud <= 9) return "11pt";
+  if (longitud <= 11) return "10pt";
+  return "9pt";
 }
 
 function estilosEtiqueta(esPequena) {
@@ -203,23 +203,37 @@ function estilosEtiqueta(esPequena) {
       width: 100%;
       height: 100%;
       text-align: center;
-      gap: ${esPequena ? "0.15mm" : "1mm"};
+      gap: ${esPequena ? "0" : "1mm"};
     }
 
     ${
       esPequena
         ? `
+    .etiqueta-inner-p {
+      justify-content: flex-start;
+    }
+
     .producto-top-p {
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 1.1;
+      line-height: 1.08;
       font-size: 6pt;
       flex-shrink: 0;
       width: 100%;
-      max-height: calc(6pt * 1.1 * 3);
+      max-height: calc(6pt * 1.08 * 3);
       overflow: hidden;
       align-self: center;
+      margin-bottom: 0.15mm;
+    }
+
+    .cuerpo-p {
+      flex: 0 0 auto;
+      margin-bottom: 0.1mm;
+    }
+
+    .cod-bloque-p {
+      margin-top: 0;
     }
     `
         : `
@@ -250,7 +264,7 @@ function estilosEtiqueta(esPequena) {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex: ${esPequena ? "1 1 0" : "1 1 auto"};
+      flex: ${esPequena ? "0 0 auto" : "1 1 auto"};
       min-height: 0;
       overflow: hidden;
       width: 100%;
@@ -259,8 +273,8 @@ function estilosEtiqueta(esPequena) {
     }
 
     .qr-${prefix} {
-      width: ${esPequena ? "8.5mm" : "24mm"};
-      height: ${esPequena ? "8.5mm" : "24mm"};
+      width: ${esPequena ? "8mm" : "24mm"};
+      height: ${esPequena ? "8mm" : "24mm"};
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
@@ -278,8 +292,8 @@ function estilosEtiqueta(esPequena) {
 
     @supports (width: 1cqw) {
       .qr-p {
-        width: min(100cqw, 100cqh, 9mm);
-        height: min(100cqw, 100cqh, 9mm);
+        width: min(100cqw, 100cqh, 8mm);
+        height: min(100cqw, 100cqh, 8mm);
       }
     }
     `
@@ -310,7 +324,7 @@ function estilosEtiqueta(esPequena) {
     }
 
     .cod-${prefix} {
-      font-size: ${esPequena ? "14pt" : "29pt"};
+      font-size: ${esPequena ? "15pt" : "29pt"};
       font-weight: 700;
       letter-spacing: 0.03em;
       text-align: center;
