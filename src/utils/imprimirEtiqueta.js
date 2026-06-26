@@ -229,11 +229,17 @@ function estilosEtiqueta(esPequena) {
 
     .cuerpo-p {
       flex: 0 0 auto;
+      min-height: 8mm;
       margin-bottom: 0.1mm;
     }
 
     .cod-bloque-p {
       margin-top: 0;
+    }
+
+    .qr-p {
+      width: 8mm;
+      height: 8mm;
     }
     `
         : `
@@ -281,23 +287,6 @@ function estilosEtiqueta(esPequena) {
       display: block;
       flex-shrink: 0;
       margin: 0 auto;
-    }
-
-    ${
-      esPequena
-        ? `
-    .cuerpo-p {
-      container-type: size;
-    }
-
-    @supports (width: 1cqw) {
-      .qr-p {
-        width: min(100cqw, 100cqh, 8mm);
-        height: min(100cqw, 100cqh, 8mm);
-      }
-    }
-    `
-        : ""
     }
 
     .cod-bloque-${prefix} {
