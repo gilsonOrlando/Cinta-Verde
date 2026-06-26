@@ -95,11 +95,11 @@ function buildProductoTopHtml(nombre, esPequena) {
 
 function tamanoFuenteCodigoPequena(codigo) {
   const longitud = String(codigo ?? "").length;
-  if (longitud <= 5) return "13pt";
-  if (longitud <= 7) return "12pt";
-  if (longitud <= 9) return "11pt";
-  if (longitud <= 11) return "10pt";
-  return "9pt";
+  if (longitud <= 5) return "14pt";
+  if (longitud <= 7) return "13pt";
+  if (longitud <= 9) return "12pt";
+  if (longitud <= 11) return "11pt";
+  return "10pt";
 }
 
 function estilosEtiqueta(esPequena) {
@@ -183,7 +183,7 @@ function estilosEtiqueta(esPequena) {
       width: ${esPequena ? "100%" : "70mm"};
       height: ${esPequena ? "25mm" : "51mm"};
       border: 0.4mm solid #000;
-      padding: ${esPequena ? "0.8mm 1mm" : "1.5mm 2mm"};
+      padding: ${esPequena ? "0.5mm 0.8mm" : "1.5mm 2mm"};
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -203,14 +203,14 @@ function estilosEtiqueta(esPequena) {
       width: 100%;
       height: 100%;
       text-align: center;
-      gap: ${esPequena ? "0" : "1mm"};
+      gap: ${esPequena ? "0.2mm" : "1mm"};
     }
 
     ${
       esPequena
         ? `
     .etiqueta-inner-p {
-      justify-content: flex-start;
+      justify-content: space-between;
     }
 
     .producto-top-p {
@@ -219,27 +219,33 @@ function estilosEtiqueta(esPequena) {
       text-transform: uppercase;
       line-height: 1.08;
       font-size: 6pt;
-      flex-shrink: 0;
+      flex: 0 0 auto;
       width: 100%;
       max-height: calc(6pt * 1.08 * 3);
       overflow: hidden;
       align-self: center;
-      margin-bottom: 0.15mm;
     }
 
     .cuerpo-p {
-      flex: 0 0 auto;
-      min-height: 8mm;
-      margin-bottom: 0.1mm;
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
     }
 
     .cod-bloque-p {
+      flex: 0 0 auto;
       margin-top: 0;
     }
 
     .qr-p {
-      width: 8mm;
-      height: 8mm;
+      width: auto;
+      height: 100%;
+      max-height: 11mm;
+      max-width: 100%;
+      object-fit: contain;
     }
     `
         : `
@@ -270,7 +276,7 @@ function estilosEtiqueta(esPequena) {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex: ${esPequena ? "0 0 auto" : "1 1 auto"};
+      flex: ${esPequena ? "1 1 0" : "1 1 auto"};
       min-height: 0;
       overflow: hidden;
       width: 100%;
@@ -279,13 +285,13 @@ function estilosEtiqueta(esPequena) {
     }
 
     .qr-${prefix} {
-      width: ${esPequena ? "8mm" : "24mm"};
-      height: ${esPequena ? "8mm" : "24mm"};
+      width: ${esPequena ? "auto" : "24mm"};
+      height: ${esPequena ? "100%" : "24mm"};
       max-width: 100%;
-      max-height: 100%;
+      max-height: ${esPequena ? "11mm" : "100%"};
       object-fit: contain;
       display: block;
-      flex-shrink: 0;
+      flex-shrink: ${esPequena ? "1" : "0"};
       margin: 0 auto;
     }
 
@@ -313,7 +319,7 @@ function estilosEtiqueta(esPequena) {
     }
 
     .cod-${prefix} {
-      font-size: ${esPequena ? "15pt" : "29pt"};
+      font-size: ${esPequena ? "16pt" : "29pt"};
       font-weight: 700;
       letter-spacing: 0.03em;
       text-align: center;
