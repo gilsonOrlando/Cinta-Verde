@@ -95,11 +95,11 @@ function buildProductoTopHtml(nombre, esPequena) {
 
 function tamanoFuenteCodigoPequena(codigo) {
   const longitud = String(codigo ?? "").length;
-  if (longitud <= 5) return "11pt";
-  if (longitud <= 7) return "10pt";
-  if (longitud <= 9) return "9pt";
-  if (longitud <= 11) return "8pt";
-  return "7pt";
+  if (longitud <= 5) return "12pt";
+  if (longitud <= 7) return "11pt";
+  if (longitud <= 9) return "10pt";
+  if (longitud <= 11) return "9pt";
+  return "8pt";
 }
 
 function estilosEtiqueta(esPequena) {
@@ -228,7 +228,7 @@ function estilosEtiqueta(esPequena) {
       font-weight: 700;
       text-transform: uppercase;
       line-height: 1.15;
-      font-size: 9pt;
+      font-size: 11pt;
       flex-shrink: 0;
       width: 100%;
       word-break: break-word;
@@ -259,8 +259,8 @@ function estilosEtiqueta(esPequena) {
     }
 
     .qr-${prefix} {
-      width: ${esPequena ? "10mm" : "32mm"};
-      height: ${esPequena ? "10mm" : "32mm"};
+      width: ${esPequena ? "8.5mm" : "27mm"};
+      height: ${esPequena ? "8.5mm" : "27mm"};
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
@@ -278,8 +278,8 @@ function estilosEtiqueta(esPequena) {
 
     @supports (width: 1cqw) {
       .qr-p {
-        width: min(100cqw, 100cqh, 11mm);
-        height: min(100cqw, 100cqh, 11mm);
+        width: min(100cqw, 100cqh, 9mm);
+        height: min(100cqw, 100cqh, 9mm);
       }
     }
     `
@@ -301,7 +301,7 @@ function estilosEtiqueta(esPequena) {
     }
 
     .cod-label-${prefix} {
-      font-size: ${esPequena ? "5pt" : "7pt"};
+      font-size: ${esPequena ? "5pt" : "8pt"};
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -310,7 +310,7 @@ function estilosEtiqueta(esPequena) {
     }
 
     .cod-${prefix} {
-      font-size: ${esPequena ? "13pt" : "22pt"};
+      font-size: ${esPequena ? "14pt" : "26pt"};
       font-weight: 700;
       letter-spacing: 0.03em;
       text-align: center;
