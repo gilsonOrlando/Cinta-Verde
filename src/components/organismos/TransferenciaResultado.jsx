@@ -125,10 +125,6 @@ export function TransferenciaResultado({
 
   const handleAgregarDesdeFormulario = (item) => agregarProductoALista(item);
 
-  const handleImprimirDesdeFormulario = (item) => {
-    handleImprimir(item);
-  };
-
   return (
     <Wrapper>
       {nombreArchivo && <Archivo>{nombreArchivo}</Archivo>}
@@ -256,7 +252,6 @@ export function TransferenciaResultado({
       {mostrarFormularioCodigo && (
         <EtiquetaCodigoModal
           onAgregar={handleAgregarDesdeFormulario}
-          onImprimir={handleImprimirDesdeFormulario}
           onClose={() => setMostrarFormularioCodigo(false)}
         />
       )}

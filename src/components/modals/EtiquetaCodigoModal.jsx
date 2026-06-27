@@ -8,7 +8,7 @@ import {
 } from "../../supabase/crudListaProductos";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 
-export function EtiquetaCodigoModal({ onAgregar, onImprimir, onClose }) {
+export function EtiquetaCodigoModal({ onAgregar, onClose }) {
   const [codigo, setCodigo] = useState("");
   const [producto, setProducto] = useState("");
   const [busqueda, setBusqueda] = useState("");
@@ -92,12 +92,12 @@ export function EtiquetaCodigoModal({ onAgregar, onImprimir, onClose }) {
     }
   };
 
-  const seleccionarResultado = (item) => {
-    setCodigo(item.codigo);
-    setProducto(item.producto);
-    setResultados([]);
-    setBusqueda("");
-    toast.success("Producto cargado en el formulario.");
+  const handleAgregarResultado = (item) => {
+    const productoItem = { codigo: item.codigo, producto: item.producto, cantidad: 1 };
+    const agregado = onAgregar(productoItem);
+    if (agregado !== false) {
+      onClose();
+    }
   };
 
   const handleAgregar = async (event) => {
@@ -118,27 +118,6 @@ export function EtiquetaCodigoModal({ onAgregar, onImprimir, onClose }) {
     }
   };
 
-  const handleImprimir = async (event) => {
-    event.preventDefault();
-
-    const item = construirProducto();
-    if (!item) return;
-
-    setGuardando(true);
-    try {
-      await guardarEnCatalogo(item);
-      onImprimir(item);
-      onClose();
-    } finally {
-      setGuardando(false);
-    }
-  };
-
-  const handleImprimirResultado = (item) => {
-    onImprimir({ codigo: item.codigo, producto: item.producto, cantidad: 1 });
-    onClose();
-  };
-
   return (
     <Overlay onClick={onClose} role="presentation">
       <Dialog
@@ -151,7 +130,7 @@ export function EtiquetaCodigoModal({ onAgregar, onImprimir, onClose }) {
           <div>
             <Titulo id="etiqueta-codigo-titulo">Generar etiqueta con código</Titulo>
             <Subtitulo>
-              Busca un producto guardado o ingresa código y nombre para imprimir.
+              Busca un producto guardado o ingresa código y nombre para agregar a la tabla.
             </Subtitulo>
           </div>
           <BtnCerrar type="button" onClick={onClose} aria-label="Cerrar">
@@ -187,11 +166,8 @@ export function EtiquetaCodigoModal({ onAgregar, onImprimir, onClose }) {
                       <span>{item.producto}</span>
                     </ResultadoInfo>
                     <ResultadoAcciones>
-                      <BtnSecundario type="button" onClick={() => seleccionarResultado(item)}>
-                        Usar
-                      </BtnSecundario>
-                      <BtnPrimario type="button" onClick={() => handleImprimirResultado(item)}>
-                        Imprimir
+                      <BtnPrimario type="button" onClick={() => handleAgregarResultado(item)}>
+                        Agregar
                       </BtnPrimario>
                     </ResultadoAcciones>
                   </ResultadoItem>
@@ -233,11 +209,8 @@ export function EtiquetaCodigoModal({ onAgregar, onImprimir, onClose }) {
                 <BtnSecundario type="button" onClick={onClose} disabled={guardando}>
                   Cancelar
                 </BtnSecundario>
-                <BtnSecundario type="button" onClick={handleAgregar} disabled={guardando}>
+                <BtnPrimario type="submit" disabled={guardando}>
                   Agregar a tabla
-                </BtnSecundario>
-                <BtnPrimario type="button" onClick={handleImprimir} disabled={guardando}>
-                  Imprimir etiqueta
                 </BtnPrimario>
               </DialogFooter>
             </FormManual>
