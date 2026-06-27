@@ -144,8 +144,8 @@ create policy "proyectos_delete_anon"
   to anon, authenticated
   using (true);
 
--- Catálogo global de productos para etiquetas (Inicio / Motos)
-create table if not exists public.catalogo_productos (
+-- Lista de productos para etiquetas (Inicio / Motos), separada de toma física
+create table if not exists public.listaproductos (
   id uuid primary key default gen_random_uuid(),
   codigo text not null,
   producto text not null,
@@ -153,36 +153,36 @@ create table if not exists public.catalogo_productos (
   created_at timestamptz not null default now()
 );
 
-create unique index if not exists catalogo_productos_codigo_unique
-  on public.catalogo_productos (codigo);
+create unique index if not exists listaproductos_codigo_unique
+  on public.listaproductos (codigo);
 
-create index if not exists catalogo_productos_producto_idx
-  on public.catalogo_productos (producto);
+create index if not exists listaproductos_producto_idx
+  on public.listaproductos (producto);
 
-alter table public.catalogo_productos enable row level security;
+alter table public.listaproductos enable row level security;
 
-drop policy if exists "catalogo_productos_select_anon" on public.catalogo_productos;
-drop policy if exists "catalogo_productos_insert_anon" on public.catalogo_productos;
-drop policy if exists "catalogo_productos_update_anon" on public.catalogo_productos;
-drop policy if exists "catalogo_productos_delete_anon" on public.catalogo_productos;
+drop policy if exists "listaproductos_select_anon" on public.listaproductos;
+drop policy if exists "listaproductos_insert_anon" on public.listaproductos;
+drop policy if exists "listaproductos_update_anon" on public.listaproductos;
+drop policy if exists "listaproductos_delete_anon" on public.listaproductos;
 
-create policy "catalogo_productos_select_anon"
-  on public.catalogo_productos for select
+create policy "listaproductos_select_anon"
+  on public.listaproductos for select
   to anon, authenticated
   using (true);
 
-create policy "catalogo_productos_insert_anon"
-  on public.catalogo_productos for insert
+create policy "listaproductos_insert_anon"
+  on public.listaproductos for insert
   to anon, authenticated
   with check (true);
 
-create policy "catalogo_productos_update_anon"
-  on public.catalogo_productos for update
+create policy "listaproductos_update_anon"
+  on public.listaproductos for update
   to anon, authenticated
   using (true)
   with check (true);
 
-create policy "catalogo_productos_delete_anon"
-  on public.catalogo_productos for delete
+create policy "listaproductos_delete_anon"
+  on public.listaproductos for delete
   to anon, authenticated
   using (true);

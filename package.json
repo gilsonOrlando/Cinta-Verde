@@ -14,7 +14,7 @@
     "prebuild": "node scripts/check-env.js && node scripts/copy-pdf-worker.js && node scripts/write-build-info.js",
     "postinstall": "node scripts/copy-pdf-worker.js",
     "setup:supabase": "node scripts/setup-supabase.js",
-    "setup:catalogo": "node scripts/setup-catalogo-productos.js"
+    "setup:listaproductos": "node scripts/setup-listaproductos.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.4",

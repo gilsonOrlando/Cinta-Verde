@@ -33,7 +33,7 @@ if (!url || !password) {
 const projectRef = new URL(url).hostname.split(".")[0];
 const connectionString = `postgresql://postgres:${encodeURIComponent(password)}@db.${projectRef}.supabase.co:5432/postgres`;
 
-const sqlPath = resolve(process.cwd(), "scripts/setup-catalogo-productos.sql");
+const sqlPath = resolve(process.cwd(), "scripts/setup-listaproductos.sql");
 const sql = readFileSync(sqlPath, "utf8");
 
 const client = new pg.Client({
@@ -44,9 +44,9 @@ const client = new pg.Client({
 try {
   await client.connect();
   await client.query(sql);
-  console.log("Tabla catalogo_productos creada correctamente.");
+  console.log("Tabla listaproductos creada correctamente.");
 } catch (error) {
-  console.error("Error al crear catalogo_productos:", error.message);
+  console.error("Error al crear listaproductos:", error.message);
   process.exit(1);
 } finally {
   await client.end();

@@ -3,9 +3,9 @@ import styled from "styled-components";
 import toast from "react-hot-toast";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import {
-  buscarCatalogoProductos,
-  registrarProductosNuevos,
-} from "../../supabase/crudCatalogoProductos";
+  buscarListaProductos,
+  registrarListaProductosNuevos,
+} from "../../supabase/crudListaProductos";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 
 export function EtiquetaCodigoModal({ onAgregar, onImprimir, onClose }) {
@@ -51,9 +51,9 @@ export function EtiquetaCodigoModal({ onAgregar, onImprimir, onClose }) {
     if (!supabaseConfigurado) return;
 
     try {
-      const { insertados } = await registrarProductosNuevos([item]);
+      const { insertados } = await registrarListaProductosNuevos([item]);
       if (insertados > 0) {
-        toast.success("Producto guardado en catálogo.");
+        toast.success("Producto guardado en lista.");
       }
     } catch (error) {
       console.error(error);
@@ -78,11 +78,11 @@ export function EtiquetaCodigoModal({ onAgregar, onImprimir, onClose }) {
     setBuscando(true);
 
     try {
-      const items = await buscarCatalogoProductos(termino);
+      const items = await buscarListaProductos(termino);
       setResultados(items);
 
       if (items.length === 0) {
-        toast.error("No se encontraron productos en el catálogo.");
+        toast.error("No se encontraron productos en la lista.");
       }
     } catch (error) {
       console.error(error);

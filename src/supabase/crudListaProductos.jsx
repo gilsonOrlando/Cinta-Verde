@@ -23,7 +23,7 @@ function deduplicarPorCodigo(productos) {
   return resultado;
 }
 
-export async function registrarProductosNuevos(productos) {
+export async function registrarListaProductosNuevos(productos) {
   const normalizados = deduplicarPorCodigo(productos ?? []);
 
   if (normalizados.length === 0) {
@@ -33,7 +33,7 @@ export async function registrarProductosNuevos(productos) {
   const codigos = normalizados.map((item) => item.codigo);
 
   const { data: existentes, error: errorConsulta } = await supabase
-    .from("catalogo_productos")
+    .from("listaproductos")
     .select("codigo")
     .in("codigo", codigos);
 
@@ -52,7 +52,7 @@ export async function registrarProductosNuevos(productos) {
     cantidad: "1",
   }));
 
-  const { error: errorInsert } = await supabase.from("catalogo_productos").insert(payload);
+  const { error: errorInsert } = await supabase.from("listaproductos").insert(payload);
 
   if (errorInsert) throw errorInsert;
 
@@ -62,12 +62,12 @@ export async function registrarProductosNuevos(productos) {
   };
 }
 
-export async function buscarCatalogoProductos(termino, limite = 25) {
+export async function buscarListaProductos(termino, limite = 25) {
   const texto = String(termino ?? "").trim().toLowerCase();
   if (!texto) return [];
 
   const { data, error } = await supabase
-    .from("catalogo_productos")
+    .from("listaproductos")
     .select("id, codigo, producto, cantidad")
     .order("codigo", { ascending: true });
 
@@ -82,12 +82,12 @@ export async function buscarCatalogoProductos(termino, limite = 25) {
     .slice(0, limite);
 }
 
-export async function obtenerProductoCatalogoPorCodigo(codigo) {
+export async function obtenerListaProductoPorCodigo(codigo) {
   const codigoNormalizado = String(codigo ?? "").trim();
   if (!codigoNormalizado) return null;
 
   const { data, error } = await supabase
-    .from("catalogo_productos")
+    .from("listaproductos")
     .select("id, codigo, producto, cantidad")
     .eq("codigo", codigoNormalizado)
     .maybeSingle();

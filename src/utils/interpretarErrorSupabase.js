@@ -28,12 +28,13 @@ export function interpretarErrorSupabase(error) {
     codigo === "PGRST205" ||
     status === 404 ||
     texto.includes("could not find the table") ||
+    texto.includes("listaproductos") ||
     texto.includes("catalogo_productos")
   ) {
     return (
-      "La tabla 'catalogo_productos' no existe en Supabase. " +
-      "Abre SQL Editor en tu proyecto y ejecuta scripts/setup-catalogo-productos.sql " +
-      "(o en tu PC: npm run setup:catalogo)."
+      "La tabla 'listaproductos' no existe en Supabase. " +
+      "Abre SQL Editor en tu proyecto y ejecuta scripts/setup-listaproductos.sql " +
+      "(o en tu PC: npm run setup:listaproductos)."
     );
   }
 

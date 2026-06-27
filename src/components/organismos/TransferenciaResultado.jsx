@@ -6,7 +6,7 @@ import { PreviewEtiquetaModal } from "../modals/PreviewEtiquetaModal";
 import { DatosEtiquetaMotoModal } from "../modals/DatosEtiquetaMotoModal";
 import { EtiquetaCodigoModal } from "../modals/EtiquetaCodigoModal";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
-import { registrarProductosNuevos } from "../../supabase/crudCatalogoProductos";
+import { registrarListaProductosNuevos } from "../../supabase/crudListaProductos";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 
 export function TransferenciaResultado({
@@ -49,9 +49,9 @@ export function TransferenciaResultado({
 
     (async () => {
       try {
-        const { insertados } = await registrarProductosNuevos(productos);
+        const { insertados } = await registrarListaProductosNuevos(productos);
         if (!cancelado && insertados > 0) {
-          toast.success(`${insertados} producto(s) nuevo(s) guardado(s) en catálogo.`);
+          toast.success(`${insertados} producto(s) nuevo(s) guardado(s) en lista.`);
         }
       } catch (error) {
         console.error(error);
