@@ -37,6 +37,7 @@ export function CargarTemplate() {
 
     setArchivo(file);
     setTransferencia(null);
+    setModoFormularioCodigo(false);
 
     setEstado("cargando");
 
@@ -118,6 +119,7 @@ export function CargarTemplate() {
             data={transferencia}
             nombreArchivo={archivo?.name}
             abrirFormularioCodigoAlInicio={modoFormularioCodigo}
+            onFormularioCodigoCerrado={() => setModoFormularioCodigo(false)}
           />
           <AccionesInferiores>
             <CambiarArchivo type="button" onClick={() => inputRef.current?.click()}>

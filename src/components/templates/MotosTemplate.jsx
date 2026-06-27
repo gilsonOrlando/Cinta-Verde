@@ -37,6 +37,7 @@ export function MotosTemplate() {
 
     setArchivo(file);
     setTransferencia(null);
+    setModoFormularioCodigo(false);
     setEstado("cargando");
 
     try {
@@ -119,6 +120,7 @@ export function MotosTemplate() {
             soloEtiquetaMediana
             tituloTabla="Motos"
             abrirFormularioCodigoAlInicio={modoFormularioCodigo}
+            onFormularioCodigoCerrado={() => setModoFormularioCodigo(false)}
           />
           <CambiarArchivo type="button" onClick={() => inputRef.current?.click()}>
             Cargar otro archivo

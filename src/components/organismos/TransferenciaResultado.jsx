@@ -15,6 +15,7 @@ export function TransferenciaResultado({
   soloEtiquetaMediana = false,
   tituloTabla = "Productos",
   abrirFormularioCodigoAlInicio = false,
+  onFormularioCodigoCerrado,
 }) {
   const { numero, bodegaOrigen, bodegaDestino, productos } = data;
   const [tipoEtiqueta, setTipoEtiqueta] = useState(
@@ -25,7 +26,14 @@ export function TransferenciaResultado({
   const [datosEtiquetaMoto, setDatosEtiquetaMoto] = useState(null);
   const [formMoto, setFormMoto] = useState(null);
   const [productosList, setProductosList] = useState(productos);
-  const [mostrarFormularioCodigo, setMostrarFormularioCodigo] = useState(false);
+  const [mostrarFormularioCodigo, setMostrarFormularioCodigo] = useState(
+    abrirFormularioCodigoAlInicio
+  );
+
+  const cerrarFormularioCodigo = () => {
+    setMostrarFormularioCodigo(false);
+    onFormularioCodigoCerrado?.();
+  };
 
   const productosKey = useMemo(
     () => productos.map((item) => `${item.codigo}:${item.producto}`).join("|"),
@@ -35,12 +43,6 @@ export function TransferenciaResultado({
   useEffect(() => {
     setProductosList(productos);
   }, [productos]);
-
-  useEffect(() => {
-    if (abrirFormularioCodigoAlInicio) {
-      setMostrarFormularioCodigo(true);
-    }
-  }, [abrirFormularioCodigoAlInicio]);
 
   useEffect(() => {
     if (!supabaseConfigurado || !productos.length) return;
@@ -252,7 +254,7 @@ export function TransferenciaResultado({
       {mostrarFormularioCodigo && (
         <EtiquetaCodigoModal
           onAgregar={handleAgregarDesdeFormulario}
-          onClose={() => setMostrarFormularioCodigo(false)}
+          onClose={cerrarFormularioCodigo}
         />
       )}
 
