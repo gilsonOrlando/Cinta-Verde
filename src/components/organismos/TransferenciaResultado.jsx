@@ -1,9 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
 import { TIPOS_ETIQUETA } from "../../utils/imprimirEtiqueta";
 import { PreviewEtiquetaModal } from "../modals/PreviewEtiquetaModal";
 import { DatosEtiquetaMotoModal } from "../modals/DatosEtiquetaMotoModal";
+import { supabaseConfigurado } from "../../supabase/supabase.config";
+import {
+  buscarCatalogoProductos,
+  registrarProductosNuevos,
+} from "../../supabase/crudCatalogoProductos";
+import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 
 export function TransferenciaResultado({
   data,
@@ -22,10 +28,42 @@ export function TransferenciaResultado({
   const [productosList, setProductosList] = useState(productos);
   const [codigoManual, setCodigoManual] = useState("");
   const [productoManual, setProductoManual] = useState("");
+  const [busquedaCatalogo, setBusquedaCatalogo] = useState("");
+  const [resultadosCatalogo, setResultadosCatalogo] = useState([]);
+  const [buscandoCatalogo, setBuscandoCatalogo] = useState(false);
+
+  const productosKey = useMemo(
+    () => productos.map((item) => `${item.codigo}:${item.producto}`).join("|"),
+    [productos]
+  );
 
   useEffect(() => {
     setProductosList(productos);
   }, [productos]);
+
+  useEffect(() => {
+    if (!supabaseConfigurado || !productos.length) return;
+
+    let cancelado = false;
+
+    (async () => {
+      try {
+        const { insertados } = await registrarProductosNuevos(productos);
+        if (!cancelado && insertados > 0) {
+          toast.success(`${insertados} producto(s) nuevo(s) guardado(s) en catálogo.`);
+        }
+      } catch (error) {
+        console.error(error);
+        if (!cancelado) {
+          toast.error(interpretarErrorSupabase(error));
+        }
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [productosKey]);
 
   const handleImprimir = (item) => {
     setPreviewLote(false);
@@ -72,7 +110,7 @@ export function TransferenciaResultado({
     setDatosEtiquetaMoto(null);
   };
 
-  const handleCrearCodigo = () => {
+  const handleCrearCodigo = async () => {
     const codigo = codigoManual.trim();
     const producto = productoManual.trim();
 
@@ -86,13 +124,75 @@ export function TransferenciaResultado({
       return;
     }
 
-    setProductosList((prev) => [
-      ...prev,
-      { codigo, producto, cantidad: 1 },
-    ]);
+    const nuevo = { codigo, producto, cantidad: 1 };
+
+    setProductosList((prev) => [...prev, nuevo]);
     setCodigoManual("");
     setProductoManual("");
     toast.success("Etiqueta agregada a la tabla.");
+
+    if (!supabaseConfigurado) return;
+
+    try {
+      const { insertados } = await registrarProductosNuevos([nuevo]);
+      if (insertados > 0) {
+        toast.success("Producto guardado en catálogo.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
+    }
+  };
+
+  const handleBuscarCatalogo = async () => {
+    const termino = busquedaCatalogo.trim();
+
+    if (!termino) {
+      toast.error("Escribe un código o nombre para buscar.");
+      return;
+    }
+
+    if (!supabaseConfigurado) {
+      toast.error("Supabase no está configurado.");
+      return;
+    }
+
+    setBuscandoCatalogo(true);
+
+    try {
+      const resultados = await buscarCatalogoProductos(termino);
+      setResultadosCatalogo(resultados);
+
+      if (resultados.length === 0) {
+        toast.error("No se encontraron productos en el catálogo.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
+    } finally {
+      setBuscandoCatalogo(false);
+    }
+  };
+
+  const handleCatalogoKeyDown = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleBuscarCatalogo();
+    }
+  };
+
+  const agregarDesdeCatalogo = (item) => {
+    const existe = productosList.some((producto) => producto.codigo === item.codigo);
+    if (existe) {
+      toast.error("Ese código ya está en la tabla.");
+      return;
+    }
+
+    setProductosList((prev) => [
+      ...prev,
+      { codigo: item.codigo, producto: item.producto, cantidad: 1 },
+    ]);
+    toast.success("Producto agregado desde catálogo.");
   };
 
   const handleManualKeyDown = (event) => {
@@ -178,6 +278,43 @@ export function TransferenciaResultado({
               </RadioGroup>
             </>
           )}
+
+          <ManualCodigo>
+            <ManualLabel>Buscar producto guardado</ManualLabel>
+            <ManualGrid>
+              <InputProducto
+                type="search"
+                value={busquedaCatalogo}
+                onChange={(event) => setBusquedaCatalogo(event.target.value)}
+                onKeyDown={handleCatalogoKeyDown}
+                placeholder="Código o nombre del producto"
+              />
+              <BtnCrear type="button" onClick={handleBuscarCatalogo} disabled={buscandoCatalogo}>
+                {buscandoCatalogo ? "Buscando..." : "Buscar"}
+              </BtnCrear>
+            </ManualGrid>
+
+            {resultadosCatalogo.length > 0 && (
+              <CatalogoResultados>
+                {resultadosCatalogo.map((item) => (
+                  <CatalogoItem key={item.id}>
+                    <CatalogoInfo>
+                      <strong>{item.codigo}</strong>
+                      <span>{item.producto}</span>
+                    </CatalogoInfo>
+                    <CatalogoAcciones>
+                      <BtnCatalogoSecundario type="button" onClick={() => agregarDesdeCatalogo(item)}>
+                        Agregar
+                      </BtnCatalogoSecundario>
+                      <BtnCatalogoPrimario type="button" onClick={() => handleImprimir(item)}>
+                        Imprimir
+                      </BtnCatalogoPrimario>
+                    </CatalogoAcciones>
+                  </CatalogoItem>
+                ))}
+              </CatalogoResultados>
+            )}
+          </ManualCodigo>
 
           <ManualCodigo>
             <ManualLabel>Generar etiqueta solo con código</ManualLabel>
@@ -476,6 +613,90 @@ const BtnCrear = styled.button`
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: #c62828;
+    border-color: #c62828;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: wait;
+  }
+`;
+
+const CatalogoResultados = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+`;
+
+const CatalogoItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fff;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const CatalogoInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  strong {
+    color: #222;
+    font-size: 0.92rem;
+  }
+
+  span {
+    color: #666;
+    font-size: 0.85rem;
+    word-break: break-word;
+  }
+`;
+
+const CatalogoAcciones = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+`;
+
+const BtnCatalogoSecundario = styled.button`
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #444;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #e53935;
+    color: #e53935;
+  }
+`;
+
+const BtnCatalogoPrimario = styled.button`
+  border: 1px solid #e53935;
+  background: #e53935;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
 
   &:hover {
     background: #c62828;

@@ -9,6 +9,13 @@ import { procesarTransferenciaExcel } from "../../utils/parseTransferenciaExcel"
 const ACCEPTED =
   ".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+const TRANSFERENCIA_VACIA = {
+  numero: null,
+  bodegaOrigen: null,
+  bodegaDestino: null,
+  productos: [],
+};
+
 export function MotosTemplate() {
   const inputRef = useRef(null);
   const [estado, setEstado] = useState("idle");
@@ -59,6 +66,12 @@ export function MotosTemplate() {
 
   const mostrarDropZone = estado === "idle" || estado === "error";
 
+  const iniciarModoBusqueda = () => {
+    setArchivo(null);
+    setTransferencia(TRANSFERENCIA_VACIA);
+    setEstado("listo");
+  };
+
   return (
     <Page>
       {mostrarDropZone && (
@@ -87,6 +100,10 @@ export function MotosTemplate() {
             hidden
             onChange={(e) => handleFile(e.target.files?.[0])}
           />
+
+          <SoloCodigo type="button" onClick={iniciarModoBusqueda}>
+            Buscar producto guardado e imprimir
+          </SoloCodigo>
         </UploadSection>
       )}
 
@@ -103,6 +120,11 @@ export function MotosTemplate() {
           <CambiarArchivo type="button" onClick={() => inputRef.current?.click()}>
             Cargar otro archivo
           </CambiarArchivo>
+          {!archivo && (
+            <CambiarArchivo type="button" onClick={() => setEstado("idle")}>
+              Volver al inicio
+            </CambiarArchivo>
+          )}
           <input
             ref={inputRef}
             type="file"
@@ -183,5 +205,21 @@ const CambiarArchivo = styled.button`
   &:hover {
     border-color: #e53935;
     color: #e53935;
+  }
+`;
+
+const SoloCodigo = styled.button`
+  margin-top: 16px;
+  border: none;
+  background: transparent;
+  color: #e53935;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: #c62828;
   }
 `;

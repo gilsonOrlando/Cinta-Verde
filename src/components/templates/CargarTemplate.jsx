@@ -103,7 +103,7 @@ export function CargarTemplate() {
           />
 
           <SoloCodigo type="button" onClick={iniciarModoSoloCodigo}>
-            Generar etiqueta solo con código
+            Buscar producto guardado e imprimir
           </SoloCodigo>
         </UploadSection>
       )}

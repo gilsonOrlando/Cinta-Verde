@@ -26,10 +26,11 @@ export function interpretarErrorSupabase(error) {
   if (
     codigo === "PGRST205" ||
     texto.includes("could not find the table") ||
-    texto.includes("proyectos") && texto.includes("schema cache")
+    (texto.includes("proyectos") && texto.includes("schema cache")) ||
+    (texto.includes("catalogo_productos") && texto.includes("schema cache"))
   ) {
     return (
-      "La tabla 'proyectos' no existe en Supabase. En tu PC ejecuta: npm run setup:supabase"
+      "Faltan tablas en Supabase. En tu PC ejecuta: npm run setup:supabase"
     );
   }
 
