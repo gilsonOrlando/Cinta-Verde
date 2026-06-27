@@ -12,9 +12,10 @@ export function interpretarErrorSupabase(error) {
     return "No se pudo conectar con Supabase.";
   }
 
+  const status = error.status ?? error.statusCode ?? "";
   const codigo = error.code ?? "";
   const mensaje = String(error.message ?? error.details ?? "");
-  const texto = `${codigo} ${mensaje}`.toLowerCase();
+  const texto = `${codigo} ${mensaje} ${status}`.toLowerCase();
 
   if (codigo === "PGRST125" || texto.includes("invalid path specified in request url")) {
     return (
@@ -25,13 +26,19 @@ export function interpretarErrorSupabase(error) {
 
   if (
     codigo === "PGRST205" ||
+    status === 404 ||
     texto.includes("could not find the table") ||
-    (texto.includes("proyectos") && texto.includes("schema cache")) ||
-    (texto.includes("catalogo_productos") && texto.includes("schema cache"))
+    texto.includes("catalogo_productos")
   ) {
     return (
-      "Faltan tablas en Supabase. En tu PC ejecuta: npm run setup:supabase"
+      "La tabla 'catalogo_productos' no existe en Supabase. " +
+      "Abre SQL Editor en tu proyecto y ejecuta scripts/setup-catalogo-productos.sql " +
+      "(o en tu PC: npm run setup:catalogo)."
     );
+  }
+
+  if (texto.includes("proyectos") && texto.includes("schema cache")) {
+    return "Faltan tablas en Supabase. En tu PC ejecuta: npm run setup:supabase";
   }
 
   if (codigo === "PGRST301" || texto.includes("jwt")) {
