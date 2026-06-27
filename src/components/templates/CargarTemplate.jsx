@@ -21,6 +21,7 @@ export function CargarTemplate() {
   const [estado, setEstado] = useState("idle");
   const [archivo, setArchivo] = useState(null);
   const [transferencia, setTransferencia] = useState(null);
+  const [modoFormularioCodigo, setModoFormularioCodigo] = useState(false);
 
   const handleFile = async (file) => {
     if (!file) return;
@@ -70,6 +71,7 @@ export function CargarTemplate() {
   const iniciarModoSoloCodigo = () => {
     setArchivo(null);
     setTransferencia(TRANSFERENCIA_VACIA);
+    setModoFormularioCodigo(true);
     setEstado("listo");
   };
 
@@ -103,7 +105,7 @@ export function CargarTemplate() {
           />
 
           <SoloCodigo type="button" onClick={iniciarModoSoloCodigo}>
-            Buscar producto guardado e imprimir
+            Generar etiqueta con código
           </SoloCodigo>
         </UploadSection>
       )}
@@ -115,6 +117,7 @@ export function CargarTemplate() {
           <TransferenciaResultado
             data={transferencia}
             nombreArchivo={archivo?.name}
+            abrirFormularioCodigoAlInicio={modoFormularioCodigo}
           />
           <AccionesInferiores>
             <CambiarArchivo type="button" onClick={() => inputRef.current?.click()}>

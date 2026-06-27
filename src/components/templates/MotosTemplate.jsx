@@ -21,6 +21,7 @@ export function MotosTemplate() {
   const [estado, setEstado] = useState("idle");
   const [archivo, setArchivo] = useState(null);
   const [transferencia, setTransferencia] = useState(null);
+  const [modoFormularioCodigo, setModoFormularioCodigo] = useState(false);
 
   const handleFile = async (file) => {
     if (!file) return;
@@ -69,6 +70,7 @@ export function MotosTemplate() {
   const iniciarModoBusqueda = () => {
     setArchivo(null);
     setTransferencia(TRANSFERENCIA_VACIA);
+    setModoFormularioCodigo(true);
     setEstado("listo");
   };
 
@@ -102,7 +104,7 @@ export function MotosTemplate() {
           />
 
           <SoloCodigo type="button" onClick={iniciarModoBusqueda}>
-            Buscar producto guardado e imprimir
+            Generar etiqueta con código
           </SoloCodigo>
         </UploadSection>
       )}
@@ -116,6 +118,7 @@ export function MotosTemplate() {
             nombreArchivo={archivo?.name}
             soloEtiquetaMediana
             tituloTabla="Motos"
+            abrirFormularioCodigoAlInicio={modoFormularioCodigo}
           />
           <CambiarArchivo type="button" onClick={() => inputRef.current?.click()}>
             Cargar otro archivo
