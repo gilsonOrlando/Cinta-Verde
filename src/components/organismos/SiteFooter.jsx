@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { RiDownloadLine, RiQrScan2Line } from "react-icons/ri";
-import cintaVerdeApk from "../../app/app-release.apk?url";
+import cintaVerdeApk from "../../app/cintaVerde.apk?url";
 
 export function SiteFooter() {
   return (
@@ -23,7 +23,7 @@ export function SiteFooter() {
             cantidad física comparándola con la cantidad del sistema.
           </CintaVerdeTexto>
 
-          <BtnDescarga href={cintaVerdeApk} download="app-release.apk">
+          <BtnDescarga href={cintaVerdeApk} download="cintaVerde.apk">
             <RiDownloadLine />
             Descargar CintaVerde (APK)
           </BtnDescarga>
