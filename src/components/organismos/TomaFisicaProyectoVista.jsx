@@ -11,12 +11,21 @@ import { calcularDiferenciaCantidades } from "../../utils/cantidadTexto";
 export function TomaFisicaProyectoVista({ proyecto, productos, onNuevaConsulta }) {
   const [mostrarPreview, setMostrarPreview] = useState(false);
 
-  const handleDescargar = () => {
+  const handleDescargar = async () => {
+    if (!Array.isArray(productos) || productos.length === 0) {
+      toast.error("No hay productos para incluir en el PDF.");
+      return;
+    }
+
     try {
-      descargarPdfTomaFisica({ proyecto, productos });
+      await descargarPdfTomaFisica({ proyecto, productos });
       toast.success("PDF descargado correctamente.");
     } catch (error) {
       console.error(error);
+      if (error.message === "SIN_PRODUCTOS") {
+        toast.error("No hay productos para incluir en el PDF.");
+        return;
+      }
       toast.error("No se pudo generar el PDF.");
     }
   };

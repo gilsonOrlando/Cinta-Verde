@@ -1,8 +1,9 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 import {
   formatearFechaProyecto,
   nombreArchivoPdf,
+  normalizarProductoTomaFisica,
   prepararFilasTomaFisica,
 } from "./tomaFisicaReporte";
 
@@ -12,6 +13,69 @@ function escapeHtml(texto) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function esperarRenderizado(iframe) {
+  return new Promise((resolve) => {
+    const completar = () => requestAnimationFrame(() => requestAnimationFrame(resolve));
+
+    if (iframe.contentDocument?.readyState === "complete") {
+      completar();
+      return;
+    }
+
+    iframe.addEventListener("load", completar, { once: true });
+    setTimeout(completar, 400);
+  });
+}
+
+function agregarCanvasEnPaginas(pdf, canvas, margen = 10) {
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const contentWidth = pageWidth - margen * 2;
+  const contentHeight = pageHeight - margen * 2;
+  const sliceHeightPx = Math.floor((contentHeight * canvas.width) / contentWidth);
+
+  let offsetY = 0;
+
+  while (offsetY < canvas.height) {
+    const sliceHeight = Math.min(sliceHeightPx, canvas.height - offsetY);
+    const pageCanvas = document.createElement("canvas");
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = sliceHeight;
+
+    const context = pageCanvas.getContext("2d");
+    if (!context) break;
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+    context.drawImage(
+      canvas,
+      0,
+      offsetY,
+      canvas.width,
+      sliceHeight,
+      0,
+      0,
+      canvas.width,
+      sliceHeight
+    );
+
+    const imgHeightMm = (sliceHeight * contentWidth) / canvas.width;
+    pdf.addImage(
+      pageCanvas.toDataURL("image/png"),
+      "PNG",
+      margen,
+      margen,
+      contentWidth,
+      imgHeightMm
+    );
+
+    offsetY += sliceHeight;
+    if (offsetY < canvas.height) {
+      pdf.addPage();
+    }
+  }
 }
 
 export function buildHtmlTomaFisica({ proyecto, productos }) {
@@ -89,6 +153,7 @@ export function buildHtmlTomaFisica({ proyecto, productos }) {
     }
     tbody tr:nth-child(even) { background: #fafafa; }
     .centro { text-align: center; white-space: nowrap; }
+    td:nth-child(3) { word-break: break-word; }
     .diferencia.positiva { color: #2e7d32; font-weight: 700; }
     .diferencia.negativa { color: #c62828; font-weight: 700; }
     .diferencia.neutra { color: #444; font-weight: 600; }
@@ -96,9 +161,6 @@ export function buildHtmlTomaFisica({ proyecto, productos }) {
       margin-top: 16px;
       font-size: 12px;
       color: #666;
-    }
-    @media print {
-      body { padding: 12px; }
     }
   </style>
 </head>
@@ -129,7 +191,7 @@ export function buildHtmlTomaFisica({ proyecto, productos }) {
       </tr>
     </thead>
     <tbody>
-      ${cuerpoFilas}
+      ${cuerpoFilas || `<tr><td colspan="6" class="centro">Sin productos registrados</td></tr>`}
     </tbody>
   </table>
   <footer>Generado desde el sistema de inventarios.</footer>
@@ -137,50 +199,62 @@ export function buildHtmlTomaFisica({ proyecto, productos }) {
 </html>`;
 }
 
-export function descargarPdfTomaFisica({ proyecto, productos }) {
-  const filas = prepararFilasTomaFisica(productos);
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+export async function descargarPdfTomaFisica({ proyecto, productos }) {
+  const lista = Array.isArray(productos)
+    ? productos.map(normalizarProductoTomaFisica)
+    : [];
 
-  doc.setFontSize(16);
-  doc.text("Toma física", 14, 16);
-
-  doc.setFontSize(10);
-  doc.text(`Proyecto: ${proyecto.nombre}`, 14, 24);
-  doc.text(`Código: ${proyecto.codigo_acceso}`, 14, 30);
-  doc.text(`Fecha: ${formatearFechaProyecto(proyecto.created_at)}`, 14, 36);
-  doc.text(`Productos: ${filas.length}`, 120, 24);
-
-  if (proyecto.nombre_archivo) {
-    doc.text(`Archivo: ${proyecto.nombre_archivo}`, 120, 30);
+  if (lista.length === 0) {
+    throw new Error("SIN_PRODUCTOS");
   }
 
-  autoTable(doc, {
-    startY: 42,
-    head: [["#", "Código", "Producto", "Cant. sistema", "Cant. toma física", "Diferencia"]],
-    body: filas.map((fila) => [
-      fila.indice,
-      fila.codigo,
-      fila.producto,
-      fila.cantidad_sistema,
-      fila.cantidad_toma_fisica,
-      fila.diferencia,
-    ]),
-    styles: { fontSize: 9, cellPadding: 2.5 },
-    headStyles: { fillColor: [34, 34, 34], textColor: 255 },
-    columnStyles: {
-      0: { halign: "center", cellWidth: 10 },
-      3: { halign: "center" },
-      4: { halign: "center" },
-      5: { halign: "center" },
-    },
-    didParseCell(data) {
-      if (data.section !== "body" || data.column.index !== 5) return;
+  const html = buildHtmlTomaFisica({ proyecto, productos: lista });
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.position = "fixed";
+  iframe.style.left = "-10000px";
+  iframe.style.top = "0";
+  iframe.style.width = "1100px";
+  iframe.style.height = "1px";
+  iframe.style.border = "none";
+  iframe.style.visibility = "hidden";
 
-      const valor = filas[data.row.index]?.diferenciaNumero ?? 0;
-      if (valor > 0) data.cell.styles.textColor = [46, 125, 50];
-      if (valor < 0) data.cell.styles.textColor = [198, 40, 40];
-    },
-  });
+  document.body.appendChild(iframe);
 
-  doc.save(nombreArchivoPdf(proyecto));
+  try {
+    const doc = iframe.contentDocument;
+    if (!doc) {
+      throw new Error("No se pudo preparar el reporte.");
+    }
+
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    await esperarRenderizado(iframe);
+
+    const body = iframe.contentDocument?.body;
+    if (!body) {
+      throw new Error("No se pudo renderizar el reporte.");
+    }
+
+    iframe.style.height = `${body.scrollHeight}px`;
+
+    const canvas = await html2canvas(body, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      logging: false,
+      width: body.scrollWidth,
+      height: body.scrollHeight,
+      windowWidth: body.scrollWidth,
+      windowHeight: body.scrollHeight,
+    });
+
+    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    agregarCanvasEnPaginas(pdf, canvas);
+    pdf.save(nombreArchivoPdf(proyecto));
+  } finally {
+    iframe.remove();
+  }
 }

@@ -3,14 +3,39 @@ import styled from "styled-components";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 import { CrearProyectoModal } from "../modals/CrearProyectoModal";
+import { PreviewTomaFisicaModal } from "../modals/PreviewTomaFisicaModal";
 import { CrearProyectoConProductos } from "../../supabase/crudProyectos";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
+import { descargarPdfTomaFisica } from "../../utils/generarPdfTomaFisica";
 
 export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado }) {
   const { productos } = data;
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [mostrarPreview, setMostrarPreview] = useState(false);
   const [guardando, setGuardando] = useState(false);
+
+  const proyectoBorrador = {
+    nombre: nombreArchivo?.replace(/\.[^/.]+$/, "") || "Toma física",
+    codigo_acceso: "BORRADOR",
+    created_at: new Date().toISOString(),
+    nombre_archivo: nombreArchivo ?? null,
+  };
+
+  const handleDescargarPdf = async () => {
+    if (!productos.length) {
+      toast.error("No hay productos para incluir en el PDF.");
+      return;
+    }
+
+    try {
+      await descargarPdfTomaFisica({ proyecto: proyectoBorrador, productos });
+      toast.success("PDF descargado correctamente.");
+    } catch (error) {
+      console.error(error);
+      toast.error("No se pudo generar el PDF.");
+    }
+  };
 
   const handleCrearProyecto = async ({ nombre, codigoAcceso }) => {
     if (!supabaseConfigurado) {
@@ -77,9 +102,17 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
           </TablaHeaderInfo>
 
           {productos.length > 0 && (
-            <BtnCrearProyecto type="button" onClick={() => setMostrarModal(true)}>
-              Crear proyecto
-            </BtnCrearProyecto>
+            <AccionesTabla>
+              <BtnSecundario type="button" onClick={() => setMostrarPreview(true)}>
+                Vista previa
+              </BtnSecundario>
+              <BtnSecundario type="button" onClick={handleDescargarPdf}>
+                Descargar PDF
+              </BtnSecundario>
+              <BtnCrearProyecto type="button" onClick={() => setMostrarModal(true)}>
+                Crear proyecto
+              </BtnCrearProyecto>
+            </AccionesTabla>
           )}
         </TablaHeader>
 
@@ -112,6 +145,14 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
           </TablaWrapper>
         )}
       </SeccionTabla>
+
+      {mostrarPreview && (
+        <PreviewTomaFisicaModal
+          proyecto={proyectoBorrador}
+          productos={productos}
+          onClose={() => setMostrarPreview(false)}
+        />
+      )}
 
       {mostrarModal && (
         <CrearProyectoModal
@@ -169,6 +210,29 @@ const TablaHeaderInfo = styled.div`
   span {
     color: #888;
     font-size: 0.9rem;
+  }
+`;
+
+const AccionesTabla = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+`;
+
+const BtnSecundario = styled.button`
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #444;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: #e53935;
+    color: #e53935;
   }
 `;
 

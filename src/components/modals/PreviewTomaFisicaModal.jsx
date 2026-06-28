@@ -20,8 +20,12 @@ export function PreviewTomaFisicaModal({ proyecto, productos, onClose }) {
     };
   }, [onClose]);
 
-  const handleDescargar = () => {
-    descargarPdfTomaFisica({ proyecto, productos });
+  const handleDescargar = async () => {
+    if (!Array.isArray(productos) || productos.length === 0) {
+      return;
+    }
+
+    await descargarPdfTomaFisica({ proyecto, productos });
   };
 
   return (
