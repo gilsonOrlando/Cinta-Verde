@@ -7,6 +7,7 @@ import { DatosEtiquetaMotoModal } from "../modals/DatosEtiquetaMotoModal";
 import { EtiquetaCodigoModal } from "../modals/EtiquetaCodigoModal";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { registrarListaProductosNuevos } from "../../supabase/crudListaProductos";
+import { guardarMotoPorChasis } from "../../supabase/crudMotos";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 
 export function TransferenciaResultado({
@@ -92,9 +93,64 @@ export function TransferenciaResultado({
     setPreviewLote(true);
   };
 
-  const handleConfirmarDatosMoto = (datos) => {
+  const handleConfirmarDatosMoto = async (datos) => {
     const modo = formMoto?.modo;
     const item = formMoto?.item;
+
+    if (soloEtiquetaMediana && supabaseConfigurado) {
+      try {
+        const contexto = {
+          linkMega: datos.linkMega,
+          agencia: datos.agencia,
+          transferenciaNumero: numero,
+          bodegaOrigen,
+          bodegaDestino,
+        };
+
+        if (modo === "lote" && Array.isArray(datos.items)) {
+          const productoMap = new Map(productosList.map((producto) => [producto.codigo, producto]));
+          const resultados = await Promise.all(
+            datos.items.map((fila) =>
+              guardarMotoPorChasis({
+                codigo: fila.codigo,
+                producto: productoMap.get(fila.codigo)?.producto ?? "",
+                chasis: fila.chasis,
+                motor: fila.motor,
+                camCpmRamw: fila.camCpmRamw,
+                ...contexto,
+              })
+            )
+          );
+
+          const actualizados = resultados.filter((resultado) => resultado.actualizado).length;
+          const nuevos = resultados.length - actualizados;
+
+          if (nuevos > 0 && actualizados > 0) {
+            toast.success(`${nuevos} moto(s) guardada(s), ${actualizados} actualizada(s).`);
+          } else if (actualizados > 0) {
+            toast.success(`${actualizados} moto(s) actualizada(s).`);
+          } else {
+            toast.success(`${nuevos} moto(s) guardada(s).`);
+          }
+        } else if (item) {
+          const { actualizado } = await guardarMotoPorChasis({
+            codigo: item.codigo,
+            producto: item.producto,
+            chasis: datos.chasis,
+            motor: datos.motor,
+            camCpmRamw: datos.camCpmRamw,
+            ...contexto,
+          });
+
+          toast.success(
+            actualizado ? "Moto actualizada en el registro." : "Moto guardada en el registro."
+          );
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error(interpretarErrorSupabase(error));
+      }
+    }
 
     setDatosEtiquetaMoto(datos);
     setFormMoto(null);

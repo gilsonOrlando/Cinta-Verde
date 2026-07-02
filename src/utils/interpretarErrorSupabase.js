@@ -29,12 +29,12 @@ export function interpretarErrorSupabase(error) {
     status === 404 ||
     texto.includes("could not find the table") ||
     texto.includes("listaproductos") ||
-    texto.includes("catalogo_productos")
+    texto.includes("catalogo_productos") ||
+    texto.includes("motos")
   ) {
     return (
-      "La tabla 'listaproductos' no existe en Supabase. " +
-      "Abre SQL Editor en tu proyecto y ejecuta scripts/setup-listaproductos.sql " +
-      "(o en tu PC: npm run setup:listaproductos)."
+      "Falta una tabla en Supabase. Ejecuta en SQL Editor: " +
+      "scripts/setup-supabase-fresh.sql o scripts/setup-motos.sql según corresponda."
     );
   }
 

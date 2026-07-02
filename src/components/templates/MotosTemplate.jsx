@@ -3,6 +3,7 @@ import styled from "styled-components";
 import toast from "react-hot-toast";
 import { CargandoTransferencia } from "../moleculas/CargandoTransferencia";
 import { TransferenciaResultado } from "../organismos/TransferenciaResultado";
+import { BuscarMotoChasisModal } from "../modals/BuscarMotoChasisModal";
 import { procesarTransferenciaPdf } from "../../utils/parseTransferenciaPdf";
 import { procesarTransferenciaExcel } from "../../utils/parseTransferenciaExcel";
 
@@ -22,6 +23,7 @@ export function MotosTemplate() {
   const [archivo, setArchivo] = useState(null);
   const [transferencia, setTransferencia] = useState(null);
   const [modoFormularioCodigo, setModoFormularioCodigo] = useState(false);
+  const [mostrarBuscarChasis, setMostrarBuscarChasis] = useState(false);
 
   const handleFile = async (file) => {
     if (!file) return;
@@ -122,14 +124,19 @@ export function MotosTemplate() {
             abrirFormularioCodigoAlInicio={modoFormularioCodigo}
             onFormularioCodigoCerrado={() => setModoFormularioCodigo(false)}
           />
-          <CambiarArchivo type="button" onClick={() => inputRef.current?.click()}>
-            Cargar otro archivo
-          </CambiarArchivo>
-          {!archivo && (
-            <CambiarArchivo type="button" onClick={() => setEstado("idle")}>
-              Volver al inicio
+          <AccionesInferiores>
+            <CambiarArchivo type="button" onClick={() => inputRef.current?.click()}>
+              Cargar otro archivo
             </CambiarArchivo>
-          )}
+            <BtnBuscarChasis type="button" onClick={() => setMostrarBuscarChasis(true)}>
+              Buscar por chasis
+            </BtnBuscarChasis>
+            {!archivo && (
+              <CambiarArchivo type="button" onClick={() => setEstado("idle")}>
+                Volver al inicio
+              </CambiarArchivo>
+            )}
+          </AccionesInferiores>
           <input
             ref={inputRef}
             type="file"
@@ -137,6 +144,9 @@ export function MotosTemplate() {
             hidden
             onChange={(e) => handleFile(e.target.files?.[0])}
           />
+          {mostrarBuscarChasis && (
+            <BuscarMotoChasisModal onClose={() => setMostrarBuscarChasis(false)} />
+          )}
         </>
       )}
     </Page>
@@ -199,7 +209,6 @@ const DropZone = styled.button`
 `;
 
 const CambiarArchivo = styled.button`
-  margin-top: 20px;
   border: 1px solid #ddd;
   background: #fff;
   color: #444;
@@ -210,6 +219,29 @@ const CambiarArchivo = styled.button`
   &:hover {
     border-color: #e53935;
     color: #e53935;
+  }
+`;
+
+const AccionesInferiores = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+`;
+
+const BtnBuscarChasis = styled.button`
+  border: 1px solid #222;
+  background: #222;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover {
+    background: #111;
+    border-color: #111;
   }
 `;
 

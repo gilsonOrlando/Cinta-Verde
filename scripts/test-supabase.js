@@ -38,7 +38,7 @@ async function probarTabla(nombre) {
   return { nombre, status: respuesta.status, texto };
 }
 
-const tablas = ["proyectos", "productos", "listaproductos"];
+const tablas = ["proyectos", "productos", "listaproductos", "motos"];
 const resultados = await Promise.all(tablas.map(probarTabla));
 
 console.log("Conexión OK con Supabase.");
