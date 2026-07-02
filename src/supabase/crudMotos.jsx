@@ -8,18 +8,7 @@ function normalizarTextoMoto(valor) {
   return String(valor ?? "").trim().toUpperCase();
 }
 
-function construirPayloadMoto({
-  codigo,
-  producto,
-  chasis,
-  motor,
-  camCpmRamw,
-  linkMega,
-  agencia,
-  transferenciaNumero,
-  bodegaOrigen,
-  bodegaDestino,
-}) {
+function construirPayloadMoto({ codigo, producto, chasis, motor, camCpmRamw, linkMega }) {
   return {
     codigo: String(codigo ?? "").trim(),
     producto: String(producto ?? "").trim(),
@@ -27,10 +16,6 @@ function construirPayloadMoto({
     motor: normalizarTextoMoto(motor),
     cam_cpm_ramw: normalizarTextoMoto(camCpmRamw),
     link_mega: String(linkMega ?? "").trim() || null,
-    agencia: String(agencia ?? "").trim() || null,
-    transferencia_numero: transferenciaNumero ?? null,
-    bodega_origen: bodegaOrigen ?? null,
-    bodega_destino: bodegaDestino ?? null,
     updated_at: new Date().toISOString(),
   };
 }

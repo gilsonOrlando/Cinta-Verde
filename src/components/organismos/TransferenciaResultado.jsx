@@ -102,10 +102,6 @@ export function TransferenciaResultado({
       try {
         const contexto = {
           linkMega: datos.linkMega,
-          agencia: datos.agencia,
-          transferenciaNumero: numero,
-          bodegaOrigen,
-          bodegaDestino,
         };
 
         if (modo === "lote" && Array.isArray(datos.items)) {

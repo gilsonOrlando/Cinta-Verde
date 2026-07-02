@@ -48,10 +48,6 @@ create table if not exists public.motos (
   motor text not null,
   cam_cpm_ramw text not null,
   link_mega text,
-  agencia text,
-  transferencia_numero text,
-  bodega_origen text,
-  bodega_destino text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

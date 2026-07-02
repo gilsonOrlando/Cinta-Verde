@@ -119,17 +119,9 @@ export function BuscarMotoChasisModal({ onClose }) {
                   <span>CAM / CPM / RAMW</span>
                   <strong>{resultado.cam_cpm_ramw}</strong>
                 </Item>
-                <Item>
-                  <span>Agencia</span>
-                  <strong>{resultado.agencia ?? "—"}</strong>
-                </Item>
                 <Item $completo>
                   <span>Enlace MEGA</span>
                   <strong>{resultado.link_mega ?? "—"}</strong>
-                </Item>
-                <Item>
-                  <span>Transferencia</span>
-                  <strong>{resultado.transferencia_numero ?? "—"}</strong>
                 </Item>
                 <Item>
                   <span>Última actualización</span>
