@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
+import { RiDeleteBin2Line } from "react-icons/ri";
 import { TIPOS_ETIQUETA } from "../../utils/imprimirEtiqueta";
 import { PreviewEtiquetaModal } from "../modals/PreviewEtiquetaModal";
 import { DatosEtiquetaMotoModal } from "../modals/DatosEtiquetaMotoModal";
@@ -183,6 +184,18 @@ export function TransferenciaResultado({
 
   const handleAgregarDesdeFormulario = (item) => agregarProductoALista(item);
 
+  const handleEliminarProducto = (index) => {
+    const item = productosList[index];
+    if (!item) return;
+
+    setProductosList((prev) => prev.filter((_, i) => i !== index));
+
+    if (previewItem?.codigo === item.codigo) {
+      setPreviewItem(null);
+      setDatosEtiquetaMoto(null);
+    }
+  };
+
   return (
     <Wrapper>
       {nombreArchivo && <Archivo>{nombreArchivo}</Archivo>}
@@ -282,6 +295,7 @@ export function TransferenciaResultado({
                   <th>Producto</th>
                   <th>Cantidad</th>
                   <th>Imprimir etiqueta</th>
+                  <th aria-label="Eliminar"> </th>
                 </tr>
               </thead>
               <tbody>
@@ -298,6 +312,16 @@ export function TransferenciaResultado({
                       >
                         Imprimir
                       </BtnImprimir>
+                    </td>
+                    <td>
+                      <BtnEliminar
+                        type="button"
+                        onClick={() => handleEliminarProducto(index)}
+                        aria-label={`Quitar ${item.codigo} de la tabla`}
+                        title="Quitar de la tabla"
+                      >
+                        <RiDeleteBin2Line />
+                      </BtnEliminar>
                     </td>
                   </tr>
                 ))}
@@ -572,7 +596,8 @@ const Tabla = styled.table`
   }
 
   th:nth-child(4),
-  th:nth-child(5) {
+  th:nth-child(5),
+  th:nth-child(6) {
     text-align: center;
   }
 
@@ -580,7 +605,12 @@ const Tabla = styled.table`
     width: 140px;
   }
 
-  td:nth-child(5) {
+  th:nth-child(6) {
+    width: 56px;
+  }
+
+  td:nth-child(5),
+  td:nth-child(6) {
     text-align: center;
     white-space: nowrap;
   }
@@ -638,5 +668,26 @@ const BtnImprimir = styled.button`
   &:hover {
     background: #e53935;
     color: #fff;
+  }
+`;
+
+const BtnEliminar = styled.button`
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #888;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background: #ffebee;
+    border-color: #e53935;
+    color: #e53935;
   }
 `;
