@@ -109,6 +109,9 @@ export function MotosTemplate() {
           <SoloCodigo type="button" onClick={iniciarModoBusqueda}>
             Generar etiqueta con código
           </SoloCodigo>
+          <SoloCodigo type="button" onClick={() => setMostrarBuscarChasis(true)}>
+            Buscar por chasis
+          </SoloCodigo>
         </UploadSection>
       )}
 
@@ -144,10 +147,11 @@ export function MotosTemplate() {
             hidden
             onChange={(e) => handleFile(e.target.files?.[0])}
           />
-          {mostrarBuscarChasis && (
-            <BuscarMotoChasisModal onClose={() => setMostrarBuscarChasis(false)} />
-          )}
         </>
+      )}
+
+      {mostrarBuscarChasis && (
+        <BuscarMotoChasisModal onClose={() => setMostrarBuscarChasis(false)} />
       )}
     </Page>
   );
@@ -246,7 +250,7 @@ const BtnBuscarChasis = styled.button`
 `;
 
 const SoloCodigo = styled.button`
-  margin-top: 16px;
+  margin-top: 12px;
   border: none;
   background: transparent;
   color: #e53935;
@@ -255,6 +259,10 @@ const SoloCodigo = styled.button`
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
+
+  &:first-of-type {
+    margin-top: 16px;
+  }
 
   &:hover {
     color: #c62828;
