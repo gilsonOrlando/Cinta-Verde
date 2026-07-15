@@ -72,7 +72,8 @@ function leerProductosDesdeHoja(sheet) {
       producto,
       categoria: celdaTexto(fila.categoria) || "Sin categoría",
       cantidad_sistema: formatearCantidad(fila.cantidad_sistema),
-      cantidad_toma_fisica: formatearCantidad(fila.cantidad_toma_fisica),
+      // Cada proyecto inicia sin conteos; esta cantidad la registra el usuario.
+      cantidad_toma_fisica: "0,00",
     });
   }
 
