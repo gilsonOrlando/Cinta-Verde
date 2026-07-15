@@ -111,7 +111,7 @@ export async function ObtenerProductosDeProyecto(proyectoId) {
 
 export async function ObtenerUsuariosDeProyecto(proyectoId) {
   const { data, error } = await supabase
-    .from("usuarios_proyecto")
+    .from("usuarios_toma_fisica")
     .select("id, nombre, created_at")
     .eq("proyecto_id", proyectoId)
     .order("created_at", { ascending: true });
@@ -128,49 +128,6 @@ export async function ObtenerConteosDeProyecto(proyectoId) {
 
   if (error) throw error;
   return data ?? [];
-}
-
-export async function RegistrarUsuarioProyecto(proyectoId, nombre) {
-  const nombreLimpio = String(nombre ?? "").trim();
-  if (!nombreLimpio) throw new Error("NOMBRE_USUARIO_REQUERIDO");
-
-  const { data, error } = await supabase.rpc("registrar_usuario_proyecto", {
-    p_proyecto_id: proyectoId,
-    p_nombre: nombreLimpio,
-  });
-
-  if (error) throw error;
-  return data;
-}
-
-export async function RegistrarUsuarioPorCodigo(codigoAcceso, nombre) {
-  const nombreLimpio = String(nombre ?? "").trim();
-  if (!nombreLimpio) throw new Error("NOMBRE_USUARIO_REQUERIDO");
-
-  const { data, error } = await supabase.rpc("registrar_usuario_por_codigo", {
-    p_codigo_acceso: normalizarCodigoAcceso(codigoAcceso),
-    p_nombre: nombreLimpio,
-  });
-
-  if (error) throw error;
-  return data;
-}
-
-export async function RegistrarConteoUsuario({
-  proyectoId,
-  usuarioId,
-  codigoProducto,
-  cantidad = 1,
-}) {
-  const { data, error } = await supabase.rpc("registrar_conteo_usuario", {
-    p_proyecto_id: proyectoId,
-    p_usuario_id: usuarioId,
-    p_codigo_producto: String(codigoProducto ?? "").trim(),
-    p_cantidad: parseCantidadTexto(cantidad),
-  });
-
-  if (error) throw error;
-  return data;
 }
 
 export async function BuscarProductoEnProyecto(proyectoId, codigoProducto) {
