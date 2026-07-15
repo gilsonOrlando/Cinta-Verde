@@ -28,6 +28,8 @@ export function TransferenciaResultado({
   const [datosEtiquetaMoto, setDatosEtiquetaMoto] = useState(null);
   const [formMoto, setFormMoto] = useState(null);
   const [productosList, setProductosList] = useState(productos);
+  const [seleccionados, setSeleccionados] = useState([]);
+  const [itemsLote, setItemsLote] = useState(null);
   const [mostrarFormularioCodigo, setMostrarFormularioCodigo] = useState(
     abrirFormularioCodigoAlInicio
   );
@@ -44,6 +46,7 @@ export function TransferenciaResultado({
 
   useEffect(() => {
     setProductosList(productos);
+    setSeleccionados([]);
   }, [productos]);
 
   useEffect(() => {
@@ -85,9 +88,38 @@ export function TransferenciaResultado({
   const handleImprimirTodo = () => {
     setPreviewItem(null);
     setDatosEtiquetaMoto(null);
+    setItemsLote(null);
 
     if (soloEtiquetaMediana) {
       setFormMoto({ modo: "lote", items: productosList });
+      return;
+    }
+
+    setPreviewLote(true);
+  };
+
+  const toggleSeleccion = (codigo) => {
+    setSeleccionados((prev) =>
+      prev.includes(codigo)
+        ? prev.filter((item) => item !== codigo)
+        : [...prev, codigo]
+    );
+  };
+
+  const handleImprimirSeleccionados = () => {
+    const items = productosList.filter((item) => seleccionados.includes(item.codigo));
+
+    if (items.length < 2) {
+      toast.error("Selecciona más de un producto para imprimir.");
+      return;
+    }
+
+    setPreviewItem(null);
+    setDatosEtiquetaMoto(null);
+    setItemsLote(items);
+
+    if (soloEtiquetaMediana) {
+      setFormMoto({ modo: "lote", items });
       return;
     }
 
@@ -164,6 +196,7 @@ export function TransferenciaResultado({
     setPreviewItem(null);
     setPreviewLote(false);
     setDatosEtiquetaMoto(null);
+    setItemsLote(null);
   };
 
   const agregarProductoALista = (item) => {
@@ -185,6 +218,7 @@ export function TransferenciaResultado({
     if (!item) return;
 
     setProductosList((prev) => prev.filter((_, i) => i !== index));
+    setSeleccionados((prev) => prev.filter((codigo) => codigo !== item.codigo));
 
     if (previewItem?.codigo === item.codigo) {
       setPreviewItem(null);
@@ -291,6 +325,16 @@ export function TransferenciaResultado({
                   <th>Producto</th>
                   <th>Cantidad</th>
                   <th>Imprimir etiqueta</th>
+                  <th>
+                    <BtnImprimirSeleccion
+                      type="button"
+                      onClick={handleImprimirSeleccionados}
+                      disabled={seleccionados.length < 2}
+                      title="Imprimir los productos seleccionados"
+                    >
+                      Imprimir ({seleccionados.length})
+                    </BtnImprimirSeleccion>
+                  </th>
                   <th aria-label="Eliminar"> </th>
                 </tr>
               </thead>
@@ -308,6 +352,14 @@ export function TransferenciaResultado({
                       >
                         Imprimir
                       </BtnImprimir>
+                    </td>
+                    <td>
+                      <CheckboxSeleccion
+                        type="checkbox"
+                        checked={seleccionados.includes(item.codigo)}
+                        onChange={() => toggleSeleccion(item.codigo)}
+                        aria-label={`Seleccionar ${item.codigo} para imprimir`}
+                      />
                     </td>
                     <td>
                       <BtnEliminar
@@ -354,7 +406,7 @@ export function TransferenciaResultado({
 
       {previewLote && (
         <PreviewEtiquetaModal
-          productos={productosList}
+          productos={itemsLote ?? productosList}
           tipo={soloEtiquetaMediana ? TIPOS_ETIQUETA.MEDIANA : tipoEtiqueta}
           datosEtiquetaMoto={soloEtiquetaMediana ? datosEtiquetaMoto : null}
           onClose={cerrarPreview}
@@ -593,7 +645,8 @@ const Tabla = styled.table`
 
   th:nth-child(4),
   th:nth-child(5),
-  th:nth-child(6) {
+  th:nth-child(6),
+  th:nth-child(7) {
     text-align: center;
   }
 
@@ -602,11 +655,16 @@ const Tabla = styled.table`
   }
 
   th:nth-child(6) {
+    width: 130px;
+  }
+
+  th:nth-child(7) {
     width: 56px;
   }
 
   td:nth-child(5),
-  td:nth-child(6) {
+  td:nth-child(6),
+  td:nth-child(7) {
     text-align: center;
     white-space: nowrap;
   }
@@ -665,6 +723,38 @@ const BtnImprimir = styled.button`
     background: #e53935;
     color: #fff;
   }
+`;
+
+const BtnImprimirSeleccion = styled.button`
+  border: 1px solid #fff;
+  background: transparent;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: normal;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: #fff;
+    color: #222;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const CheckboxSeleccion = styled.input`
+  width: 18px;
+  height: 18px;
+  accent-color: #e53935;
+  cursor: pointer;
 `;
 
 const BtnEliminar = styled.button`
