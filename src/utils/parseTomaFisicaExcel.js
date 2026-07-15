@@ -1,9 +1,10 @@
 import * as XLSX from "xlsx";
 
-/** Columnas fijas por posición: A, B, C, D. La fila 0 del Excel es solo encabezado. */
+/** Columnas fijas por posición: A, B, C, D, E. La fila 0 del Excel es solo encabezado. */
 export const COLUMNAS_TOMA_FISICA = [
   "codigo",
   "producto",
+  "categoria",
   "cantidad_sistema",
   "cantidad_toma_fisica",
 ];
@@ -69,6 +70,7 @@ function leerProductosDesdeHoja(sheet) {
     productos.push({
       codigo,
       producto,
+      categoria: celdaTexto(fila.categoria) || "Sin categoría",
       cantidad_sistema: formatearCantidad(fila.cantidad_sistema),
       cantidad_toma_fisica: formatearCantidad(fila.cantidad_toma_fisica),
     });

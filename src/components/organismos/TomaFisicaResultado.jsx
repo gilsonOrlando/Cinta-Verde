@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -11,9 +11,38 @@ import { descargarPdfTomaFisica } from "../../utils/generarPdfTomaFisica";
 
 export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado }) {
   const { productos } = data;
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarPreview, setMostrarPreview] = useState(false);
   const [guardando, setGuardando] = useState(false);
+
+  const categorias = useMemo(
+    () =>
+      [...new Set(productos.map((item) => item.categoria || "Sin categoría"))].sort((a, b) =>
+        a.localeCompare(b, "es", { sensitivity: "base" })
+      ),
+    [productos]
+  );
+
+  const productosFiltrados = useMemo(
+    () =>
+      categoriaSeleccionada
+        ? productos.filter(
+            (item) => (item.categoria || "Sin categoría") === categoriaSeleccionada
+          )
+        : productos,
+    [categoriaSeleccionada, productos]
+  );
+
+  const totalPaginas = Math.max(1, Math.ceil(productosFiltrados.length / filasPorPagina));
+  const paginaSegura = Math.min(paginaActual, totalPaginas);
+  const inicioPagina = (paginaSegura - 1) * filasPorPagina;
+  const productosPagina = productosFiltrados.slice(
+    inicioPagina,
+    inicioPagina + filasPorPagina
+  );
 
   const proyectoBorrador = {
     nombre: nombreArchivo?.replace(/\.[^/.]+$/, "") || "Toma física",
@@ -23,13 +52,16 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
   };
 
   const handleDescargarPdf = async () => {
-    if (!productos.length) {
+    if (!productosFiltrados.length) {
       toast.error("No hay productos para incluir en el PDF.");
       return;
     }
 
     try {
-      await descargarPdfTomaFisica({ proyecto: proyectoBorrador, productos });
+      await descargarPdfTomaFisica({
+        proyecto: proyectoBorrador,
+        productos: productosFiltrados,
+      });
       toast.success("PDF descargado correctamente.");
     } catch (error) {
       console.error(error);
@@ -50,7 +82,7 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
         nombre,
         codigoAcceso,
         nombreArchivo,
-        productos,
+        productos: productosFiltrados,
       });
 
       setMostrarModal(false);
@@ -95,9 +127,9 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
           <TablaHeaderInfo>
             <h2>Lista de toma física</h2>
             <span>
-              {productos.length === 1
-                ? "1 producto encontrado"
-                : `${productos.length} productos encontrados`}
+              {productosFiltrados.length === productos.length
+                ? `${productos.length} producto(s) encontrado(s)`
+                : `${productosFiltrados.length} de ${productos.length} producto(s)`}
             </span>
           </TablaHeaderInfo>
 
@@ -116,40 +148,107 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
           )}
         </TablaHeader>
 
+        {productos.length > 0 && (
+          <Filtros>
+            <label htmlFor="filtro-categoria">Categoría</label>
+            <select
+              id="filtro-categoria"
+              value={categoriaSeleccionada}
+              onChange={(event) => {
+                setCategoriaSeleccionada(event.target.value);
+                setPaginaActual(1);
+              }}
+            >
+              <option value="">Todas las categorías</option>
+              {categorias.map((categoria) => (
+                <option key={categoria} value={categoria}>
+                  {categoria}
+                </option>
+              ))}
+            </select>
+            <span>
+              El proyecto, la vista previa y el PDF usarán los productos filtrados.
+            </span>
+          </Filtros>
+        )}
+
         {productos.length === 0 ? (
           <Empty>No se encontraron productos en el archivo.</Empty>
+        ) : productosFiltrados.length === 0 ? (
+          <Empty>No hay productos para la categoría seleccionada.</Empty>
         ) : (
-          <TablaWrapper>
-            <Tabla>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Código</th>
-                  <th>Producto</th>
-                  <th>Cantidad sistema</th>
-                  <th>Cantidad toma física</th>
-                </tr>
-              </thead>
-              <tbody>
-                {productos.map((item, index) => (
-                  <tr key={`${item.codigo}-${index}`}>
-                    <td>{index + 1}</td>
-                    <td>{item.codigo}</td>
-                    <td>{item.producto}</td>
-                    <td>{item.cantidad_sistema}</td>
-                    <td>{item.cantidad_toma_fisica}</td>
+          <>
+            <TablaWrapper>
+              <Tabla>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Código</th>
+                    <th>Producto</th>
+                    <th>Cantidad sistema</th>
+                    <th>Cantidad toma física</th>
                   </tr>
-                ))}
-              </tbody>
-            </Tabla>
-          </TablaWrapper>
+                </thead>
+                <tbody>
+                  {productosPagina.map((item, index) => (
+                    <tr key={`${item.codigo}-${inicioPagina + index}`}>
+                      <td>{inicioPagina + index + 1}</td>
+                      <td>{item.codigo}</td>
+                      <td>{item.producto}</td>
+                      <td>{item.cantidad_sistema}</td>
+                      <td>{item.cantidad_toma_fisica}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Tabla>
+            </TablaWrapper>
+
+            <Paginacion>
+              <FilasPagina>
+                <label htmlFor="filas-por-pagina">Filas por página</label>
+                <select
+                  id="filas-por-pagina"
+                  value={filasPorPagina}
+                  onChange={(event) => {
+                    setFilasPorPagina(Number(event.target.value));
+                    setPaginaActual(1);
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </FilasPagina>
+              <span>
+                Página {paginaSegura} de {totalPaginas}
+              </span>
+              <ControlesPagina>
+                <button
+                  type="button"
+                  onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+                  disabled={paginaSegura === 1}
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))
+                  }
+                  disabled={paginaSegura === totalPaginas}
+                >
+                  Siguiente
+                </button>
+              </ControlesPagina>
+            </Paginacion>
+          </>
         )}
       </SeccionTabla>
 
       {mostrarPreview && (
         <PreviewTomaFisicaModal
           proyecto={proyectoBorrador}
-          productos={productos}
+          productos={productosFiltrados}
           onClose={() => setMostrarPreview(false)}
         />
       )}
@@ -157,7 +256,7 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
       {mostrarModal && (
         <CrearProyectoModal
           nombreArchivo={nombreArchivo}
-          totalProductos={productos.length}
+          totalProductos={productosFiltrados.length}
           guardando={guardando}
           onConfirmar={handleCrearProyecto}
           onClose={() => {
@@ -217,6 +316,38 @@ const AccionesTabla = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+`;
+
+const Filtros = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  background: #fafafa;
+
+  label {
+    color: #444;
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  select {
+    min-width: 220px;
+    padding: 9px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+    color: #222;
+  }
+
+  span {
+    color: #777;
+    font-size: 0.82rem;
+  }
 `;
 
 const BtnSecundario = styled.button`
@@ -327,6 +458,54 @@ const Tabla = styled.table`
 
   tbody tr:last-child td {
     border-bottom: none;
+  }
+`;
+
+const Paginacion = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  color: #666;
+  font-size: 0.88rem;
+`;
+
+const FilasPagina = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  select {
+    padding: 7px 9px;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    background: #fff;
+  }
+`;
+
+const ControlesPagina = styled.div`
+  display: flex;
+  gap: 8px;
+
+  button {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    background: #fff;
+    color: #444;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      border-color: #e53935;
+      color: #e53935;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 `;
 

@@ -73,7 +73,7 @@ export function TomaFisicaTemplate() {
       if (data.productos.length === 0) {
         setEstado("listo");
         toast.error(
-          "No se detectaron productos. El Excel debe tener 4 columnas en este orden: Código, Producto, Cantidad Sistema, Cantidad Toma Física (fila 1 = encabezado)."
+          "No se detectaron productos. El Excel debe tener 5 columnas en este orden: Código, Producto, Categoría, Cantidad Sistema, Cantidad Toma Física (fila 1 = encabezado)."
         );
       } else {
         setEstado("listo");
