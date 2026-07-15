@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
+import { RiDeleteBin2Line } from "react-icons/ri";
 import { CrearProyectoModal } from "../modals/CrearProyectoModal";
 import { PreviewTomaFisicaModal } from "../modals/PreviewTomaFisicaModal";
 import { CrearProyectoConProductos } from "../../supabase/crudProyectos";
@@ -11,6 +12,7 @@ import { descargarPdfTomaFisica } from "../../utils/generarPdfTomaFisica";
 
 export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado }) {
   const { productos } = data;
+  const [productosList, setProductosList] = useState(productos);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
   const [paginaActual, setPaginaActual] = useState(1);
   const [filasPorPagina, setFilasPorPagina] = useState(10);
@@ -18,22 +20,28 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
   const [mostrarPreview, setMostrarPreview] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
+  useEffect(() => {
+    setProductosList(productos);
+    setCategoriaSeleccionada("");
+    setPaginaActual(1);
+  }, [productos]);
+
   const categorias = useMemo(
     () =>
-      [...new Set(productos.map((item) => item.categoria || "Sin categoría"))].sort((a, b) =>
-        a.localeCompare(b, "es", { sensitivity: "base" })
+      [...new Set(productosList.map((item) => item.categoria || "Sin categoría"))].sort(
+        (a, b) => a.localeCompare(b, "es", { sensitivity: "base" })
       ),
-    [productos]
+    [productosList]
   );
 
   const productosFiltrados = useMemo(
     () =>
       categoriaSeleccionada
-        ? productos.filter(
+        ? productosList.filter(
             (item) => (item.categoria || "Sin categoría") === categoriaSeleccionada
           )
-        : productos,
-    [categoriaSeleccionada, productos]
+        : productosList,
+    [categoriaSeleccionada, productosList]
   );
 
   const totalPaginas = Math.max(1, Math.ceil(productosFiltrados.length / filasPorPagina));
@@ -43,6 +51,22 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
     inicioPagina,
     inicioPagina + filasPorPagina
   );
+
+  const handleEliminarProducto = (codigo) => {
+    const listaActualizada = productosList.filter((item) => item.codigo !== codigo);
+    setProductosList(listaActualizada);
+
+    if (
+      categoriaSeleccionada &&
+      !listaActualizada.some(
+        (item) => (item.categoria || "Sin categoría") === categoriaSeleccionada
+      )
+    ) {
+      setCategoriaSeleccionada("");
+    }
+
+    setPaginaActual(1);
+  };
 
   const proyectoBorrador = {
     nombre: nombreArchivo?.replace(/\.[^/.]+$/, "") || "Toma física",
@@ -127,13 +151,13 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
           <TablaHeaderInfo>
             <h2>Lista de toma física</h2>
             <span>
-              {productosFiltrados.length === productos.length
-                ? `${productos.length} producto(s) encontrado(s)`
-                : `${productosFiltrados.length} de ${productos.length} producto(s)`}
+              {productosFiltrados.length === productosList.length
+                ? `${productosList.length} producto(s) encontrado(s)`
+                : `${productosFiltrados.length} de ${productosList.length} producto(s)`}
             </span>
           </TablaHeaderInfo>
 
-          {productos.length > 0 && (
+          {productosList.length > 0 && (
             <AccionesTabla>
               <BtnSecundario type="button" onClick={() => setMostrarPreview(true)}>
                 Vista previa
@@ -148,7 +172,7 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
           )}
         </TablaHeader>
 
-        {productos.length > 0 && (
+        {productosList.length > 0 && (
           <Filtros>
             <label htmlFor="filtro-categoria">Categoría</label>
             <select
@@ -172,7 +196,7 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
           </Filtros>
         )}
 
-        {productos.length === 0 ? (
+        {productosList.length === 0 ? (
           <Empty>No se encontraron productos en el archivo.</Empty>
         ) : productosFiltrados.length === 0 ? (
           <Empty>No hay productos para la categoría seleccionada.</Empty>
@@ -187,6 +211,7 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
                     <th>Producto</th>
                     <th>Cantidad sistema</th>
                     <th>Cantidad toma física</th>
+                    <th aria-label="Eliminar"> </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -197,6 +222,16 @@ export function TomaFisicaResultado({ data, nombreArchivo, onProyectoGuardado })
                       <td>{item.producto}</td>
                       <td>{item.cantidad_sistema}</td>
                       <td>{item.cantidad_toma_fisica}</td>
+                      <td>
+                        <BtnEliminar
+                          type="button"
+                          onClick={() => handleEliminarProducto(item.codigo)}
+                          aria-label={`Eliminar ${item.codigo}`}
+                          title="Eliminar de la tabla"
+                        >
+                          <RiDeleteBin2Line />
+                        </BtnEliminar>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -448,6 +483,13 @@ const Tabla = styled.table`
     color: #e53935;
   }
 
+  th:nth-child(6),
+  td:nth-child(6) {
+    width: 64px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
   tbody tr:nth-child(even) {
     background: #fafafa;
   }
@@ -506,6 +548,27 @@ const ControlesPagina = styled.div`
       opacity: 0.5;
       cursor: not-allowed;
     }
+  }
+`;
+
+const BtnEliminar = styled.button`
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  color: #888;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background: #ffebee;
+    border-color: #e53935;
+    color: #e53935;
   }
 `;
 
