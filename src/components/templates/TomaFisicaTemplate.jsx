@@ -100,6 +100,7 @@ export function TomaFisicaTemplate() {
           <TomaFisicaProyectoVista
             proyecto={proyectoConsultado.proyecto}
             productos={proyectoConsultado.productos}
+            usuarios={proyectoConsultado.usuarios}
             onNuevaConsulta={handleNuevaConsulta}
           />
         </ResultadoConsulta>

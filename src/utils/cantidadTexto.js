@@ -14,3 +14,17 @@ export function formatearCantidadTexto(valor) {
 export function calcularDiferenciaCantidades(cantidadSistema, cantidadTomaFisica) {
   return parseCantidadTexto(cantidadTomaFisica) - parseCantidadTexto(cantidadSistema);
 }
+
+export function calcularFaltante(cantidadSistema, cantidadTomaFisica) {
+  return Math.max(
+    parseCantidadTexto(cantidadSistema) - parseCantidadTexto(cantidadTomaFisica),
+    0
+  );
+}
+
+export function calcularSobrante(cantidadSistema, cantidadTomaFisica) {
+  return Math.max(
+    parseCantidadTexto(cantidadTomaFisica) - parseCantidadTexto(cantidadSistema),
+    0
+  );
+}

@@ -1,5 +1,6 @@
 -- Instalación limpia para proyecto Supabase nuevo (qodeimcwrkehjclxpaaz)
 -- Pegar en Supabase → SQL Editor → Run
+-- Después ejecutar también scripts/setup-conteos-usuarios.sql.
 
 create table if not exists public.proyectos (
   id uuid primary key default gen_random_uuid(),

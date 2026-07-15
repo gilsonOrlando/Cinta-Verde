@@ -5,11 +5,14 @@ import { ClipLoader } from "react-spinners";
 import { PreviewTomaFisicaModal } from "../modals/PreviewTomaFisicaModal";
 import { descargarPdfTomaFisica } from "../../utils/generarPdfTomaFisica";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
-import { formatearDiferencia, formatearFechaProyecto } from "../../utils/tomaFisicaReporte";
-import { calcularDiferenciaCantidades } from "../../utils/cantidadTexto";
+import {
+  formatearFechaProyecto,
+  prepararFilasTomaFisica,
+} from "../../utils/tomaFisicaReporte";
 
-export function TomaFisicaProyectoVista({ proyecto, productos, onNuevaConsulta }) {
+export function TomaFisicaProyectoVista({ proyecto, productos, usuarios = [], onNuevaConsulta }) {
   const [mostrarPreview, setMostrarPreview] = useState(false);
+  const filas = prepararFilasTomaFisica(productos, usuarios);
 
   const handleDescargar = async () => {
     if (!Array.isArray(productos) || productos.length === 0) {
@@ -18,7 +21,7 @@ export function TomaFisicaProyectoVista({ proyecto, productos, onNuevaConsulta }
     }
 
     try {
-      await descargarPdfTomaFisica({ proyecto, productos });
+      await descargarPdfTomaFisica({ proyecto, productos, usuarios });
       toast.success("PDF descargado correctamente.");
     } catch (error) {
       console.error(error);
@@ -74,37 +77,40 @@ export function TomaFisicaProyectoVista({ proyecto, productos, onNuevaConsulta }
         <Empty>Este proyecto no tiene productos registrados.</Empty>
       ) : (
         <TablaWrapper>
-          <Tabla>
+          <Tabla $usuarios={usuarios.length}>
             <thead>
               <tr>
                 <th>#</th>
                 <th>Código</th>
                 <th>Producto</th>
-                <th>Cantidad sistema</th>
-                <th>Cantidad toma física</th>
-                <th>Diferencia</th>
+                {usuarios.map((usuario) => (
+                  <th key={usuario.id} className="numerica">
+                    {usuario.nombre}
+                  </th>
+                ))}
+                <th className="numerica">Cantidad sistema</th>
+                <th className="numerica">Cantidad toma física</th>
+                <th className="numerica">Faltante</th>
+                <th className="numerica">Sobrante</th>
               </tr>
             </thead>
             <tbody>
-              {productos.map((item, index) => {
-                const diferenciaNumero = calcularDiferenciaCantidades(
-                  item.cantidad_sistema,
-                  item.cantidad_toma_fisica
-                );
-
-                return (
-                  <tr key={item.id ?? `${item.codigo}-${index}`}>
-                    <td>{index + 1}</td>
-                    <td>{item.codigo}</td>
-                    <td>{item.producto}</td>
-                    <td>{item.cantidad_sistema}</td>
-                    <td>{item.cantidad_toma_fisica}</td>
-                    <DiferenciaCelda $valor={diferenciaNumero}>
-                      {formatearDiferencia(item.cantidad_sistema, item.cantidad_toma_fisica)}
-                    </DiferenciaCelda>
-                  </tr>
-                );
-              })}
+              {filas.map((item) => (
+                <tr key={`${item.codigo}-${item.indice}`}>
+                  <td>{item.indice}</td>
+                  <td>{item.codigo}</td>
+                  <td>{item.producto}</td>
+                  {item.conteos.map((conteo) => (
+                    <td key={conteo.usuarioId} className="numerica">
+                      {conteo.cantidad}
+                    </td>
+                  ))}
+                  <td className="numerica">{item.cantidad_sistema}</td>
+                  <td className="numerica">{item.cantidad_toma_fisica}</td>
+                  <FaltanteCelda $valor={item.faltante}>{item.faltante}</FaltanteCelda>
+                  <SobranteCelda $valor={item.sobrante}>{item.sobrante}</SobranteCelda>
+                </tr>
+              ))}
             </tbody>
           </Tabla>
         </TablaWrapper>
@@ -114,6 +120,7 @@ export function TomaFisicaProyectoVista({ proyecto, productos, onNuevaConsulta }
         <PreviewTomaFisicaModal
           proyecto={proyecto}
           productos={productos}
+          usuarios={usuarios}
           onClose={() => setMostrarPreview(false)}
         />
       )}
@@ -262,7 +269,7 @@ const Tabla = styled.table`
   width: 100%;
   border-collapse: collapse;
   background: #fff;
-  min-width: 980px;
+  min-width: ${({ $usuarios }) => 980 + $usuarios * 110}px;
 
   th,
   td {
@@ -295,15 +302,11 @@ const Tabla = styled.table`
     white-space: nowrap;
   }
 
-  td:nth-child(4),
-  td:nth-child(5),
-  td:nth-child(6),
-  th:nth-child(4),
-  th:nth-child(5),
-  th:nth-child(6) {
+  th.numerica,
+  td.numerica {
     text-align: center;
     white-space: nowrap;
-    width: 130px;
+    min-width: 110px;
   }
 
   tbody tr:nth-child(even) {
@@ -319,10 +322,14 @@ const Tabla = styled.table`
   }
 `;
 
-const DiferenciaCelda = styled.td`
+const FaltanteCelda = styled.td.attrs({ className: "numerica" })`
   font-weight: 700;
-  color: ${({ $valor }) =>
-    $valor > 0 ? "#2e7d32" : $valor < 0 ? "#c62828" : "#444"};
+  color: ${({ $valor }) => ($valor !== "0,00" ? "#c62828" : "#444")};
+`;
+
+const SobranteCelda = styled.td.attrs({ className: "numerica" })`
+  font-weight: 700;
+  color: ${({ $valor }) => ($valor !== "0,00" ? "#2e7d32" : "#444")};
 `;
 
 const Empty = styled.p`

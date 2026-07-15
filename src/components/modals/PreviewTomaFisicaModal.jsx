@@ -3,8 +3,8 @@ import styled from "styled-components";
 import { buildHtmlTomaFisica, descargarPdfTomaFisica } from "../../utils/generarPdfTomaFisica";
 import { formatearFechaProyecto } from "../../utils/tomaFisicaReporte";
 
-export function PreviewTomaFisicaModal({ proyecto, productos, onClose }) {
-  const html = buildHtmlTomaFisica({ proyecto, productos });
+export function PreviewTomaFisicaModal({ proyecto, productos, usuarios = [], onClose }) {
+  const html = buildHtmlTomaFisica({ proyecto, productos, usuarios });
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -25,7 +25,7 @@ export function PreviewTomaFisicaModal({ proyecto, productos, onClose }) {
       return;
     }
 
-    await descargarPdfTomaFisica({ proyecto, productos });
+    await descargarPdfTomaFisica({ proyecto, productos, usuarios });
   };
 
   return (

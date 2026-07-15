@@ -78,26 +78,28 @@ function agregarCanvasEnPaginas(pdf, canvas, margen = 10) {
   }
 }
 
-export function buildHtmlTomaFisica({ proyecto, productos }) {
-  const filas = prepararFilasTomaFisica(productos);
+export function buildHtmlTomaFisica({ proyecto, productos, usuarios = [] }) {
+  const filas = prepararFilasTomaFisica(productos, usuarios);
   const fecha = formatearFechaProyecto(proyecto.created_at);
+  const columnasUsuario = usuarios
+    .map((usuario) => `<th>${escapeHtml(usuario.nombre)}</th>`)
+    .join("");
 
   const cuerpoFilas = filas
     .map((fila) => {
-      const claseDiferencia =
-        fila.diferenciaNumero > 0
-          ? "positiva"
-          : fila.diferenciaNumero < 0
-            ? "negativa"
-            : "neutra";
+      const conteosUsuario = fila.conteos
+        .map((conteo) => `<td class="centro">${escapeHtml(conteo.cantidad)}</td>`)
+        .join("");
 
       return `<tr>
         <td class="centro">${fila.indice}</td>
         <td>${escapeHtml(fila.codigo)}</td>
         <td>${escapeHtml(fila.producto)}</td>
+        ${conteosUsuario}
         <td class="centro">${escapeHtml(fila.cantidad_sistema)}</td>
         <td class="centro">${escapeHtml(fila.cantidad_toma_fisica)}</td>
-        <td class="centro diferencia ${claseDiferencia}">${escapeHtml(fila.diferencia)}</td>
+        <td class="centro faltante">${escapeHtml(fila.faltante)}</td>
+        <td class="centro sobrante">${escapeHtml(fila.sobrante)}</td>
       </tr>`;
     })
     .join("");
@@ -135,6 +137,7 @@ export function buildHtmlTomaFisica({ proyecto, productos }) {
     .meta strong { color: #111; }
     table {
       width: 100%;
+      min-width: ${900 + usuarios.length * 110}px;
       border-collapse: collapse;
       font-size: 12px;
     }
@@ -154,9 +157,8 @@ export function buildHtmlTomaFisica({ proyecto, productos }) {
     tbody tr:nth-child(even) { background: #fafafa; }
     .centro { text-align: center; white-space: nowrap; }
     td:nth-child(3) { word-break: break-word; }
-    .diferencia.positiva { color: #2e7d32; font-weight: 700; }
-    .diferencia.negativa { color: #c62828; font-weight: 700; }
-    .diferencia.neutra { color: #444; font-weight: 600; }
+    .faltante { color: #c62828; font-weight: 700; }
+    .sobrante { color: #2e7d32; font-weight: 700; }
     footer {
       margin-top: 16px;
       font-size: 12px;
@@ -185,13 +187,18 @@ export function buildHtmlTomaFisica({ proyecto, productos }) {
         <th>#</th>
         <th>Código</th>
         <th>Producto</th>
+        ${columnasUsuario}
         <th>Cant. sistema</th>
         <th>Cant. toma física</th>
-        <th>Diferencia</th>
+        <th>Faltante</th>
+        <th>Sobrante</th>
       </tr>
     </thead>
     <tbody>
-      ${cuerpoFilas || `<tr><td colspan="6" class="centro">Sin productos registrados</td></tr>`}
+      ${
+        cuerpoFilas ||
+        `<tr><td colspan="${7 + usuarios.length}" class="centro">Sin productos registrados</td></tr>`
+      }
     </tbody>
   </table>
   <footer>Generado desde el sistema de inventarios.</footer>
@@ -199,7 +206,7 @@ export function buildHtmlTomaFisica({ proyecto, productos }) {
 </html>`;
 }
 
-export async function descargarPdfTomaFisica({ proyecto, productos }) {
+export async function descargarPdfTomaFisica({ proyecto, productos, usuarios = [] }) {
   const lista = Array.isArray(productos)
     ? productos.map(normalizarProductoTomaFisica)
     : [];
@@ -208,13 +215,13 @@ export async function descargarPdfTomaFisica({ proyecto, productos }) {
     throw new Error("SIN_PRODUCTOS");
   }
 
-  const html = buildHtmlTomaFisica({ proyecto, productos: lista });
+  const html = buildHtmlTomaFisica({ proyecto, productos: lista, usuarios });
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
   iframe.style.position = "fixed";
   iframe.style.left = "-10000px";
   iframe.style.top = "0";
-  iframe.style.width = "1100px";
+  iframe.style.width = `${Math.max(1100, 900 + usuarios.length * 110)}px`;
   iframe.style.height = "1px";
   iframe.style.border = "none";
   iframe.style.visibility = "hidden";

@@ -33,8 +33,10 @@ if (!url || !password) {
 const projectRef = new URL(url).hostname.split(".")[0];
 const connectionString = `postgresql://postgres:${encodeURIComponent(password)}@db.${projectRef}.supabase.co:5432/postgres`;
 
-const sqlPath = resolve(process.cwd(), "scripts/setup-supabase.sql");
-const sql = readFileSync(sqlPath, "utf8");
+const sqlPaths = [
+  resolve(process.cwd(), "scripts/setup-supabase.sql"),
+  resolve(process.cwd(), "scripts/setup-conteos-usuarios.sql"),
+];
 
 const client = new pg.Client({
   connectionString,
@@ -43,7 +45,9 @@ const client = new pg.Client({
 
 try {
   await client.connect();
-  await client.query(sql);
+  for (const sqlPath of sqlPaths) {
+    await client.query(readFileSync(sqlPath, "utf8"));
+  }
   const { rows } = await client.query(
     "select count(*)::int as total from public.productos"
   );
