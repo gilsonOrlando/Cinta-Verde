@@ -6,9 +6,11 @@ import {
   buscarListaProductos,
   registrarListaProductosNuevos,
 } from "../../supabase/crudListaProductos";
+import { buscarMotos } from "../../supabase/crudMotos";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 
-export function EtiquetaCodigoModal({ onAgregar, onClose }) {
+export function EtiquetaCodigoModal({ onAgregar, onClose, catalogo = "lista" }) {
+  const esMotos = catalogo === "motos";
   const [codigo, setCodigo] = useState("");
   const [producto, setProducto] = useState("");
   const [busqueda, setBusqueda] = useState("");
@@ -48,7 +50,7 @@ export function EtiquetaCodigoModal({ onAgregar, onClose }) {
   };
 
   const guardarEnCatalogo = async (item) => {
-    if (!supabaseConfigurado) return;
+    if (!supabaseConfigurado || esMotos) return;
 
     try {
       const { insertados } = await registrarListaProductosNuevos([item]);
@@ -66,7 +68,11 @@ export function EtiquetaCodigoModal({ onAgregar, onClose }) {
 
     const termino = busqueda.trim();
     if (!termino) {
-      toast.error("Escribe un código o nombre para buscar.");
+      toast.error(
+        esMotos
+          ? "Escribe un código, nombre o chasis para buscar."
+          : "Escribe un código o nombre para buscar."
+      );
       return;
     }
 
@@ -78,11 +84,17 @@ export function EtiquetaCodigoModal({ onAgregar, onClose }) {
     setBuscando(true);
 
     try {
-      const items = await buscarListaProductos(termino);
+      const items = esMotos
+        ? await buscarMotos(termino)
+        : await buscarListaProductos(termino);
       setResultados(items);
 
       if (items.length === 0) {
-        toast.error("No se encontraron productos en la lista.");
+        toast.error(
+          esMotos
+            ? "No se encontraron motos registradas."
+            : "No se encontraron productos en la lista."
+        );
       }
     } catch (error) {
       console.error(error);
@@ -130,7 +142,9 @@ export function EtiquetaCodigoModal({ onAgregar, onClose }) {
           <div>
             <Titulo id="etiqueta-codigo-titulo">Generar etiqueta con código</Titulo>
             <Subtitulo>
-              Busca un producto guardado o ingresa código y nombre para agregar a la tabla.
+              {esMotos
+                ? "Busca una moto registrada o ingresa código y nombre para agregar a la tabla."
+                : "Busca un producto guardado o ingresa código y nombre para agregar a la tabla."}
             </Subtitulo>
           </div>
           <BtnCerrar type="button" onClick={onClose} aria-label="Cerrar">
@@ -140,16 +154,22 @@ export function EtiquetaCodigoModal({ onAgregar, onClose }) {
 
         <Contenido>
           <Seccion>
-            <SeccionTitulo>Buscar producto guardado</SeccionTitulo>
+            <SeccionTitulo>
+              {esMotos ? "Buscar moto registrada" : "Buscar producto guardado"}
+            </SeccionTitulo>
             <FormBusqueda onSubmit={handleBuscar}>
               <Campo>
-                <label htmlFor="busqueda-catalogo">Código o nombre</label>
+                <label htmlFor="busqueda-catalogo">
+                  {esMotos ? "Código, nombre o chasis" : "Código o nombre"}
+                </label>
                 <input
                   id="busqueda-catalogo"
                   type="search"
                   value={busqueda}
                   onChange={(event) => setBusqueda(event.target.value)}
-                  placeholder="Ej. 12345 o FILTRO ACEITE"
+                  placeholder={
+                    esMotos ? "Ej. 12345, MOTOCICLETA o chasis" : "Ej. 12345 o FILTRO ACEITE"
+                  }
                 />
               </Campo>
               <BtnBuscar type="submit" disabled={buscando}>
@@ -164,6 +184,7 @@ export function EtiquetaCodigoModal({ onAgregar, onClose }) {
                     <ResultadoInfo>
                       <strong>{item.codigo}</strong>
                       <span>{item.producto}</span>
+                      {esMotos && item.chasis && <small>Chasis: {item.chasis}</small>}
                     </ResultadoInfo>
                     <ResultadoAcciones>
                       <BtnPrimario type="button" onClick={() => handleAgregarResultado(item)}>
@@ -426,6 +447,11 @@ const ResultadoInfo = styled.div`
     color: #666;
     font-size: 0.85rem;
     word-break: break-word;
+  }
+
+  small {
+    color: #888;
+    font-size: 0.78rem;
   }
 `;
 

@@ -383,6 +383,7 @@ export function TransferenciaResultado({
         <EtiquetaCodigoModal
           onAgregar={handleAgregarDesdeFormulario}
           onClose={cerrarFormularioCodigo}
+          catalogo={soloEtiquetaMediana ? "motos" : "lista"}
         />
       )}
 

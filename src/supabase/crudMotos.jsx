@@ -34,6 +34,27 @@ export async function buscarMotoPorChasis(chasis) {
   return data;
 }
 
+export async function buscarMotos(termino, limite = 25) {
+  const texto = String(termino ?? "").trim().toLowerCase();
+  if (!texto) return [];
+
+  const { data, error } = await supabase
+    .from("motos")
+    .select("id, codigo, producto, chasis, motor, cam_cpm_ramw")
+    .order("codigo", { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? [])
+    .filter(
+      (item) =>
+        item.codigo?.toLowerCase().includes(texto) ||
+        item.producto?.toLowerCase().includes(texto) ||
+        item.chasis?.toLowerCase().includes(texto)
+    )
+    .slice(0, limite);
+}
+
 export async function guardarMotoPorChasis(datos) {
   const payload = construirPayloadMoto(datos);
 
