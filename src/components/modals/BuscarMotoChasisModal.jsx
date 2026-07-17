@@ -5,15 +5,19 @@ import { buscarMotoPorChasis } from "../../supabase/crudMotos";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 import { formatearFechaProyecto } from "../../utils/tomaFisicaReporte";
+import { PreviewEtiquetaModal } from "./PreviewEtiquetaModal";
+import { TIPOS_ETIQUETA } from "../../utils/imprimirEtiqueta";
+import { ENLACE_MEGA_INICIO, esEnlaceMegaValido } from "../../utils/enlaceMega";
 
 export function BuscarMotoChasisModal({ onClose }) {
   const [chasis, setChasis] = useState("");
   const [buscando, setBuscando] = useState(false);
   const [resultado, setResultado] = useState(null);
+  const [mostrarPreview, setMostrarPreview] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(event) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape" && !mostrarPreview) onClose();
     }
 
     document.addEventListener("keydown", handleKeyDown);
@@ -23,7 +27,7 @@ export function BuscarMotoChasisModal({ onClose }) {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [onClose]);
+  }, [mostrarPreview, onClose]);
 
   const handleBuscar = async (event) => {
     event?.preventDefault();
@@ -59,8 +63,28 @@ export function BuscarMotoChasisModal({ onClose }) {
     }
   };
 
+  const productoEtiqueta = resultado
+    ? {
+        codigo: resultado.codigo,
+        producto: resultado.producto,
+        cantidad: 1,
+      }
+    : null;
+
+  const datosEtiquetaMoto = resultado
+    ? {
+        chasis: resultado.chasis,
+        motor: resultado.motor,
+        camCpmRamw: resultado.cam_cpm_ramw,
+        linkMega: esEnlaceMegaValido(resultado.link_mega)
+          ? resultado.link_mega
+          : ENLACE_MEGA_INICIO,
+      }
+    : null;
+
   return (
-    <Overlay onClick={onClose} role="presentation">
+    <>
+      <Overlay onClick={onClose} role="presentation">
       <Dialog
         role="dialog"
         aria-modal="true"
@@ -121,7 +145,17 @@ export function BuscarMotoChasisModal({ onClose }) {
                 </Item>
                 <Item $completo>
                   <span>Enlace MEGA</span>
-                  <strong>{resultado.link_mega ?? "—"}</strong>
+                  {esEnlaceMegaValido(resultado.link_mega) ? (
+                    <MegaLink
+                      href={resultado.link_mega}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Abrir repositorio MEGA
+                    </MegaLink>
+                  ) : (
+                    <strong>—</strong>
+                  )}
                 </Item>
                 <Item>
                   <span>Última actualización</span>
@@ -133,12 +167,27 @@ export function BuscarMotoChasisModal({ onClose }) {
         </Contenido>
 
         <DialogFooter>
+          {resultado && (
+            <BtnPrimario type="button" onClick={() => setMostrarPreview(true)}>
+              Imprimir etiqueta
+            </BtnPrimario>
+          )}
           <BtnSecundario type="button" onClick={onClose}>
             Cerrar
           </BtnSecundario>
         </DialogFooter>
-      </Dialog>
-    </Overlay>
+        </Dialog>
+      </Overlay>
+
+      {mostrarPreview && productoEtiqueta && datosEtiquetaMoto && (
+        <PreviewEtiquetaModal
+          producto={productoEtiqueta}
+          tipo={TIPOS_ETIQUETA.MEDIANA}
+          datosEtiquetaMoto={datosEtiquetaMoto}
+          onClose={() => setMostrarPreview(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -320,6 +369,19 @@ const Item = styled.div`
   }
 `;
 
+const MegaLink = styled.a`
+  color: #1565c0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  word-break: break-word;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: #0d47a1;
+  }
+`;
+
 const DialogFooter = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -341,5 +403,21 @@ const BtnSecundario = styled.button`
 
   &:hover {
     background: #f3f3f3;
+  }
+`;
+
+const BtnPrimario = styled.button`
+  border: 1px solid #e53935;
+  background: #e53935;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #c62828;
+    border-color: #c62828;
   }
 `;
