@@ -114,6 +114,8 @@ function buildSelloMarkup(clase = "sello-m") {
   `;
 }
 
+export { buildSelloMarkup };
+
 function buildCeldaMediana(contenido) {
   return `
     <div class="celda-m">

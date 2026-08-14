@@ -1,5 +1,6 @@
 import QRCode from "qrcode";
 import {
+  buildSelloMarkup,
   contarHojasImpresion,
   escaparHtml,
   expandirEtiquetasPorCantidad,
@@ -74,17 +75,17 @@ function dividirNombreProducto(nombre, maxLineas = 2, maxCharsPorLinea = 28) {
 
 function tamanoFuenteCam(valor) {
   const longitud = String(valor ?? "").length;
-  if (longitud <= 8) return "13pt";
-  if (longitud <= 10) return "11pt";
-  if (longitud <= 12) return "9.5pt";
-  return "8.5pt";
+  if (longitud <= 8) return "12pt";
+  if (longitud <= 10) return "10pt";
+  if (longitud <= 12) return "9pt";
+  return "8pt";
 }
 
 function tamanoFuenteFooter(valor) {
   const longitud = String(valor ?? "").length;
-  if (longitud <= 18) return "10pt";
-  if (longitud <= 22) return "9.5pt";
-  return "9pt";
+  if (longitud <= 18) return "9.5pt";
+  if (longitud <= 22) return "9pt";
+  return "8.5pt";
 }
 
 function estilosEtiquetaMoto() {
@@ -143,26 +144,46 @@ function estilosEtiquetaMoto() {
       max-height: 51mm;
       border: 0.45mm solid #000;
       border-radius: 2.5mm;
-      padding: 0.9mm 1.1mm 1mm;
+      padding: 0.7mm 1.1mm 0.9mm;
       display: flex;
       flex-direction: column;
-      gap: 0.35mm;
+      gap: 0.25mm;
       overflow: hidden;
       background: #fff;
+    }
+
+    .sello-moto {
+      flex: 0 0 6.5mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 0.1mm 1mm 0.2mm;
+      margin-bottom: 0.6mm;
+      min-height: 0;
+    }
+
+    .sello-moto img {
+      max-height: 100%;
+      max-width: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
     }
 
     .moto-header {
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 1.1;
-      font-size: 10pt;
+      line-height: 1.08;
+      font-size: 9.5pt;
       flex-shrink: 0;
-      margin-bottom: 0.15mm;
+      margin-bottom: 0.1mm;
       padding: 0 0.3mm;
       display: flex;
       flex-direction: column;
-      gap: 0.2mm;
+      gap: 0.15mm;
     }
 
     .moto-header div {
@@ -183,7 +204,7 @@ function estilosEtiquetaMoto() {
     .moto-factura {
       writing-mode: vertical-rl;
       transform: rotate(180deg);
-      font-size: 5.5pt;
+      font-size: 5pt;
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -192,8 +213,8 @@ function estilosEtiquetaMoto() {
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 21mm;
-      margin-top: 2mm;
+      height: 18mm;
+      margin-top: 1.5mm;
     }
 
     .moto-centro {
@@ -214,7 +235,7 @@ function estilosEtiquetaMoto() {
     }
 
     .moto-cod {
-      font-size: 10pt;
+      font-size: 9pt;
       font-weight: 700;
       letter-spacing: 0.02em;
       white-space: nowrap;
@@ -235,10 +256,10 @@ function estilosEtiquetaMoto() {
     }
 
     .moto-qr-link {
-      flex: 0 0 21mm;
-      width: 21mm;
-      height: 21mm;
-      max-height: 21mm;
+      flex: 0 0 18mm;
+      width: 18mm;
+      height: 18mm;
+      max-height: 18mm;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -248,8 +269,8 @@ function estilosEtiquetaMoto() {
     }
 
     .moto-qr {
-      width: 21mm;
-      height: 21mm;
+      width: 18mm;
+      height: 18mm;
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
@@ -270,20 +291,20 @@ function estilosEtiquetaMoto() {
     .moto-caja {
       flex: 1 1 0;
       min-width: 0;
-      height: 21mm;
-      max-height: 21mm;
+      height: 18mm;
+      max-height: 18mm;
       border: 0.4mm solid #000;
-      border-radius: 1.8mm;
+      border-radius: 1.6mm;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
     .moto-caja-header {
-      font-size: 5pt;
+      font-size: 4.5pt;
       font-weight: 600;
       text-align: center;
-      padding: 0.4mm 0.5mm;
+      padding: 0.35mm 0.4mm;
       border-bottom: 0.3mm solid #000;
       letter-spacing: 0.01em;
       line-height: 1.05;
@@ -304,9 +325,9 @@ function estilosEtiquetaMoto() {
     }
 
     .moto-caja-agencia {
-      font-size: 4.8pt;
+      font-size: 4.5pt;
       text-align: right;
-      padding: 0.3mm 0.8mm 0.45mm;
+      padding: 0.25mm 0.7mm 0.35mm;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -316,13 +337,13 @@ function estilosEtiquetaMoto() {
 
     .moto-datos {
       flex-shrink: 0;
-      line-height: 1.1;
-      font-size: 10pt;
+      line-height: 1.08;
+      font-size: 9pt;
       margin: 0;
       padding: 0.1mm 0.2mm 0;
       display: flex;
       flex-direction: column;
-      gap: 0.3mm;
+      gap: 0.25mm;
     }
 
     .moto-datos div {
@@ -387,6 +408,7 @@ export function buildEtiquetaMotoMarkup(producto, datosMoto, qrDataUrl) {
 
   return `
     <div class="celda-moto">
+      ${buildSelloMarkup("sello-moto")}
       <div class="moto-header">
         <div>${escaparHtml(linea1)}</div>
         <div>${escaparHtml(linea2)}</div>
