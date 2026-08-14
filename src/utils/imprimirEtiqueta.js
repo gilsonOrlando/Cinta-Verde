@@ -188,7 +188,6 @@ function estilosEtiquetaNormal() {
       width: 65%;
       display: flex;
       flex-direction: column;
-      border-right: 0.3mm solid #000;
       min-width: 0;
     }
 
@@ -213,7 +212,6 @@ function estilosEtiquetaNormal() {
       line-height: 1.1;
       overflow: hidden;
       word-break: break-word;
-      border-bottom: 0.3mm solid #000;
     }
 
     .codigo-n {
