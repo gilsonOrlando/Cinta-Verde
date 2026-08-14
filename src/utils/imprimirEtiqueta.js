@@ -134,6 +134,19 @@ function tamanoFuenteCodigoPequena(codigo) {
   return "11pt";
 }
 
+function tamanoFuentePrecioPequena(precio) {
+  const longitud = String(precio ?? "").length;
+  if (longitud <= 4) return "14pt";
+  if (longitud <= 6) return "12pt";
+  if (longitud <= 8) return "10pt";
+  if (longitud <= 10) return "9pt";
+  return "8pt";
+}
+
+function obtenerPrecioEtiqueta(producto) {
+  return String(producto?.precio ?? "").trim();
+}
+
 function tamanoFuenteCodigoNormal(codigo) {
   const longitud = String(codigo ?? "").length;
   if (longitud <= 5) return "22pt";
@@ -451,6 +464,44 @@ function estilosEtiqueta(esPequena) {
       width: 100%;
     }
 
+    .cuerpo-p-con-precio {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.3mm;
+    }
+
+    .qr-wrap-p {
+      flex: 0 0 50%;
+      max-width: 50%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .cuerpo-p-con-precio .qr-p {
+      width: auto;
+      height: auto;
+      max-height: 11mm;
+      max-width: 100%;
+    }
+
+    .precio-p {
+      flex: 0 0 50%;
+      max-width: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      line-height: 1.05;
+      word-break: break-word;
+      text-align: center;
+      padding: 0 0.2mm;
+      min-width: 0;
+    }
+
     .cod-bloque-p {
       flex: 0 0 auto;
       margin-top: 0;
@@ -604,13 +655,27 @@ export function buildEtiquetaMarkup(producto, tipo, qrDataUrl) {
   const estiloCodigo = esPequena
     ? ` style="font-size:${tamanoFuenteCodigoPequena(codigo)}"`
     : "";
+  const precio = esPequena ? obtenerPrecioEtiqueta(producto) : "";
+  const tienePrecio = Boolean(precio);
+  const cuerpoHtml = tienePrecio
+    ? `
+      <div class="cuerpo-${prefix} cuerpo-p-con-precio">
+        <div class="qr-wrap-p">
+          <img class="qr-${prefix}" src="${qrDataUrl}" alt="QR ${escaparHtml(codigo)}" />
+        </div>
+        <div class="precio-p" style="font-size:${tamanoFuentePrecioPequena(precio)}">${escaparHtml(precio)}</div>
+      </div>
+    `
+    : `
+      <div class="cuerpo-${prefix}">
+        <img class="qr-${prefix}" src="${qrDataUrl}" alt="QR ${escaparHtml(codigo)}" />
+      </div>
+    `;
 
   return `
     <div class="etiqueta-inner-${prefix}">
       ${productoHtml}
-      <div class="cuerpo-${prefix}">
-        <img class="qr-${prefix}" src="${qrDataUrl}" alt="QR ${escaparHtml(codigo)}" />
-      </div>
+      ${cuerpoHtml}
       <div class="cod-bloque-${prefix}">
         <span class="cod-label-${prefix}">Código</span>
         <span class="cod-${prefix}"${estiloCodigo}>${escaparHtml(codigo)}</span>

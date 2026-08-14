@@ -30,9 +30,24 @@ export function TransferenciaResultado({
   const [productosList, setProductosList] = useState(productos);
   const [seleccionados, setSeleccionados] = useState([]);
   const [itemsLote, setItemsLote] = useState(null);
+  const [precios, setPrecios] = useState({});
   const [mostrarFormularioCodigo, setMostrarFormularioCodigo] = useState(
     abrirFormularioCodigoAlInicio
   );
+
+  const mostrarColumnaPrecio =
+    !soloEtiquetaMediana && tipoEtiqueta === TIPOS_ETIQUETA.PEQUENA;
+
+  const enriquecerProducto = (item) => {
+    const precio = String(precios[item.codigo] ?? "").trim();
+    return precio ? { ...item, precio } : item;
+  };
+
+  const enriquecerProductos = (items) => items.map(enriquecerProducto);
+
+  const handlePrecioChange = (codigo, valor) => {
+    setPrecios((prev) => ({ ...prev, [codigo]: valor }));
+  };
 
   const cerrarFormularioCodigo = () => {
     setMostrarFormularioCodigo(false);
@@ -82,7 +97,7 @@ export function TransferenciaResultado({
       return;
     }
 
-    setPreviewItem(item);
+    setPreviewItem(enriquecerProducto(item));
   };
 
   const handleImprimirTodo = () => {
@@ -219,6 +234,12 @@ export function TransferenciaResultado({
 
     setProductosList((prev) => prev.filter((_, i) => i !== index));
     setSeleccionados((prev) => prev.filter((codigo) => codigo !== item.codigo));
+    setPrecios((prev) => {
+      if (!(item.codigo in prev)) return prev;
+      const siguiente = { ...prev };
+      delete siguiente[item.codigo];
+      return siguiente;
+    });
 
     if (previewItem?.codigo === item.codigo) {
       setPreviewItem(null);
@@ -331,13 +352,14 @@ export function TransferenciaResultado({
           </Empty>
         ) : (
           <TablaWrapper>
-            <Tabla>
+            <Tabla $mostrarPrecio={mostrarColumnaPrecio}>
               <thead>
                 <tr>
                   <th>#</th>
                   <th>Código</th>
                   <th>Producto</th>
                   <th>Cantidad</th>
+                  {mostrarColumnaPrecio && <th>Precio</th>}
                   <th>Imprimir etiqueta</th>
                   <th>
                     <BtnImprimirSeleccion
@@ -359,6 +381,20 @@ export function TransferenciaResultado({
                     <td data-label="Código">{item.codigo}</td>
                     <td data-label="Producto">{item.producto}</td>
                     <td data-label="Cantidad">{item.cantidad}</td>
+                    {mostrarColumnaPrecio && (
+                      <td data-label="Precio">
+                        <InputPrecio
+                          type="text"
+                          inputMode="decimal"
+                          value={precios[item.codigo] ?? ""}
+                          onChange={(event) =>
+                            handlePrecioChange(item.codigo, event.target.value)
+                          }
+                          placeholder="Opcional"
+                          aria-label={`Precio para ${item.codigo}`}
+                        />
+                      </td>
+                    )}
                     <td>
                       <BtnImprimir
                         type="button"
@@ -421,7 +457,7 @@ export function TransferenciaResultado({
 
       {previewLote && (
         <PreviewEtiquetaModal
-          productos={itemsLote ?? productosList}
+          productos={enriquecerProductos(itemsLote ?? productosList)}
           tipo={soloEtiquetaMediana ? TIPOS_ETIQUETA.MEDIANA : tipoEtiqueta}
           datosEtiquetaMoto={soloEtiquetaMediana ? datosEtiquetaMoto : null}
           onClose={cerrarPreview}
@@ -619,7 +655,7 @@ const Tabla = styled.table`
   width: 100%;
   border-collapse: collapse;
   background: #fff;
-  min-width: 780px;
+  min-width: ${({ $mostrarPrecio }) => ($mostrarPrecio ? "880px" : "780px")};
 
   th,
   td {
@@ -658,31 +694,67 @@ const Tabla = styled.table`
     width: 100px;
   }
 
-  th:nth-child(4),
-  th:nth-child(5),
-  th:nth-child(6),
-  th:nth-child(7) {
-    text-align: center;
-  }
+  ${({ $mostrarPrecio }) =>
+    $mostrarPrecio
+      ? `
+    th:nth-child(5),
+    td:nth-child(5) {
+      text-align: center;
+      width: 120px;
+    }
 
-  th:nth-child(5) {
-    width: 140px;
-  }
+    th:nth-child(6),
+    th:nth-child(7),
+    th:nth-child(8) {
+      text-align: center;
+    }
 
-  th:nth-child(6) {
-    width: 130px;
-  }
+    th:nth-child(6) {
+      width: 140px;
+    }
 
-  th:nth-child(7) {
-    width: 56px;
-  }
+    th:nth-child(7) {
+      width: 130px;
+    }
 
-  td:nth-child(5),
-  td:nth-child(6),
-  td:nth-child(7) {
-    text-align: center;
-    white-space: nowrap;
-  }
+    th:nth-child(8) {
+      width: 56px;
+    }
+
+    td:nth-child(6),
+    td:nth-child(7),
+    td:nth-child(8) {
+      text-align: center;
+      white-space: nowrap;
+    }
+  `
+      : `
+    th:nth-child(4),
+    th:nth-child(5),
+    th:nth-child(6),
+    th:nth-child(7) {
+      text-align: center;
+    }
+
+    th:nth-child(5) {
+      width: 140px;
+    }
+
+    th:nth-child(6) {
+      width: 130px;
+    }
+
+    th:nth-child(7) {
+      width: 56px;
+    }
+
+    td:nth-child(5),
+    td:nth-child(6),
+    td:nth-child(7) {
+      text-align: center;
+      white-space: nowrap;
+    }
+  `}
 
   tbody tr:nth-child(even) {
     background: #fafafa;
@@ -694,6 +766,29 @@ const Tabla = styled.table`
 
   tbody tr:last-child td {
     border-bottom: none;
+  }
+`;
+
+const InputPrecio = styled.input`
+  width: 100%;
+  max-width: 100px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  text-align: center;
+  color: #222;
+  background: #fff;
+
+  &:focus {
+    outline: none;
+    border-color: #e53935;
+    box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.12);
+  }
+
+  &::placeholder {
+    color: #aaa;
+    font-weight: 400;
   }
 `;
 
