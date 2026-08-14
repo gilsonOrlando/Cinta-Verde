@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 export const TIPOS_ETIQUETA = {
   PEQUENA: "pequena",
   MEDIANA: "mediana",
+  NORMAL: "normal",
 };
 
 export function escaparHtml(texto) {
@@ -100,6 +101,164 @@ function tamanoFuenteCodigoPequena(codigo) {
   if (longitud <= 9) return "13pt";
   if (longitud <= 11) return "12pt";
   return "11pt";
+}
+
+function tamanoFuenteCodigoNormal(codigo) {
+  const longitud = String(codigo ?? "").length;
+  if (longitud <= 5) return "16pt";
+  if (longitud <= 7) return "14pt";
+  if (longitud <= 9) return "12pt";
+  if (longitud <= 11) return "11pt";
+  return "10pt";
+}
+
+function tamanoFuenteProductoNormal(nombre) {
+  const longitud = String(nombre ?? "").trim().length;
+  if (longitud <= 18) return "8pt";
+  if (longitud <= 28) return "7pt";
+  if (longitud <= 40) return "6.5pt";
+  return "6pt";
+}
+
+function estilosEtiquetaNormal() {
+  return `
+    @page {
+      size: 45mm 30mm;
+      margin: 0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #000;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    @media screen {
+      html, body {
+        width: 100%;
+        min-height: 100%;
+        background: #d4d4d4;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+
+      .preview-hoja {
+        background: #fff;
+        padding: 20px;
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
+        border-radius: 2px;
+        transform: scale(2);
+        transform-origin: center center;
+      }
+    }
+
+    @media print {
+      html, body { background: #fff; }
+      body { display: block; padding: 0; }
+      .preview-hoja {
+        padding: 0;
+        box-shadow: none;
+        transform: none;
+      }
+    }
+
+    .celda-n {
+      width: 45mm;
+      height: 30mm;
+      border: 0.4mm solid #000;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .etiqueta-n {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+
+    .etiqueta-n-izq {
+      width: 65%;
+      display: flex;
+      flex-direction: column;
+      border-right: 0.3mm solid #000;
+      min-width: 0;
+    }
+
+    .etiqueta-n-der {
+      width: 35%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1mm;
+      min-width: 0;
+    }
+
+    .producto-n {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1mm 1.2mm;
+      font-weight: 700;
+      text-transform: uppercase;
+      line-height: 1.1;
+      overflow: hidden;
+      word-break: break-word;
+      border-bottom: 0.3mm solid #000;
+    }
+
+    .codigo-n {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0.5mm 1mm;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      overflow: hidden;
+      word-break: break-word;
+    }
+
+    .qr-n {
+      width: 100%;
+      height: 100%;
+      max-width: 14mm;
+      max-height: 26mm;
+      object-fit: contain;
+      display: block;
+    }
+  `;
+}
+
+function buildEtiquetaNormalMarkup(producto, qrDataUrl) {
+  const { codigo, producto: nombre } = producto;
+  const nombreVisible = esNombreProductoVisible(nombre)
+    ? escaparHtml(String(nombre).trim().toUpperCase())
+    : "";
+  const estiloProducto = ` style="font-size:${tamanoFuenteProductoNormal(nombre)}"`;
+  const estiloCodigo = ` style="font-size:${tamanoFuenteCodigoNormal(codigo)}"`;
+
+  return `
+    <div class="etiqueta-n">
+      <div class="etiqueta-n-izq">
+        <div class="producto-n"${estiloProducto}>${nombreVisible}</div>
+        <div class="codigo-n"${estiloCodigo}>${escaparHtml(codigo)}</div>
+      </div>
+      <div class="etiqueta-n-der">
+        <img class="qr-n" src="${qrDataUrl}" alt="QR ${escaparHtml(codigo)}" />
+      </div>
+    </div>
+  `;
 }
 
 function estilosEtiqueta(esPequena) {
@@ -351,6 +510,10 @@ function estilosEtiqueta(esPequena) {
 }
 
 export function buildEtiquetaMarkup(producto, tipo, qrDataUrl) {
+  if (tipo === TIPOS_ETIQUETA.NORMAL) {
+    return buildEtiquetaNormalMarkup(producto, qrDataUrl);
+  }
+
   const esPequena = tipo === TIPOS_ETIQUETA.PEQUENA;
   const prefix = esPequena ? "p" : "m";
   const { codigo, producto: nombre } = producto;
@@ -374,6 +537,10 @@ export function buildEtiquetaMarkup(producto, tipo, qrDataUrl) {
 }
 
 function buildContenedorEtiqueta(producto, tipo, qrDataUrl) {
+  if (tipo === TIPOS_ETIQUETA.NORMAL) {
+    return `<div class="celda-n">${buildEtiquetaNormalMarkup(producto, qrDataUrl)}</div>`;
+  }
+
   const esPequena = tipo === TIPOS_ETIQUETA.PEQUENA;
   const prefix = esPequena ? "p" : "m";
   const contenido = buildEtiquetaMarkup(producto, tipo, qrDataUrl);
@@ -402,9 +569,9 @@ function buildFilaPequena(productos, tipo, qrPorCodigo) {
   return `<div class="fila">${celdas.join("")}</div>`;
 }
 
-function estilosLote(esPequena) {
+function estilosLote(esPequena, esNormal = false) {
   return `
-    ${estilosEtiqueta(esPequena)}
+    ${esNormal ? estilosEtiquetaNormal() : estilosEtiqueta(esPequena)}
 
     body.lote {
       display: block;
@@ -491,6 +658,7 @@ async function generarQrPorCodigo(productos) {
 
 export function buildDocumentoEtiquetasLote(productos, tipo, qrPorCodigo) {
   const esPequena = tipo === TIPOS_ETIQUETA.PEQUENA;
+  const esNormal = tipo === TIPOS_ETIQUETA.NORMAL;
   const expandidos = expandirEtiquetasPorCantidad(productos);
 
   let hojasHtml;
@@ -502,6 +670,18 @@ export function buildDocumentoEtiquetasLote(productos, tipo, qrPorCodigo) {
         (fila) => `
           <div class="hoja-impresion">
             <div class="preview-hoja">${buildFilaPequena(fila, tipo, qrPorCodigo)}</div>
+          </div>
+        `
+      )
+      .join("");
+  } else if (esNormal) {
+    hojasHtml = expandidos
+      .map(
+        (item) => `
+          <div class="hoja-impresion">
+            <div class="preview-hoja">
+              <div class="celda-n">${buildEtiquetaNormalMarkup(item, qrPorCodigo[item.codigo])}</div>
+            </div>
           </div>
         `
       )
@@ -527,7 +707,7 @@ export function buildDocumentoEtiquetasLote(productos, tipo, qrPorCodigo) {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Etiquetas lote</title>
-        <style>${estilosLote(esPequena)}</style>
+        <style>${estilosLote(esPequena, esNormal)}</style>
       </head>
       <body class="lote">
         <div class="lote-hojas">${hojasHtml}</div>
@@ -553,6 +733,7 @@ export async function generarDocumentoEtiquetasLote(
 
 export function buildDocumentoEtiqueta(producto, tipo, qrDataUrl) {
   const esPequena = tipo === TIPOS_ETIQUETA.PEQUENA;
+  const esNormal = tipo === TIPOS_ETIQUETA.NORMAL;
   const etiquetaHtml = buildContenedorEtiqueta(producto, tipo, qrDataUrl);
 
   return `
@@ -562,7 +743,7 @@ export function buildDocumentoEtiqueta(producto, tipo, qrDataUrl) {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Etiqueta ${escaparHtml(producto.codigo)}</title>
-        <style>${estilosEtiqueta(esPequena)}</style>
+        <style>${esNormal ? estilosEtiquetaNormal() : estilosEtiqueta(esPequena)}</style>
       </head>
       <body>
         <div class="preview-hoja">${etiquetaHtml}</div>
@@ -597,7 +778,11 @@ export function imprimirDesdeIframe(iframe, { onAfterPrint } = {}) {
 }
 
 export function getEtiquetaTipoLabel(tipo) {
-  return tipo === TIPOS_ETIQUETA.PEQUENA
-    ? "Pequeña (105 × 28 mm, márgenes 2 mm, separación 3 mm)"
-    : "Mediana (70 × 51 mm)";
+  if (tipo === TIPOS_ETIQUETA.PEQUENA) {
+    return "Pequeña (105 × 28 mm, márgenes 2 mm, separación 3 mm)";
+  }
+  if (tipo === TIPOS_ETIQUETA.NORMAL) {
+    return "Normal (45 × 30 mm)";
+  }
+  return "Mediana (70 × 51 mm)";
 }

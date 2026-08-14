@@ -299,6 +299,20 @@ export function TransferenciaResultado({
                     <span>70 × 51 mm · 1 etiqueta</span>
                   </RadioText>
                 </RadioOption>
+
+                <RadioOption>
+                  <input
+                    type="radio"
+                    name="tipo-etiqueta"
+                    value={TIPOS_ETIQUETA.NORMAL}
+                    checked={tipoEtiqueta === TIPOS_ETIQUETA.NORMAL}
+                    onChange={() => setTipoEtiqueta(TIPOS_ETIQUETA.NORMAL)}
+                  />
+                  <RadioText>
+                    <strong>Normal</strong>
+                    <span>45 × 30 mm · producto/código + QR</span>
+                  </RadioText>
+                </RadioOption>
               </RadioGroup>
             </>
           )}
