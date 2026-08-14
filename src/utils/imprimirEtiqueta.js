@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import selloUrl from "../app/sello.png?url";
 
 export const TIPOS_ETIQUETA = {
   PEQUENA: "pequena",
@@ -94,6 +95,16 @@ function buildProductoTopHtml(nombre, esPequena) {
   return `<div class="${clase}">${lineasHtml}</div>`;
 }
 
+function resolverUrlSello() {
+  if (typeof window === "undefined") return selloUrl;
+
+  try {
+    return new URL(selloUrl, window.location.href).href;
+  } catch {
+    return selloUrl;
+  }
+}
+
 function tamanoFuenteCodigoPequena(codigo) {
   const longitud = String(codigo ?? "").length;
   if (longitud <= 5) return "15pt";
@@ -176,12 +187,33 @@ function estilosEtiquetaNormal() {
       border: 0.4mm solid #000;
       overflow: hidden;
       background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sello-n {
+      flex: 0 0 5.5mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.4mm 1.5mm 0.2mm;
+      min-height: 0;
+    }
+
+    .sello-n img {
+      max-height: 100%;
+      max-width: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
     }
 
     .etiqueta-n {
+      flex: 1;
       display: flex;
       width: 100%;
-      height: 100%;
+      min-height: 0;
     }
 
     .etiqueta-n-izq {
@@ -245,15 +277,21 @@ function buildEtiquetaNormalMarkup(producto, qrDataUrl) {
     : "";
   const estiloProducto = ` style="font-size:${tamanoFuenteProductoNormal(nombre)}"`;
   const estiloCodigo = ` style="font-size:${tamanoFuenteCodigoNormal(codigo)}"`;
+  const selloSrc = escaparHtml(resolverUrlSello());
 
   return `
-    <div class="etiqueta-n">
-      <div class="etiqueta-n-izq">
-        <div class="producto-n"${estiloProducto}>${nombreVisible}</div>
-        <div class="codigo-n"${estiloCodigo}>${escaparHtml(codigo)}</div>
+    <div class="celda-n">
+      <div class="sello-n">
+        <img src="${selloSrc}" alt="Electrohogar" />
       </div>
-      <div class="etiqueta-n-der">
-        <img class="qr-n" src="${qrDataUrl}" alt="QR ${escaparHtml(codigo)}" />
+      <div class="etiqueta-n">
+        <div class="etiqueta-n-izq">
+          <div class="producto-n"${estiloProducto}>${nombreVisible}</div>
+          <div class="codigo-n"${estiloCodigo}>${escaparHtml(codigo)}</div>
+        </div>
+        <div class="etiqueta-n-der">
+          <img class="qr-n" src="${qrDataUrl}" alt="QR ${escaparHtml(codigo)}" />
+        </div>
       </div>
     </div>
   `;
@@ -536,7 +574,7 @@ export function buildEtiquetaMarkup(producto, tipo, qrDataUrl) {
 
 function buildContenedorEtiqueta(producto, tipo, qrDataUrl) {
   if (tipo === TIPOS_ETIQUETA.NORMAL) {
-    return `<div class="celda-n">${buildEtiquetaNormalMarkup(producto, qrDataUrl)}</div>`;
+    return buildEtiquetaNormalMarkup(producto, qrDataUrl);
   }
 
   const esPequena = tipo === TIPOS_ETIQUETA.PEQUENA;
@@ -678,7 +716,7 @@ export function buildDocumentoEtiquetasLote(productos, tipo, qrPorCodigo) {
         (item) => `
           <div class="hoja-impresion">
             <div class="preview-hoja">
-              <div class="celda-n">${buildEtiquetaNormalMarkup(item, qrPorCodigo[item.codigo])}</div>
+              ${buildEtiquetaNormalMarkup(item, qrPorCodigo[item.codigo])}
             </div>
           </div>
         `
