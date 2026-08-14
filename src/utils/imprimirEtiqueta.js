@@ -147,6 +147,10 @@ function obtenerPrecioEtiqueta(producto) {
   return String(producto?.precio ?? "").trim();
 }
 
+function formatearPrecioEtiqueta(precio) {
+  return obtenerPrecioEtiqueta({ precio }).replace(/^\$+/, "").trim();
+}
+
 function tamanoFuenteCodigoNormal(codigo) {
   const longitud = String(codigo ?? "").length;
   if (longitud <= 5) return "22pt";
@@ -471,6 +475,36 @@ function estilosEtiqueta(esPequena) {
       gap: 0.3mm;
     }
 
+    .precio-caja-p {
+      flex: 0 0 50%;
+      max-width: 50%;
+      height: 100%;
+      max-height: 11mm;
+      border: 0.35mm solid #000;
+      border-radius: 1mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25mm;
+      padding: 0.3mm 0.4mm;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
+    .precio-simbolo-p {
+      font-weight: 700;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .precio-valor-p {
+      font-weight: 700;
+      line-height: 1.05;
+      word-break: break-word;
+      text-align: center;
+      min-width: 0;
+    }
+
     .qr-wrap-p {
       flex: 0 0 50%;
       max-width: 50%;
@@ -486,20 +520,6 @@ function estilosEtiqueta(esPequena) {
       height: auto;
       max-height: 11mm;
       max-width: 100%;
-    }
-
-    .precio-p {
-      flex: 0 0 50%;
-      max-width: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      line-height: 1.05;
-      word-break: break-word;
-      text-align: center;
-      padding: 0 0.2mm;
-      min-width: 0;
     }
 
     .cod-bloque-p {
@@ -656,14 +676,18 @@ export function buildEtiquetaMarkup(producto, tipo, qrDataUrl) {
     ? ` style="font-size:${tamanoFuenteCodigoPequena(codigo)}"`
     : "";
   const precio = esPequena ? obtenerPrecioEtiqueta(producto) : "";
-  const tienePrecio = Boolean(precio);
+  const precioMostrar = formatearPrecioEtiqueta(precio);
+  const tienePrecio = Boolean(precioMostrar);
   const cuerpoHtml = tienePrecio
     ? `
       <div class="cuerpo-${prefix} cuerpo-p-con-precio">
+        <div class="precio-caja-p">
+          <span class="precio-simbolo-p" style="font-size:${tamanoFuentePrecioPequena(precioMostrar)}">$</span>
+          <span class="precio-valor-p" style="font-size:${tamanoFuentePrecioPequena(precioMostrar)}">${escaparHtml(precioMostrar)}</span>
+        </div>
         <div class="qr-wrap-p">
           <img class="qr-${prefix}" src="${qrDataUrl}" alt="QR ${escaparHtml(codigo)}" />
         </div>
-        <div class="precio-p" style="font-size:${tamanoFuentePrecioPequena(precio)}">${escaparHtml(precio)}</div>
       </div>
     `
     : `
