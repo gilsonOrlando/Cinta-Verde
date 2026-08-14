@@ -79,7 +79,7 @@ function buildProductoTopHtml(nombre, esPequena) {
   const lineas = dividirNombreProducto(
     nombre,
     esPequena ? 3 : 2,
-    esPequena ? 18 : 22
+    esPequena ? 18 : 20
   );
 
   if (lineas.length === 0) return "";
@@ -103,6 +103,24 @@ function resolverUrlSello() {
   } catch {
     return selloUrl;
   }
+}
+
+function buildSelloMarkup(clase = "sello-m") {
+  const selloSrc = escaparHtml(resolverUrlSello());
+  return `
+    <div class="${clase}">
+      <img src="${selloSrc}" alt="Electrohogar" />
+    </div>
+  `;
+}
+
+function buildCeldaMediana(contenido) {
+  return `
+    <div class="celda-m">
+      ${buildSelloMarkup("sello-m")}
+      ${contenido}
+    </div>
+  `;
 }
 
 function tamanoFuenteCodigoPequena(codigo) {
@@ -378,11 +396,11 @@ function estilosEtiqueta(esPequena) {
       width: ${esPequena ? "100%" : "70mm"};
       height: ${esPequena ? "25mm" : "51mm"};
       border: 0.4mm solid #000;
-      padding: ${esPequena ? "0.5mm 0.8mm" : "1.5mm 2mm"};
+      padding: ${esPequena ? "0.5mm 0.8mm" : "0.8mm 1.5mm 1.2mm"};
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: ${esPequena ? "center" : "flex-start"};
       overflow: hidden;
       flex-shrink: ${esPequena ? "1" : "0"};
       min-width: ${esPequena ? "0" : "auto"};
@@ -444,12 +462,37 @@ function estilosEtiqueta(esPequena) {
     }
     `
         : `
+    .sello-m {
+      flex: 0 0 7mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 0.2mm 1mm 0.3mm;
+      min-height: 0;
+    }
+
+    .sello-m img {
+      max-height: 100%;
+      max-width: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .etiqueta-inner-m {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+    }
+
     .producto-top-m {
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 1.15;
-      font-size: 11pt;
+      line-height: 1.12;
+      font-size: 9.5pt;
       flex-shrink: 0;
       width: 100%;
       word-break: break-word;
@@ -480,8 +523,8 @@ function estilosEtiqueta(esPequena) {
     }
 
     .qr-${prefix} {
-      width: ${esPequena ? "auto" : "24mm"};
-      height: ${esPequena ? "100%" : "24mm"};
+      width: ${esPequena ? "auto" : "21mm"};
+      height: ${esPequena ? "100%" : "21mm"};
       max-width: 100%;
       max-height: ${esPequena ? "11mm" : "100%"};
       object-fit: contain;
@@ -586,7 +629,7 @@ function buildContenedorEtiqueta(producto, tipo, qrDataUrl) {
     return `<div class="fila">${celda}${celda}${celda}</div>`;
   }
 
-  return `<div class="celda-${prefix}">${contenido}</div>`;
+  return buildCeldaMediana(contenido);
 }
 
 function buildFilaPequena(productos, tipo, qrPorCodigo) {
@@ -728,7 +771,7 @@ export function buildDocumentoEtiquetasLote(productos, tipo, qrPorCodigo) {
         (item) => `
           <div class="hoja-impresion">
             <div class="preview-hoja">
-              <div class="celda-m">${buildEtiquetaMarkup(item, tipo, qrPorCodigo[item.codigo])}</div>
+              ${buildCeldaMediana(buildEtiquetaMarkup(item, tipo, qrPorCodigo[item.codigo]))}
             </div>
           </div>
         `
