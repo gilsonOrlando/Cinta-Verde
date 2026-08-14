@@ -105,11 +105,11 @@ function tamanoFuenteCodigoPequena(codigo) {
 
 function tamanoFuenteCodigoNormal(codigo) {
   const longitud = String(codigo ?? "").length;
-  if (longitud <= 5) return "16pt";
-  if (longitud <= 7) return "14pt";
-  if (longitud <= 9) return "12pt";
-  if (longitud <= 11) return "11pt";
-  return "10pt";
+  if (longitud <= 5) return "22pt";
+  if (longitud <= 7) return "20pt";
+  if (longitud <= 9) return "17pt";
+  if (longitud <= 11) return "15pt";
+  return "13pt";
 }
 
 function tamanoFuenteProductoNormal(nombre) {
