@@ -266,7 +266,7 @@ export function TransferenciaResultado({
           {soloEtiquetaMediana ? (
             <EtiquetaFija>
               <strong>Etiqueta mediana</strong>
-              <span>70 × 51 mm · 1 etiqueta por producto</span>
+              <span>70 × 51 mm</span>
             </EtiquetaFija>
           ) : (
             <>
@@ -282,7 +282,7 @@ export function TransferenciaResultado({
                   />
                   <RadioText>
                     <strong>Pequeña</strong>
-                    <span>105 × 28 mm · 3 por fila (márgenes 2 mm, separación 3 mm)</span>
+                    <span>105 × 28 mm</span>
                   </RadioText>
                 </RadioOption>
 
@@ -296,7 +296,7 @@ export function TransferenciaResultado({
                   />
                   <RadioText>
                     <strong>Mediana</strong>
-                    <span>70 × 51 mm · 1 etiqueta</span>
+                    <span>70 × 51 mm</span>
                   </RadioText>
                 </RadioOption>
 
@@ -310,7 +310,7 @@ export function TransferenciaResultado({
                   />
                   <RadioText>
                     <strong>Normal</strong>
-                    <span>45 × 30 mm · producto/código + QR</span>
+                    <span>45 × 30 mm</span>
                   </RadioText>
                 </RadioOption>
               </RadioGroup>

@@ -215,6 +215,7 @@ function estilosEtiquetaNormal() {
       align-items: center;
       justify-content: center;
       padding: 0.4mm 1.5mm 0.2mm;
+      margin-bottom: 1mm;
       min-height: 0;
     }
 
@@ -469,6 +470,7 @@ function estilosEtiqueta(esPequena) {
       justify-content: center;
       width: 100%;
       padding: 0.2mm 1mm 0.3mm;
+      margin-bottom: 1.2mm;
       min-height: 0;
     }
 
@@ -858,7 +860,7 @@ export function imprimirDesdeIframe(iframe, { onAfterPrint } = {}) {
 
 export function getEtiquetaTipoLabel(tipo) {
   if (tipo === TIPOS_ETIQUETA.PEQUENA) {
-    return "Pequeña (105 × 28 mm, márgenes 2 mm, separación 3 mm)";
+    return "Pequeña (105 × 28 mm)";
   }
   if (tipo === TIPOS_ETIQUETA.NORMAL) {
     return "Normal (45 × 30 mm)";
