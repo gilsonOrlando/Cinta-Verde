@@ -1,5 +1,7 @@
 import { supabase } from "./supabase.config";
 
+const TAMANO_LOTE_GUARDADO = 100;
+
 function normalizarProducto(item) {
   return {
     codigo: String(item?.codigo ?? "").trim(),
@@ -23,6 +25,16 @@ function deduplicarPorCodigo(productos) {
   return resultado;
 }
 
+function agruparEnLotes(items, tamano = TAMANO_LOTE_GUARDADO) {
+  const lotes = [];
+
+  for (let i = 0; i < items.length; i += tamano) {
+    lotes.push(items.slice(i, i + tamano));
+  }
+
+  return lotes;
+}
+
 export async function registrarListaProductosNuevos(productos) {
   const normalizados = deduplicarPorCodigo(productos ?? []);
 
@@ -30,35 +42,28 @@ export async function registrarListaProductosNuevos(productos) {
     return { insertados: 0, omitidos: 0 };
   }
 
-  const codigos = normalizados.map((item) => item.codigo);
+  let insertados = 0;
 
-  const { data: existentes, error: errorConsulta } = await supabase
-    .from("listaproductos")
-    .select("codigo")
-    .in("codigo", codigos);
+  for (const lote of agruparEnLotes(normalizados)) {
+    const payload = lote.map((item) => ({
+      codigo: item.codigo,
+      producto: item.producto,
+      cantidad: "1",
+    }));
 
-  if (errorConsulta) throw errorConsulta;
+    const { data, error } = await supabase
+      .from("listaproductos")
+      .upsert(payload, { onConflict: "codigo", ignoreDuplicates: true })
+      .select("codigo");
 
-  const codigosExistentes = new Set((existentes ?? []).map((item) => item.codigo));
-  const nuevos = normalizados.filter((item) => !codigosExistentes.has(item.codigo));
+    if (error) throw error;
 
-  if (nuevos.length === 0) {
-    return { insertados: 0, omitidos: normalizados.length };
+    insertados += (data ?? []).length;
   }
 
-  const payload = nuevos.map((item) => ({
-    codigo: item.codigo,
-    producto: item.producto,
-    cantidad: "1",
-  }));
-
-  const { error: errorInsert } = await supabase.from("listaproductos").insert(payload);
-
-  if (errorInsert) throw errorInsert;
-
   return {
-    insertados: payload.length,
-    omitidos: normalizados.length - payload.length,
+    insertados,
+    omitidos: normalizados.length - insertados,
   };
 }
 

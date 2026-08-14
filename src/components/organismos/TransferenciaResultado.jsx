@@ -71,9 +71,17 @@ export function TransferenciaResultado({
 
     (async () => {
       try {
-        const { insertados } = await registrarListaProductosNuevos(productos);
-        if (!cancelado && insertados > 0) {
-          toast.success(`${insertados} producto(s) nuevo(s) guardado(s) en lista.`);
+        const { insertados, omitidos } = await registrarListaProductosNuevos(productos);
+        if (!cancelado) {
+          if (insertados > 0 && omitidos > 0) {
+            toast.success(
+              `${insertados} producto(s) nuevo(s) guardado(s). ${omitidos} ya estaban en la lista.`
+            );
+          } else if (insertados > 0) {
+            toast.success(`${insertados} producto(s) nuevo(s) guardado(s) en lista.`);
+          } else if (omitidos > 0) {
+            toast.success(`Los ${omitidos} producto(s) ya estaban en la lista.`);
+          }
         }
       } catch (error) {
         console.error(error);

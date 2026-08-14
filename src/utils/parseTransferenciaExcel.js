@@ -24,6 +24,20 @@ function formatearCantidad(valor) {
   return String(valor).trim();
 }
 
+function celdaTexto(valor) {
+  if (valor === null || valor === undefined) return "";
+
+  if (typeof valor === "number" && Number.isFinite(valor)) {
+    if (Number.isInteger(valor)) return String(valor);
+    if (Math.abs(valor - Math.round(valor)) < 1e-9) {
+      return String(Math.round(valor));
+    }
+    return String(valor);
+  }
+
+  return String(valor).trim();
+}
+
 function buscarEncabezados(rows) {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i] ?? [];
@@ -164,12 +178,12 @@ export async function procesarTransferenciaExcel(file) {
         break;
       }
 
-      const codigo = String(row[headers.idxCodigo] ?? "").trim();
-      const producto = String(row[headers.idxProducto] ?? "").trim();
+      const codigo = celdaTexto(row[headers.idxCodigo]);
+      const producto = celdaTexto(row[headers.idxProducto]);
       const cantidadRaw = row[headers.idxCantidad];
-      const cantidad = formatearCantidad(cantidadRaw);
+      const cantidad = formatearCantidad(cantidadRaw) || "1,00";
 
-      if (!codigo || !producto || !cantidad) continue;
+      if (!codigo || !producto) continue;
 
       productos.push({ codigo, producto, cantidad });
     }
