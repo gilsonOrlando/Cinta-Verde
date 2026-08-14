@@ -470,19 +470,23 @@ function estilosEtiqueta(esPequena) {
 
     .cuerpo-p-con-precio {
       flex-direction: row;
+      flex-wrap: nowrap;
       align-items: center;
       justify-content: space-between;
       gap: 0.3mm;
     }
 
     .precio-caja-p {
-      flex: 0 0 50%;
+      flex: 1 1 50%;
+      width: 50%;
       max-width: 50%;
-      height: 100%;
+      height: auto;
+      min-height: 9mm;
       max-height: 11mm;
       border: 0.35mm solid #000;
       border-radius: 1mm;
       display: flex;
+      flex-direction: row;
       align-items: center;
       justify-content: center;
       gap: 0.25mm;
@@ -506,9 +510,12 @@ function estilosEtiqueta(esPequena) {
     }
 
     .qr-wrap-p {
-      flex: 0 0 50%;
+      flex: 1 1 50%;
+      width: 50%;
       max-width: 50%;
-      height: 100%;
+      height: auto;
+      min-height: 9mm;
+      max-height: 11mm;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -595,6 +602,20 @@ function estilosEtiqueta(esPequena) {
       width: 100%;
       padding: 0;
       align-self: center;
+    }
+
+    ${
+      esPequena
+        ? `
+    .cuerpo-p.cuerpo-p-con-precio {
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.3mm;
+    }
+    `
+        : ""
     }
 
     .qr-${prefix} {
