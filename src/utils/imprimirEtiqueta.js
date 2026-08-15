@@ -205,6 +205,11 @@ function estilosEtiquetaNormal() {
     html, body {
       font-family: Arial, Helvetica, sans-serif;
       color: #000;
+      width: 45mm;
+      height: 30mm;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -213,6 +218,8 @@ function estilosEtiquetaNormal() {
       html, body {
         width: 100%;
         min-height: 100%;
+        height: auto;
+        overflow: visible;
         background: #d4d4d4;
       }
 
@@ -224,28 +231,52 @@ function estilosEtiquetaNormal() {
       }
 
       .preview-hoja {
+        width: 45mm;
+        height: 30mm;
         background: #fff;
-        padding: 20px;
+        padding: 0;
         box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
         border-radius: 2px;
         transform: scale(2);
         transform-origin: center center;
+        overflow: hidden;
       }
     }
 
     @media print {
-      html, body { background: #fff; }
-      body { display: block; padding: 0; }
+      html, body {
+        width: 45mm;
+        height: 30mm;
+        background: #fff;
+      }
+
+      body {
+        display: block;
+      }
+
       .preview-hoja {
+        width: 45mm;
+        height: 30mm;
         padding: 0;
         box-shadow: none;
         transform: none;
+        overflow: hidden;
       }
+    }
+
+    .preview-hoja {
+      width: 45mm;
+      height: 30mm;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
     .celda-n {
       width: 45mm;
       height: 30mm;
+      min-width: 45mm;
+      min-height: 30mm;
       border: 0.4mm solid #000;
       overflow: hidden;
       background: #fff;
@@ -255,11 +286,11 @@ function estilosEtiquetaNormal() {
     }
 
     .sello-n {
-      flex: 0 0 4.8mm;
+      flex: 0 0 5.5mm;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0.3mm 1.2mm 0.2mm;
+      padding: 0.35mm 1mm 0.25mm;
       min-height: 0;
     }
 
@@ -277,17 +308,18 @@ function estilosEtiquetaNormal() {
       display: flex;
       width: 100%;
       min-height: 0;
-      padding: 0.4mm 0.5mm 0.5mm;
-      gap: 0.4mm;
+      padding: 0.3mm 0.4mm 0.35mm;
+      gap: 0.35mm;
     }
 
     .etiqueta-n-izq {
       flex: 1 1 0;
       min-width: 0;
+      min-height: 0;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      gap: 0.3mm;
+      justify-content: stretch;
+      gap: 0.25mm;
     }
 
     .etiqueta-n-izq-solo-codigo {
@@ -295,8 +327,9 @@ function estilosEtiquetaNormal() {
     }
 
     .etiqueta-n-der {
-      flex: 0 0 14.5mm;
-      width: 14.5mm;
+      flex: 0 0 15mm;
+      width: 15mm;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -305,7 +338,7 @@ function estilosEtiquetaNormal() {
     }
 
     .producto-n {
-      flex: 0 0 auto;
+      flex: 0 1 auto;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -316,7 +349,7 @@ function estilosEtiquetaNormal() {
       line-height: 1.1;
       overflow: hidden;
       width: 100%;
-      max-height: 9mm;
+      max-height: 10mm;
     }
 
     .producto-n div {
@@ -349,10 +382,10 @@ function estilosEtiquetaNormal() {
     }
 
     .qr-n {
-      width: auto;
-      height: auto;
-      max-width: 14mm;
-      max-height: 100%;
+      width: 100%;
+      height: 100%;
+      max-width: 14.5mm;
+      max-height: 24mm;
       object-fit: contain;
       display: block;
     }
