@@ -169,9 +169,10 @@ function tamanoFuenteCodigoNormal(codigo, soloCodigo = false) {
 
 function tamanoFuenteProductoNormal(nombre) {
   const longitud = String(nombre ?? "").trim().length;
-  if (longitud <= 16) return "8.5pt";
-  if (longitud <= 24) return "8pt";
-  return "7.5pt";
+  if (longitud <= 16) return "10.5pt";
+  if (longitud <= 28) return "10pt";
+  if (longitud <= 40) return "9.5pt";
+  return "9pt";
 }
 
 function buildProductoNormalHtml(nombre) {
@@ -179,7 +180,7 @@ function buildProductoNormalHtml(nombre) {
     return { html: "", tieneNombre: false };
   }
 
-  const lineas = dividirNombreProducto(nombre, 2, 14).filter(Boolean);
+  const lineas = dividirNombreProducto(nombre, 3, 13).filter(Boolean);
   if (lineas.length === 0) {
     return { html: "", tieneNombre: false };
   }
@@ -349,7 +350,7 @@ function estilosEtiquetaNormal() {
       line-height: 1.1;
       overflow: hidden;
       width: 100%;
-      max-height: 10mm;
+      max-height: 12mm;
     }
 
     .producto-n div {
@@ -358,6 +359,11 @@ function estilosEtiquetaNormal() {
       text-overflow: ellipsis;
       width: 100%;
       text-align: center;
+      flex: 0 0 auto;
+    }
+
+    .producto-n div:nth-child(n + 4) {
+      display: none;
     }
 
     .codigo-n {
