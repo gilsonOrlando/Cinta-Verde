@@ -155,14 +155,14 @@ function tamanoFuenteCodigoNormal(codigo, soloCodigo = false) {
   const longitud = String(codigo ?? "").length;
   let tamano;
 
-  if (longitud <= 4) tamano = 18;
-  else if (longitud <= 6) tamano = 16;
-  else if (longitud <= 8) tamano = 14;
-  else if (longitud <= 10) tamano = 12;
-  else if (longitud <= 12) tamano = 11;
-  else tamano = 10;
+  if (longitud <= 4) tamano = 20;
+  else if (longitud <= 6) tamano = 18;
+  else if (longitud <= 8) tamano = 16;
+  else if (longitud <= 10) tamano = 14;
+  else if (longitud <= 12) tamano = 12;
+  else tamano = 11;
 
-  if (soloCodigo) tamano = Math.min(tamano + 2, 20);
+  if (soloCodigo) tamano = Math.min(tamano + 2, 22);
 
   return `${tamano}pt`;
 }
