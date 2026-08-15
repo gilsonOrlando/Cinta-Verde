@@ -306,29 +306,33 @@ function estilosEtiquetaNormal() {
 
     .etiqueta-n {
       flex: 1 1 0;
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr 15mm;
       width: 100%;
       min-height: 0;
-      padding: 0.25mm 0.45mm 0.55mm;
-      gap: 0.25mm;
+      padding: 0.2mm 0.45mm 0.85mm;
+      gap: 0.3mm;
+      align-items: stretch;
     }
 
     .etiqueta-n-izq {
-      flex: 1 1 0;
       min-width: 0;
       min-height: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      gap: 0.2mm;
+      height: 100%;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      align-content: stretch;
+      gap: 0.15mm;
     }
 
     .etiqueta-n-izq-solo-codigo {
-      justify-content: center;
+      grid-template-rows: 1fr;
+      align-content: center;
     }
 
     .etiqueta-n-der {
-      flex: 0 0 15mm;
+      grid-column: 2;
+      grid-row: 1;
       width: 15mm;
       height: 100%;
       display: flex;
@@ -339,7 +343,7 @@ function estilosEtiquetaNormal() {
     }
 
     .producto-n {
-      flex: 1 1 0;
+      grid-row: 1;
       min-height: 0;
       display: flex;
       flex-direction: column;
@@ -351,6 +355,7 @@ function estilosEtiquetaNormal() {
       line-height: 1.08;
       overflow: hidden;
       width: 100%;
+      align-self: start;
     }
 
     .producto-n div {
@@ -367,25 +372,27 @@ function estilosEtiquetaNormal() {
     }
 
     .codigo-n {
-      flex: 0 0 auto;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      grid-row: 2;
+      display: block;
       text-align: center;
-      padding: 0.15mm 0.5mm 0.25mm;
+      padding: 0.1mm 0.45mm 0.15mm;
       font-weight: 700;
       letter-spacing: 0.015em;
-      line-height: 1.08;
+      line-height: 1.2;
       overflow: visible;
       word-break: break-all;
       width: 100%;
       max-width: 100%;
+      align-self: end;
     }
 
     .etiqueta-n-izq-solo-codigo .codigo-n {
-      flex: 1 1 auto;
+      grid-row: 1;
+      display: flex;
       align-items: center;
+      justify-content: center;
+      align-self: center;
+      padding: 0.2mm 0.45mm;
     }
 
     .qr-n {
