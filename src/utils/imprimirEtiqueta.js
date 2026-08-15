@@ -287,11 +287,11 @@ function estilosEtiquetaNormal() {
     }
 
     .sello-n {
-      flex: 0 0 5.5mm;
+      flex: 0 0 5mm;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0.35mm 1mm 0.25mm;
+      padding: 0.3mm 1mm 0.2mm;
       min-height: 0;
     }
 
@@ -309,8 +309,8 @@ function estilosEtiquetaNormal() {
       display: flex;
       width: 100%;
       min-height: 0;
-      padding: 0.3mm 0.4mm 0.35mm;
-      gap: 0.35mm;
+      padding: 0.25mm 0.45mm 0.55mm;
+      gap: 0.25mm;
     }
 
     .etiqueta-n-izq {
@@ -319,8 +319,8 @@ function estilosEtiquetaNormal() {
       min-height: 0;
       display: flex;
       flex-direction: column;
-      justify-content: stretch;
-      gap: 0.25mm;
+      justify-content: flex-end;
+      gap: 0.2mm;
     }
 
     .etiqueta-n-izq-solo-codigo {
@@ -339,18 +339,18 @@ function estilosEtiquetaNormal() {
     }
 
     .producto-n {
-      flex: 0 1 auto;
+      flex: 1 1 0;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 1.1;
+      line-height: 1.08;
       overflow: hidden;
       width: 100%;
-      max-height: 12mm;
     }
 
     .producto-n div {
@@ -367,24 +367,25 @@ function estilosEtiquetaNormal() {
     }
 
     .codigo-n {
-      flex: 1 1 0;
-      min-height: 0;
+      flex: 0 0 auto;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 0.2mm 0.6mm;
+      padding: 0.15mm 0.5mm 0.25mm;
       font-weight: 700;
-      letter-spacing: 0.02em;
-      line-height: 1.05;
-      overflow: hidden;
+      letter-spacing: 0.015em;
+      line-height: 1.08;
+      overflow: visible;
       word-break: break-all;
       width: 100%;
+      max-width: 100%;
     }
 
     .etiqueta-n-izq-solo-codigo .codigo-n {
       flex: 1 1 auto;
-      max-height: none;
+      align-items: center;
     }
 
     .qr-n {
