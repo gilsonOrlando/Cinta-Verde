@@ -155,24 +155,24 @@ function tamanoFuenteCodigoNormal(codigo, soloCodigo = false) {
   const longitud = String(codigo ?? "").length;
   let tamano;
 
-  if (longitud <= 4) tamano = 20;
-  else if (longitud <= 6) tamano = 18;
-  else if (longitud <= 8) tamano = 16;
-  else if (longitud <= 10) tamano = 14;
-  else if (longitud <= 12) tamano = 12;
-  else tamano = 11;
+  if (longitud <= 4) tamano = 22;
+  else if (longitud <= 6) tamano = 20;
+  else if (longitud <= 8) tamano = 18;
+  else if (longitud <= 10) tamano = 16;
+  else if (longitud <= 12) tamano = 14;
+  else tamano = 12;
 
-  if (soloCodigo) tamano = Math.min(tamano + 2, 22);
+  if (soloCodigo) tamano = Math.min(tamano + 2, 24);
 
   return `${tamano}pt`;
 }
 
 function tamanoFuenteProductoNormal(nombre) {
   const longitud = String(nombre ?? "").trim().length;
-  if (longitud <= 16) return "8pt";
-  if (longitud <= 28) return "7.5pt";
-  if (longitud <= 40) return "7pt";
-  return "6.5pt";
+  if (longitud <= 16) return "7pt";
+  if (longitud <= 28) return "6.5pt";
+  if (longitud <= 40) return "6pt";
+  return "5.5pt";
 }
 
 function buildProductoNormalHtml(nombre) {
@@ -319,32 +319,16 @@ function estilosEtiquetaNormal() {
       min-width: 0;
       min-height: 0;
       height: 100%;
-      display: grid;
-      grid-template-rows: auto auto;
-      align-content: start;
-      gap: 6mm;
+      display: flex;
+      flex-direction: column;
     }
 
     .etiqueta-n-izq-solo-codigo {
-      grid-template-rows: 1fr;
-      align-content: center;
-      gap: 0;
-    }
-
-    .etiqueta-n-der {
-      grid-column: 2;
-      grid-row: 1;
-      width: 15mm;
-      height: 100%;
-      display: flex;
-      align-items: center;
       justify-content: center;
-      min-width: 0;
-      min-height: 0;
     }
 
     .producto-n {
-      grid-row: 1;
+      flex: 0 0 auto;
       min-height: 0;
       display: flex;
       flex-direction: column;
@@ -356,7 +340,6 @@ function estilosEtiquetaNormal() {
       line-height: 1.08;
       overflow: hidden;
       width: 100%;
-      align-self: start;
     }
 
     .producto-n div {
@@ -372,27 +355,37 @@ function estilosEtiquetaNormal() {
       display: none;
     }
 
+    .etiqueta-n-der {
+      grid-column: 2;
+      grid-row: 1;
+      width: 15mm;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      min-height: 0;
+    }
+
     .codigo-n {
-      grid-row: 2;
-      display: block;
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       text-align: center;
-      padding: 0.1mm 0.45mm 0.15mm;
+      padding: 0.15mm 0.45mm;
       font-weight: 700;
       letter-spacing: 0.015em;
-      line-height: 1.2;
+      line-height: 1.15;
       overflow: visible;
       word-break: break-all;
       width: 100%;
       max-width: 100%;
-      align-self: start;
     }
 
     .etiqueta-n-izq-solo-codigo .codigo-n {
-      grid-row: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      align-self: center;
+      flex: 1 1 auto;
       padding: 0.2mm 0.45mm;
     }
 
