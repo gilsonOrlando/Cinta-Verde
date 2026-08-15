@@ -151,21 +151,27 @@ function formatearPrecioEtiqueta(precio) {
   return obtenerPrecioEtiqueta({ precio }).replace(/^\$+/, "").trim();
 }
 
-function tamanoFuenteCodigoNormal(codigo) {
+function tamanoFuenteCodigoNormal(codigo, soloCodigo = false) {
   const longitud = String(codigo ?? "").length;
-  if (longitud <= 4) return "15pt";
-  if (longitud <= 6) return "13pt";
-  if (longitud <= 8) return "11pt";
-  if (longitud <= 10) return "10pt";
-  if (longitud <= 12) return "9pt";
-  return "8pt";
+  let tamano;
+
+  if (longitud <= 4) tamano = 18;
+  else if (longitud <= 6) tamano = 16;
+  else if (longitud <= 8) tamano = 14;
+  else if (longitud <= 10) tamano = 12;
+  else if (longitud <= 12) tamano = 11;
+  else tamano = 10;
+
+  if (soloCodigo) tamano = Math.min(tamano + 2, 20);
+
+  return `${tamano}pt`;
 }
 
 function tamanoFuenteProductoNormal(nombre) {
   const longitud = String(nombre ?? "").trim().length;
-  if (longitud <= 16) return "7pt";
-  if (longitud <= 24) return "6.5pt";
-  return "6pt";
+  if (longitud <= 16) return "8.5pt";
+  if (longitud <= 24) return "8pt";
+  return "7.5pt";
 }
 
 function buildProductoNormalHtml(nombre) {
@@ -289,8 +295,8 @@ function estilosEtiquetaNormal() {
     }
 
     .etiqueta-n-der {
-      flex: 0 0 16mm;
-      width: 16mm;
+      flex: 0 0 14.5mm;
+      width: 14.5mm;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -307,10 +313,10 @@ function estilosEtiquetaNormal() {
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 1.08;
+      line-height: 1.1;
       overflow: hidden;
       width: 100%;
-      max-height: 8mm;
+      max-height: 9mm;
     }
 
     .producto-n div {
@@ -345,7 +351,7 @@ function estilosEtiquetaNormal() {
     .qr-n {
       width: auto;
       height: auto;
-      max-width: 15.5mm;
+      max-width: 14mm;
       max-height: 100%;
       object-fit: contain;
       display: block;
@@ -356,7 +362,7 @@ function estilosEtiquetaNormal() {
 function buildEtiquetaNormalMarkup(producto, qrDataUrl) {
   const { codigo, producto: nombre } = producto;
   const { html: productoHtml, tieneNombre } = buildProductoNormalHtml(nombre);
-  const estiloCodigo = ` style="font-size:${tamanoFuenteCodigoNormal(codigo)}"`;
+  const estiloCodigo = ` style="font-size:${tamanoFuenteCodigoNormal(codigo, !tieneNombre)}"`;
   const selloSrc = escaparHtml(resolverUrlSello());
   const claseIzq = tieneNombre ? "etiqueta-n-izq" : "etiqueta-n-izq etiqueta-n-izq-solo-codigo";
 
