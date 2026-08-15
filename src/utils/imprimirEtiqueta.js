@@ -153,19 +153,38 @@ function formatearPrecioEtiqueta(precio) {
 
 function tamanoFuenteCodigoNormal(codigo) {
   const longitud = String(codigo ?? "").length;
-  if (longitud <= 5) return "22pt";
-  if (longitud <= 7) return "20pt";
-  if (longitud <= 9) return "17pt";
-  if (longitud <= 11) return "15pt";
-  return "13pt";
+  if (longitud <= 4) return "15pt";
+  if (longitud <= 6) return "13pt";
+  if (longitud <= 8) return "11pt";
+  if (longitud <= 10) return "10pt";
+  if (longitud <= 12) return "9pt";
+  return "8pt";
 }
 
 function tamanoFuenteProductoNormal(nombre) {
   const longitud = String(nombre ?? "").trim().length;
-  if (longitud <= 18) return "8pt";
-  if (longitud <= 28) return "7pt";
-  if (longitud <= 40) return "6.5pt";
+  if (longitud <= 16) return "7pt";
+  if (longitud <= 24) return "6.5pt";
   return "6pt";
+}
+
+function buildProductoNormalHtml(nombre) {
+  if (!esNombreProductoVisible(nombre)) {
+    return { html: "", tieneNombre: false };
+  }
+
+  const lineas = dividirNombreProducto(nombre, 2, 14).filter(Boolean);
+  if (lineas.length === 0) {
+    return { html: "", tieneNombre: false };
+  }
+
+  const fontSize = tamanoFuenteProductoNormal(nombre);
+  const lineasHtml = lineas.map((linea) => `<div>${escaparHtml(linea)}</div>`).join("");
+
+  return {
+    html: `<div class="producto-n" style="font-size:${fontSize}">${lineasHtml}</div>`,
+    tieneNombre: true,
+  };
 }
 
 function estilosEtiquetaNormal() {
@@ -226,15 +245,15 @@ function estilosEtiquetaNormal() {
       background: #fff;
       display: flex;
       flex-direction: column;
+      box-sizing: border-box;
     }
 
     .sello-n {
-      flex: 0 0 5.5mm;
+      flex: 0 0 4.8mm;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0.4mm 1.5mm 0.2mm;
-      margin-bottom: 1mm;
+      padding: 0.3mm 1.2mm 0.2mm;
       min-height: 0;
     }
 
@@ -248,60 +267,86 @@ function estilosEtiquetaNormal() {
     }
 
     .etiqueta-n {
-      flex: 1;
+      flex: 1 1 0;
       display: flex;
       width: 100%;
       min-height: 0;
+      padding: 0.4mm 0.5mm 0.5mm;
+      gap: 0.4mm;
     }
 
     .etiqueta-n-izq {
-      width: 65%;
+      flex: 1 1 0;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      min-width: 0;
+      justify-content: center;
+      gap: 0.3mm;
+    }
+
+    .etiqueta-n-izq-solo-codigo {
+      justify-content: center;
     }
 
     .etiqueta-n-der {
-      width: 35%;
+      flex: 0 0 16mm;
+      width: 16mm;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1mm;
       min-width: 0;
+      min-height: 0;
     }
 
     .producto-n {
-      flex: 1;
+      flex: 0 0 auto;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 1mm 1.2mm;
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 1.1;
+      line-height: 1.08;
       overflow: hidden;
-      word-break: break-word;
+      width: 100%;
+      max-height: 8mm;
+    }
+
+    .producto-n div {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      text-align: center;
     }
 
     .codigo-n {
-      flex: 1;
+      flex: 1 1 0;
+      min-height: 0;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 0.5mm 1mm;
+      padding: 0.2mm 0.6mm;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
+      line-height: 1.05;
       overflow: hidden;
-      word-break: break-word;
+      word-break: break-all;
+      width: 100%;
+    }
+
+    .etiqueta-n-izq-solo-codigo .codigo-n {
+      flex: 1 1 auto;
+      max-height: none;
     }
 
     .qr-n {
-      width: 100%;
-      height: 100%;
-      max-width: 14mm;
-      max-height: 26mm;
+      width: auto;
+      height: auto;
+      max-width: 15.5mm;
+      max-height: 100%;
       object-fit: contain;
       display: block;
     }
@@ -310,12 +355,10 @@ function estilosEtiquetaNormal() {
 
 function buildEtiquetaNormalMarkup(producto, qrDataUrl) {
   const { codigo, producto: nombre } = producto;
-  const nombreVisible = esNombreProductoVisible(nombre)
-    ? escaparHtml(String(nombre).trim().toUpperCase())
-    : "";
-  const estiloProducto = ` style="font-size:${tamanoFuenteProductoNormal(nombre)}"`;
+  const { html: productoHtml, tieneNombre } = buildProductoNormalHtml(nombre);
   const estiloCodigo = ` style="font-size:${tamanoFuenteCodigoNormal(codigo)}"`;
   const selloSrc = escaparHtml(resolverUrlSello());
+  const claseIzq = tieneNombre ? "etiqueta-n-izq" : "etiqueta-n-izq etiqueta-n-izq-solo-codigo";
 
   return `
     <div class="celda-n">
@@ -323,8 +366,8 @@ function buildEtiquetaNormalMarkup(producto, qrDataUrl) {
         <img src="${selloSrc}" alt="Electrohogar" />
       </div>
       <div class="etiqueta-n">
-        <div class="etiqueta-n-izq">
-          <div class="producto-n"${estiloProducto}>${nombreVisible}</div>
+        <div class="${claseIzq}">
+          ${productoHtml}
           <div class="codigo-n"${estiloCodigo}>${escaparHtml(codigo)}</div>
         </div>
         <div class="etiqueta-n-der">
