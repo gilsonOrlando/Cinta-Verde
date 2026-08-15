@@ -169,10 +169,10 @@ function tamanoFuenteCodigoNormal(codigo, soloCodigo = false) {
 
 function tamanoFuenteProductoNormal(nombre) {
   const longitud = String(nombre ?? "").trim().length;
-  if (longitud <= 16) return "10.5pt";
-  if (longitud <= 28) return "10pt";
-  if (longitud <= 40) return "9.5pt";
-  return "9pt";
+  if (longitud <= 16) return "8pt";
+  if (longitud <= 28) return "7.5pt";
+  if (longitud <= 40) return "7pt";
+  return "6.5pt";
 }
 
 function buildProductoNormalHtml(nombre) {
@@ -320,14 +320,15 @@ function estilosEtiquetaNormal() {
       min-height: 0;
       height: 100%;
       display: grid;
-      grid-template-rows: minmax(0, 1fr) auto;
-      align-content: stretch;
-      gap: 0.15mm;
+      grid-template-rows: auto auto;
+      align-content: start;
+      gap: 6mm;
     }
 
     .etiqueta-n-izq-solo-codigo {
       grid-template-rows: 1fr;
       align-content: center;
+      gap: 0;
     }
 
     .etiqueta-n-der {
@@ -383,7 +384,7 @@ function estilosEtiquetaNormal() {
       word-break: break-all;
       width: 100%;
       max-width: 100%;
-      align-self: end;
+      align-self: start;
     }
 
     .etiqueta-n-izq-solo-codigo .codigo-n {
