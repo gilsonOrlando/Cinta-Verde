@@ -54,9 +54,9 @@ export function TransferenciaResultado({
     onFormularioCodigoCerrado?.();
   };
 
-  const productosKey = useMemo(
-    () => productos.map((item) => `${item.codigo}:${item.producto}`).join("|"),
-    [productos]
+  const productosListKey = useMemo(
+    () => productosList.map((item) => `${item.codigo}:${item.producto}`).join("|"),
+    [productosList]
   );
 
   useEffect(() => {
@@ -65,23 +65,15 @@ export function TransferenciaResultado({
   }, [productos]);
 
   useEffect(() => {
-    if (!supabaseConfigurado || !productos.length) return;
+    if (!supabaseConfigurado || soloEtiquetaMediana || productosList.length === 0) return;
 
     let cancelado = false;
 
     (async () => {
       try {
-        const { insertados, omitidos } = await registrarListaProductosNuevos(productos);
-        if (!cancelado) {
-          if (insertados > 0 && omitidos > 0) {
-            toast.success(
-              `${insertados} producto(s) nuevo(s) guardado(s). ${omitidos} ya estaban en la lista.`
-            );
-          } else if (insertados > 0) {
-            toast.success(`${insertados} producto(s) nuevo(s) guardado(s) en lista.`);
-          } else if (omitidos > 0) {
-            toast.success(`Los ${omitidos} producto(s) ya estaban en la lista.`);
-          }
+        const { guardados } = await registrarListaProductosNuevos(productosList);
+        if (!cancelado && guardados > 0) {
+          toast.success(`${guardados} producto(s) guardado(s) en lista.`);
         }
       } catch (error) {
         console.error(error);
@@ -94,7 +86,7 @@ export function TransferenciaResultado({
     return () => {
       cancelado = true;
     };
-  }, [productosKey]);
+  }, [productosListKey, soloEtiquetaMediana]);
 
   const handleImprimir = (item) => {
     setPreviewLote(false);

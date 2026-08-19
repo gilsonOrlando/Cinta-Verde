@@ -4,7 +4,6 @@ import toast from "react-hot-toast";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import {
   buscarListaProductos,
-  registrarListaProductosNuevos,
 } from "../../supabase/crudListaProductos";
 import { buscarMotos } from "../../supabase/crudMotos";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
@@ -16,7 +15,6 @@ export function EtiquetaCodigoModal({ onAgregar, onClose, catalogo = "lista" }) 
   const [busqueda, setBusqueda] = useState("");
   const [resultados, setResultados] = useState([]);
   const [buscando, setBuscando] = useState(false);
-  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -47,20 +45,6 @@ export function EtiquetaCodigoModal({ onAgregar, onClose, catalogo = "lista" }) 
     }
 
     return { codigo: codigoLimpio, producto: productoLimpio, cantidad: 1 };
-  };
-
-  const guardarEnCatalogo = async (item) => {
-    if (!supabaseConfigurado || esMotos) return;
-
-    try {
-      const { insertados } = await registrarListaProductosNuevos([item]);
-      if (insertados > 0) {
-        toast.success("Producto guardado en lista.");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error(interpretarErrorSupabase(error));
-    }
   };
 
   const handleBuscar = async (event) => {
@@ -112,21 +96,15 @@ export function EtiquetaCodigoModal({ onAgregar, onClose, catalogo = "lista" }) 
     }
   };
 
-  const handleAgregar = async (event) => {
+  const handleAgregar = (event) => {
     event.preventDefault();
 
     const item = construirProducto();
     if (!item) return;
 
-    setGuardando(true);
-    try {
-      await guardarEnCatalogo(item);
-      const agregado = onAgregar(item);
-      if (agregado !== false) {
-        onClose();
-      }
-    } finally {
-      setGuardando(false);
+    const agregado = onAgregar(item);
+    if (agregado !== false) {
+      onClose();
     }
   };
 
@@ -227,10 +205,10 @@ export function EtiquetaCodigoModal({ onAgregar, onClose, catalogo = "lista" }) 
               </GridCampos>
 
               <DialogFooter>
-                <BtnSecundario type="button" onClick={onClose} disabled={guardando}>
+                <BtnSecundario type="button" onClick={onClose}>
                   Cancelar
                 </BtnSecundario>
-                <BtnPrimario type="submit" disabled={guardando}>
+                <BtnPrimario type="submit">
                   Agregar a tabla
                 </BtnPrimario>
               </DialogFooter>

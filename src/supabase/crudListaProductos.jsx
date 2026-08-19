@@ -9,6 +9,11 @@ function normalizarProducto(item) {
   };
 }
 
+function normalizarCantidadProducto(cantidad) {
+  const texto = String(cantidad ?? "").trim();
+  return texto || "1";
+}
+
 function deduplicarPorCodigo(productos) {
   const vistos = new Set();
   const resultado = [];
@@ -39,31 +44,31 @@ export async function registrarListaProductosNuevos(productos) {
   const normalizados = deduplicarPorCodigo(productos ?? []);
 
   if (normalizados.length === 0) {
-    return { insertados: 0, omitidos: 0 };
+    return { guardados: 0, insertados: 0, omitidos: 0 };
   }
 
-  let insertados = 0;
+  let guardados = 0;
 
   for (const lote of agruparEnLotes(normalizados)) {
     const payload = lote.map((item) => ({
       codigo: item.codigo,
       producto: item.producto,
-      cantidad: "1",
+      cantidad: normalizarCantidadProducto(item.cantidad),
     }));
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("listaproductos")
-      .upsert(payload, { onConflict: "codigo", ignoreDuplicates: true })
-      .select("codigo");
+      .upsert(payload, { onConflict: "codigo" });
 
     if (error) throw error;
 
-    insertados += (data ?? []).length;
+    guardados += lote.length;
   }
 
   return {
-    insertados,
-    omitidos: normalizados.length - insertados,
+    guardados,
+    insertados: guardados,
+    omitidos: 0,
   };
 }
 
