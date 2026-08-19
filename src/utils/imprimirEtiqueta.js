@@ -134,6 +134,16 @@ function tamanoFuenteCodigoPequena(codigo) {
   return "11pt";
 }
 
+function tamanoFuenteCodigoMediana(codigo) {
+  const longitud = String(codigo ?? "").length;
+  if (longitud <= 5) return "20pt";
+  if (longitud <= 7) return "18pt";
+  if (longitud <= 9) return "16pt";
+  if (longitud <= 11) return "14pt";
+  if (longitud <= 13) return "12pt";
+  return "11pt";
+}
+
 function tamanoFuentePrecioPequena(precio) {
   const longitud = String(precio ?? "").length;
   if (longitud <= 4) return "14pt";
@@ -506,7 +516,7 @@ function estilosEtiqueta(esPequena) {
       width: ${esPequena ? "100%" : "70mm"};
       height: ${esPequena ? "25mm" : "51mm"};
       border: 0.4mm solid #000;
-      padding: ${esPequena ? "0.5mm 0.8mm" : "0.8mm 1.5mm 1.2mm"};
+      padding: ${esPequena ? "0.5mm 0.8mm" : "0.6mm 1.2mm 0.65mm"};
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -516,6 +526,8 @@ function estilosEtiqueta(esPequena) {
       min-width: ${esPequena ? "0" : "auto"};
       background: #fff;
       text-align: center;
+      box-sizing: border-box;
+      gap: ${esPequena ? "0" : "0.25mm"};
     }
 
     .etiqueta-inner-${prefix} {
@@ -634,13 +646,12 @@ function estilosEtiqueta(esPequena) {
     `
         : `
     .sello-m {
-      flex: 0 0 7mm;
+      flex: 0 0 6mm;
       display: flex;
       align-items: center;
       justify-content: center;
       width: 100%;
-      padding: 0.2mm 1mm 0.3mm;
-      margin-bottom: 1.2mm;
+      padding: 0.15mm 1mm 0.1mm;
       min-height: 0;
     }
 
@@ -654,19 +665,27 @@ function estilosEtiqueta(esPequena) {
     }
 
     .etiqueta-inner-m {
-      flex: 1;
+      flex: 1 1 0;
       min-height: 0;
       width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.4mm;
+      padding-bottom: 0.35mm;
     }
 
     .producto-top-m {
       text-align: center;
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 1.12;
-      font-size: 9.5pt;
-      flex-shrink: 0;
+      line-height: 1.1;
+      font-size: 9pt;
+      flex: 0 0 auto;
       width: 100%;
+      max-height: 9.5mm;
+      overflow: hidden;
       word-break: break-word;
       align-self: center;
     }
@@ -677,6 +696,34 @@ function estilosEtiqueta(esPequena) {
       text-overflow: ellipsis;
       text-align: center;
       width: 100%;
+    }
+
+    .etiqueta-inner-m .cuerpo-m {
+      flex: 0 0 auto;
+      min-height: 0;
+      max-height: 18mm;
+      overflow: hidden;
+    }
+
+    .etiqueta-inner-m .qr-m {
+      width: 18mm;
+      height: 18mm;
+      max-width: 18mm;
+      max-height: 18mm;
+    }
+
+    .etiqueta-inner-m .cod-bloque-m {
+      flex: 0 0 auto;
+      flex-shrink: 0;
+      margin-top: 0;
+      padding: 0.15mm 0.5mm 0.3mm;
+      line-height: 1.15;
+      overflow: visible;
+    }
+
+    .etiqueta-inner-m .cod-m {
+      line-height: 1.1;
+      word-break: break-all;
     }
     `
     }
@@ -785,7 +832,7 @@ export function buildEtiquetaMarkup(producto, tipo, qrDataUrl) {
   const productoHtml = buildProductoTopHtml(nombre, esPequena);
   const estiloCodigo = esPequena
     ? ` style="font-size:${tamanoFuenteCodigoPequena(codigo)}"`
-    : "";
+    : ` style="font-size:${tamanoFuenteCodigoMediana(codigo)}"`;
   const precio = esPequena ? obtenerPrecioEtiqueta(producto) : "";
   const precioMostrar = formatearPrecioEtiqueta(precio);
   const tienePrecio = Boolean(precioMostrar);
