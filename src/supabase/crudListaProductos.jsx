@@ -72,24 +72,53 @@ export async function registrarListaProductosNuevos(productos) {
   };
 }
 
+function escaparPatronIlike(texto) {
+  return String(texto).replace(/[%_\\]/g, (caracter) => `\\${caracter}`);
+}
+
 export async function buscarListaProductos(termino, limite = 25) {
-  const texto = String(termino ?? "").trim().toLowerCase();
+  const texto = String(termino ?? "").trim();
   if (!texto) return [];
 
-  const { data, error } = await supabase
+  const { data: exactos, error: errorExacto } = await supabase
     .from("listaproductos")
     .select("id, codigo, producto, cantidad")
-    .order("codigo", { ascending: true });
+    .eq("codigo", texto)
+    .limit(limite);
 
-  if (error) throw error;
+  if (errorExacto) throw errorExacto;
+  if (exactos?.length) return exactos;
 
-  return (data ?? [])
-    .filter(
-      (item) =>
-        item.codigo?.toLowerCase().includes(texto) ||
-        item.producto?.toLowerCase().includes(texto)
-    )
-    .slice(0, limite);
+  const patron = `%${escaparPatronIlike(texto)}%`;
+  const consultaParcial = (columna) =>
+    supabase
+      .from("listaproductos")
+      .select("id, codigo, producto, cantidad")
+      .ilike(columna, patron)
+      .order("codigo", { ascending: true })
+      .limit(limite);
+
+  const [porCodigo, porProducto] = await Promise.all([
+    consultaParcial("codigo"),
+    consultaParcial("producto"),
+  ]);
+
+  if (porCodigo.error) throw porCodigo.error;
+  if (porProducto.error) throw porProducto.error;
+
+  const vistos = new Set();
+  const resultado = [];
+
+  for (const item of [...(porCodigo.data ?? []), ...(porProducto.data ?? [])]) {
+    if (vistos.has(item.id)) continue;
+    vistos.add(item.id);
+    resultado.push(item);
+    if (resultado.length >= limite) break;
+  }
+
+  return resultado.sort((a, b) =>
+    String(a.codigo).localeCompare(String(b.codigo), undefined, { numeric: true })
+  );
 }
 
 export async function obtenerListaProductoPorCodigo(codigo) {
