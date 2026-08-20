@@ -136,12 +136,12 @@ function tamanoFuenteCodigoPequena(codigo) {
 
 function tamanoFuenteCodigoMediana(codigo) {
   const longitud = String(codigo ?? "").length;
-  if (longitud <= 5) return "20pt";
-  if (longitud <= 7) return "18pt";
-  if (longitud <= 9) return "16pt";
-  if (longitud <= 11) return "14pt";
-  if (longitud <= 13) return "12pt";
-  return "11pt";
+  if (longitud <= 5) return "24pt";
+  if (longitud <= 7) return "22pt";
+  if (longitud <= 9) return "20pt";
+  if (longitud <= 11) return "18pt";
+  if (longitud <= 13) return "16pt";
+  return "14pt";
 }
 
 function tamanoFuentePrecioPequena(precio) {
@@ -671,9 +671,9 @@ function estilosEtiqueta(esPequena) {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      gap: 0.4mm;
-      padding-bottom: 0.35mm;
+      justify-content: space-between;
+      gap: 0.35mm;
+      padding-bottom: 0.25mm;
     }
 
     .producto-top-m {
@@ -699,30 +699,33 @@ function estilosEtiqueta(esPequena) {
     }
 
     .etiqueta-inner-m .cuerpo-m {
-      flex: 0 0 auto;
+      flex: 1 1 0;
       min-height: 0;
-      max-height: 18mm;
+      max-height: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       overflow: hidden;
     }
 
     .etiqueta-inner-m .qr-m {
-      width: 18mm;
-      height: 18mm;
-      max-width: 18mm;
-      max-height: 18mm;
+      width: 24mm;
+      height: 24mm;
+      max-width: 24mm;
+      max-height: 24mm;
     }
 
     .etiqueta-inner-m .cod-bloque-m {
       flex: 0 0 auto;
       flex-shrink: 0;
       margin-top: 0;
-      padding: 0.15mm 0.5mm 0.3mm;
-      line-height: 1.15;
+      padding: 0.1mm 0.5mm 0.15mm;
+      line-height: 1.12;
       overflow: visible;
     }
 
     .etiqueta-inner-m .cod-m {
-      line-height: 1.1;
+      line-height: 1.08;
       word-break: break-all;
     }
     `
@@ -756,8 +759,8 @@ function estilosEtiqueta(esPequena) {
     }
 
     .qr-${prefix} {
-      width: ${esPequena ? "auto" : "21mm"};
-      height: ${esPequena ? "100%" : "21mm"};
+      width: ${esPequena ? "auto" : "24mm"};
+      height: ${esPequena ? "100%" : "24mm"};
       max-width: 100%;
       max-height: ${esPequena ? "11mm" : "100%"};
       object-fit: contain;
@@ -773,7 +776,7 @@ function estilosEtiqueta(esPequena) {
       justify-content: center;
       gap: ${esPequena ? "0.5mm" : "1.5mm"};
       flex-shrink: 0;
-      margin-top: ${esPequena ? "0" : "auto"};
+      margin-top: 0;
       width: 100%;
       line-height: 1;
       text-align: center;
@@ -781,7 +784,7 @@ function estilosEtiqueta(esPequena) {
     }
 
     .cod-label-${prefix} {
-      font-size: ${esPequena ? "5pt" : "8pt"};
+      font-size: ${esPequena ? "5pt" : "9pt"};
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -790,7 +793,7 @@ function estilosEtiqueta(esPequena) {
     }
 
     .cod-${prefix} {
-      font-size: ${esPequena ? "17pt" : "29pt"};
+      font-size: ${esPequena ? "17pt" : "32pt"};
       font-weight: 700;
       letter-spacing: 0.03em;
       text-align: center;
