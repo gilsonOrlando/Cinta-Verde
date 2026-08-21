@@ -170,14 +170,14 @@ function tamanoFuenteCodigoNormal(codigo, soloCodigo = false) {
   const longitud = String(codigo ?? "").length;
   let tamano;
 
-  if (longitud <= 4) tamano = 22;
-  else if (longitud <= 6) tamano = 20;
-  else if (longitud <= 8) tamano = 18;
-  else if (longitud <= 10) tamano = 16;
-  else if (longitud <= 12) tamano = 14;
-  else tamano = 12;
+  if (longitud <= 4) tamano = 26;
+  else if (longitud <= 6) tamano = 24;
+  else if (longitud <= 8) tamano = 22;
+  else if (longitud <= 10) tamano = 20;
+  else if (longitud <= 12) tamano = 18;
+  else tamano = 15;
 
-  if (soloCodigo) tamano = Math.min(tamano + 2, 24);
+  if (soloCodigo) tamano = Math.min(tamano + 3, 28);
 
   return `${tamano}pt`;
 }
@@ -311,11 +311,11 @@ function estilosEtiquetaNormal() {
     }
 
     .sello-n {
-      flex: 0 0 5mm;
+      flex: 0 0 7mm;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0.3mm 1mm 0.2mm;
+      padding: 0.35mm 0.8mm 0.25mm;
       min-height: 0;
     }
 
@@ -334,7 +334,7 @@ function estilosEtiquetaNormal() {
       grid-template-columns: 1fr 15mm;
       width: 100%;
       min-height: 0;
-      padding: 0.2mm 0.45mm 0.85mm;
+      padding: 0.15mm 0.45mm 0.45mm;
       gap: 0.3mm;
       align-items: stretch;
     }
@@ -398,10 +398,10 @@ function estilosEtiquetaNormal() {
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 0.15mm 0.45mm;
+      padding: 0.1mm 0.35mm;
       font-weight: 700;
       letter-spacing: 0.015em;
-      line-height: 1.15;
+      line-height: 1.1;
       overflow: visible;
       word-break: break-all;
       width: 100%;
