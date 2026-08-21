@@ -7,6 +7,11 @@ export const TIPOS_ETIQUETA = {
   NORMAL: "normal",
 };
 
+const ETIQUETA_NORMAL_ANCHO = "45mm";
+const ETIQUETA_NORMAL_ALTO = "30mm";
+const ETIQUETA_NORMAL_SEPARACION = "3mm";
+const ETIQUETA_NORMAL_ALTO_PAGINA = "33mm";
+
 export function escaparHtml(texto) {
   return String(texto ?? "")
     .replace(/&/g, "&amp;")
@@ -207,7 +212,7 @@ function buildProductoNormalHtml(nombre) {
 function estilosEtiquetaNormal() {
   return `
     @page {
-      size: 45mm 30mm;
+      size: ${ETIQUETA_NORMAL_ANCHO} ${ETIQUETA_NORMAL_ALTO_PAGINA};
       margin: 0;
     }
 
@@ -216,8 +221,8 @@ function estilosEtiquetaNormal() {
     html, body {
       font-family: Arial, Helvetica, sans-serif;
       color: #000;
-      width: 45mm;
-      height: 30mm;
+      width: ${ETIQUETA_NORMAL_ANCHO};
+      height: ${ETIQUETA_NORMAL_ALTO_PAGINA};
       margin: 0;
       padding: 0;
       overflow: hidden;
@@ -242,8 +247,8 @@ function estilosEtiquetaNormal() {
       }
 
       .preview-hoja {
-        width: 45mm;
-        height: 30mm;
+        width: ${ETIQUETA_NORMAL_ANCHO};
+        height: ${ETIQUETA_NORMAL_ALTO_PAGINA};
         background: #fff;
         padding: 0;
         box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
@@ -251,13 +256,17 @@ function estilosEtiquetaNormal() {
         transform: scale(2);
         transform-origin: center center;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
       }
     }
 
     @media print {
       html, body {
-        width: 45mm;
-        height: 30mm;
+        width: ${ETIQUETA_NORMAL_ANCHO};
+        height: ${ETIQUETA_NORMAL_ALTO_PAGINA};
         background: #fff;
       }
 
@@ -266,8 +275,8 @@ function estilosEtiquetaNormal() {
       }
 
       .preview-hoja {
-        width: 45mm;
-        height: 30mm;
+        width: ${ETIQUETA_NORMAL_ANCHO};
+        height: ${ETIQUETA_NORMAL_ALTO_PAGINA};
         padding: 0;
         box-shadow: none;
         transform: none;
@@ -276,18 +285,23 @@ function estilosEtiquetaNormal() {
     }
 
     .preview-hoja {
-      width: 45mm;
-      height: 30mm;
+      width: ${ETIQUETA_NORMAL_ANCHO};
+      height: ${ETIQUETA_NORMAL_ALTO_PAGINA};
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
     }
 
     .celda-n {
-      width: 45mm;
-      height: 30mm;
-      min-width: 45mm;
-      min-height: 30mm;
+      width: ${ETIQUETA_NORMAL_ANCHO};
+      height: ${ETIQUETA_NORMAL_ALTO};
+      min-width: ${ETIQUETA_NORMAL_ANCHO};
+      min-height: ${ETIQUETA_NORMAL_ALTO};
+      flex: 0 0 ${ETIQUETA_NORMAL_ALTO};
       border: 0.4mm solid #000;
       overflow: hidden;
       background: #fff;
@@ -903,6 +917,21 @@ function buildFilaPequena(productos, tipo, qrPorCodigo) {
 }
 
 function estilosLote(esPequena, esNormal = false) {
+  const estilosHojaNormal = esNormal
+    ? `
+    .hoja-impresion {
+      width: ${ETIQUETA_NORMAL_ANCHO};
+      height: ${ETIQUETA_NORMAL_ALTO_PAGINA};
+      overflow: hidden;
+    }
+
+    .hoja-impresion .preview-hoja {
+      width: ${ETIQUETA_NORMAL_ANCHO};
+      height: ${ETIQUETA_NORMAL_ALTO_PAGINA};
+    }
+    `
+    : "";
+
   return `
     ${esNormal ? estilosEtiquetaNormal() : estilosEtiqueta(esPequena)}
 
@@ -915,12 +944,14 @@ function estilosLote(esPequena, esNormal = false) {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 24px;
+      gap: ${esNormal ? ETIQUETA_NORMAL_SEPARACION : "24px"};
     }
 
     .hoja-impresion {
       flex-shrink: 0;
     }
+
+    ${estilosHojaNormal}
 
     @media print {
       body.lote {
@@ -1115,7 +1146,7 @@ export function getEtiquetaTipoLabel(tipo) {
     return "Pequeña (105 × 28 mm)";
   }
   if (tipo === TIPOS_ETIQUETA.NORMAL) {
-    return "Normal (45 × 30 mm)";
+    return "Normal (45 × 30 mm, separación 3 mm)";
   }
   return "Mediana (70 × 51 mm)";
 }

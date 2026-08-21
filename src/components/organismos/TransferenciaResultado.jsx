@@ -331,7 +331,7 @@ export function TransferenciaResultado({
                   />
                   <RadioText>
                     <strong>Normal</strong>
-                    <span>45 × 30 mm</span>
+                    <span>45 × 30 mm · sep. 3 mm</span>
                   </RadioText>
                 </RadioOption>
               </RadioGroup>
