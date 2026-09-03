@@ -124,8 +124,8 @@ export function TransferenciaResultado({
   const handleImprimirSeleccionados = () => {
     const items = productosList.filter((item) => seleccionados.includes(item.codigo));
 
-    if (items.length < 2) {
-      toast.error("Selecciona más de un producto para imprimir.");
+    if (items.length === 0) {
+      toast.error("Selecciona al menos un producto para imprimir.");
       return;
     }
 
@@ -365,7 +365,7 @@ export function TransferenciaResultado({
                     <BtnImprimirSeleccion
                       type="button"
                       onClick={handleImprimirSeleccionados}
-                      disabled={seleccionados.length < 2}
+                      disabled={seleccionados.length === 0}
                       title="Imprimir los productos seleccionados"
                     >
                       Imprimir ({seleccionados.length})

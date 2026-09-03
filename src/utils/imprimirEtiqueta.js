@@ -922,18 +922,26 @@ function estilosLote(esPequena, esNormal = false) {
     .hoja-impresion {
       width: ${ETIQUETA_NORMAL_ANCHO};
       height: ${ETIQUETA_NORMAL_ALTO_PAGINA};
-      overflow: hidden;
     }
 
     .hoja-impresion .preview-hoja {
       width: ${ETIQUETA_NORMAL_ANCHO};
       height: ${ETIQUETA_NORMAL_ALTO_PAGINA};
+      transform: none;
     }
     `
     : "";
 
   return `
     ${esNormal ? estilosEtiquetaNormal() : estilosEtiqueta(esPequena)}
+
+    html.lote,
+    body.lote {
+      width: auto;
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
 
     body.lote {
       display: block;
@@ -949,12 +957,19 @@ function estilosLote(esPequena, esNormal = false) {
 
     .hoja-impresion {
       flex-shrink: 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
 
     ${estilosHojaNormal}
 
     @media print {
+      html.lote,
       body.lote {
+        width: auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
         padding: 0;
       }
 
@@ -966,6 +981,8 @@ function estilosLote(esPequena, esNormal = false) {
       .hoja-impresion {
         page-break-after: always;
         break-after: page;
+        page-break-inside: avoid;
+        break-inside: avoid;
       }
 
       .hoja-impresion:last-child {
@@ -1066,7 +1083,7 @@ export function buildDocumentoEtiquetasLote(productos, tipo, qrPorCodigo) {
 
   return `
     <!DOCTYPE html>
-    <html lang="es">
+    <html lang="es" class="lote">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
