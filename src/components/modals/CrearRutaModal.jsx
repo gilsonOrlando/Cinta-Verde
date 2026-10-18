@@ -12,11 +12,7 @@ export function CrearRutaModal({ sucursales, guardando, onConfirmar, onClose }) 
     [sucursales]
   );
   const agencias = useMemo(
-    () =>
-      sucursales
-        .filter((item) => !esMatriz(item.tipo))
-        .slice()
-        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+    () => sucursales.filter((item) => !esMatriz(item.tipo)),
     [sucursales]
   );
 
@@ -152,7 +148,7 @@ const Overlay = styled.div`
 
 const Dialog = styled.div`
   width: 100%;
-  max-width: 620px;
+  max-width: 680px;
   max-height: min(90vh, 760px);
   overflow: auto;
   background: #fff;
@@ -226,40 +222,35 @@ const ListaDestinos = styled.div`
   overflow: auto;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   column-gap: 18px;
   row-gap: 10px;
 
-  @media (max-width: 560px) {
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 480px) {
     grid-template-columns: 1fr;
-    row-gap: 8px;
   }
 `;
 
 const Destino = styled.label`
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 36px;
-  padding: 8px 10px;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 4px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
-  line-height: 1.55;
+  font-size: 0.86rem;
+  line-height: 1.45;
   color: #333;
-  border-bottom: 1px solid #f0f0f0;
 
   span {
-    line-height: 1.55;
-    letter-spacing: 0.02em;
-  }
-
-  input {
-    width: auto;
-    margin: 0;
-    flex-shrink: 0;
+    line-height: 1.45;
   }
 
   &:hover {

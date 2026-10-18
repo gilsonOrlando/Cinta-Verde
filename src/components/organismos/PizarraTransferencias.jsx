@@ -304,8 +304,8 @@ export function PizarraTransferencias() {
                   onPointerDown={(event) => iniciarArrastre(event, bodega.id)}
                 >
                   <Pin aria-hidden="true" />
-                  <NodoTipo>{matriz ? "Matriz" : "Agencia"}</NodoTipo>
-                  <NodoNombre>{bodega.nombre}</NodoNombre>
+                  <NodoTipo $compacto={!matriz}>{matriz ? "Matriz" : "Agencia"}</NodoTipo>
+                  <NodoNombre $compacto={!matriz}>{bodega.nombre}</NodoNombre>
                 </Nodo>
               );
             })}
@@ -475,7 +475,7 @@ const Cuerpo = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
   gap: 16px;
-  min-height: 720px;
+  min-height: 680px;
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
@@ -489,14 +489,14 @@ const Marco = styled.div`
     inset 0 0 0 5px #4e342e,
     0 18px 40px rgba(0, 0, 0, 0.18);
   overflow: hidden;
-  min-height: 700px;
+  min-height: 640px;
 `;
 
 const Tablero = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 700px;
+  min-height: 640px;
   background:
     radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.05), transparent 32%),
     radial-gradient(circle at 80% 70%, rgba(0, 0, 0, 0.18), transparent 36%),
@@ -531,10 +531,10 @@ const Nodo = styled.button`
   left: ${({ $x }) => `${$x}%`};
   top: ${({ $y }) => `${$y}%`};
   transform: translate(-50%, -50%);
-  width: ${({ $matriz }) => ($matriz ? "150px" : "108px")};
+  width: ${({ $matriz }) => ($matriz ? "150px" : "96px")};
   border: none;
   border-radius: 8px;
-  padding: ${({ $matriz }) => ($matriz ? "14px 10px 12px" : "8px 6px 7px")};
+  padding: ${({ $matriz }) => ($matriz ? "14px 10px 12px" : "7px 4px 6px")};
   background: ${({ $matriz, $activo }) =>
     $activo ? "#fff8e1" : $matriz ? "#ffe082" : "#fffde7"};
   box-shadow: ${({ $activo }) =>
@@ -587,8 +587,8 @@ const Pin = styled.span`
 
 const NodoTipo = styled.small`
   display: block;
-  margin-top: 6px;
-  font-size: 0.58rem;
+  margin-top: ${({ $compacto }) => ($compacto ? "4px" : "6px")};
+  font-size: ${({ $compacto }) => ($compacto ? "0.5rem" : "0.58rem")};
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8d6e63;
@@ -599,8 +599,8 @@ const NodoNombre = styled.strong`
   display: block;
   margin-top: 2px;
   color: #3e2723;
-  font-size: 0.74rem;
-  line-height: 1.2;
+  font-size: ${({ $compacto }) => ($compacto ? "0.62rem" : "0.74rem")};
+  line-height: 1.15;
 `;
 
 const Panel = styled.aside`
