@@ -40,7 +40,7 @@ const HeaderBar = styled.header`
 `;
 
 const Inner = styled.div`
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 18px 24px;
   display: flex;
@@ -109,14 +109,18 @@ const Nav = styled.nav`
   align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 28px;
+  gap: 22px;
+
+  @media (max-width: 980px) {
+    gap: 12px;
+  }
 `;
 
 const NavItem = styled(NavLink)`
   text-decoration: none;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #222;
   transition: color 0.2s ease;

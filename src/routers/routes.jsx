@@ -3,6 +3,7 @@ import { PublicLayout } from "../hooks/PublicLayout";
 import { Home } from "../pages/Home";
 import { Motos } from "../pages/Motos";
 import { TomaFisica } from "../pages/TomaFisica";
+import { TransferenciasBodegas } from "../pages/TransferenciasBodegas";
 
 export function MyRoutes() {
   return (
@@ -20,6 +21,14 @@ export function MyRoutes() {
         element={
           <PublicLayout>
             <Motos />
+          </PublicLayout>
+        }
+      />
+      <Route
+        path="/transferencias-bodegas"
+        element={
+          <PublicLayout wide>
+            <TransferenciasBodegas />
           </PublicLayout>
         }
       />
