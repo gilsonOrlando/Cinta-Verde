@@ -36,12 +36,9 @@ function apilarAgencias(items, xs, yInicio, yPaso) {
   });
 }
 
-export function ubicarSucursales(sucursales, destinoIdsRuta = []) {
-  const enRuta = new Set(destinoIdsRuta);
+export function ubicarSucursales(sucursales) {
   const matrices = sucursales.filter((item) => item.tipo === "matriz");
   const agencias = sucursales.filter((item) => item.tipo !== "matriz");
-  const izquierda = agencias.filter((item) => !enRuta.has(item.id));
-  const derecha = agencias.filter((item) => enRuta.has(item.id));
   const ubicadas = [];
 
   matrices.forEach((item, index) => {
@@ -56,17 +53,9 @@ export function ubicarSucursales(sucursales, destinoIdsRuta = []) {
     });
   });
 
-  const filasIzq = Math.max(1, Math.ceil(izquierda.length / 2));
-  const pasoIzq = filasIzq <= 1 ? 0 : Math.min(10.2, 84 / Math.max(filasIzq - 1, 1));
-  ubicadas.push(...apilarAgencias(izquierda, [11, 25], 7, pasoIzq));
-
-  if (derecha.length > 0) {
-    const columnasDer = derecha.length > 8 ? 2 : 1;
-    const xsDer = columnasDer === 1 ? [80] : [70, 88];
-    const filasDer = Math.max(1, Math.ceil(derecha.length / columnasDer));
-    const pasoDer = filasDer <= 1 ? 0 : Math.min(9.5, 58 / Math.max(filasDer - 1, 1));
-    ubicadas.push(...apilarAgencias(derecha, xsDer, 34, pasoDer));
-  }
+  const filas = Math.max(1, Math.ceil(agencias.length / 2));
+  const paso = filas <= 1 ? 0 : Math.min(10.2, 84 / Math.max(filas - 1, 1));
+  ubicadas.push(...apilarAgencias(agencias, [11, 25], 7, paso));
 
   return ubicadas;
 }
