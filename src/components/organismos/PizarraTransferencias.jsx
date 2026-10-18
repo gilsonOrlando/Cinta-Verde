@@ -227,7 +227,7 @@ const Cuerpo = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
   gap: 16px;
-  min-height: 620px;
+  min-height: 680px;
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
@@ -241,14 +241,14 @@ const Marco = styled.div`
     inset 0 0 0 5px #4e342e,
     0 18px 40px rgba(0, 0, 0, 0.18);
   overflow: hidden;
-  min-height: 560px;
+  min-height: 640px;
 `;
 
 const Tablero = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 560px;
+  min-height: 640px;
   background:
     radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.05), transparent 32%),
     radial-gradient(circle at 80% 70%, rgba(0, 0, 0, 0.18), transparent 36%),
@@ -274,10 +274,10 @@ const Nodo = styled.button`
   left: ${({ $x }) => `${$x}%`};
   top: ${({ $y }) => `${$y}%`};
   transform: translate(-50%, -50%);
-  width: 128px;
+  width: ${({ $matriz }) => ($matriz ? "150px" : "118px")};
   border: none;
   border-radius: 8px;
-  padding: 12px 8px 10px;
+  padding: ${({ $matriz }) => ($matriz ? "14px 10px 12px" : "10px 6px 8px")};
   background: ${({ $matriz, $activo }) =>
     $activo ? "#fff8e1" : $matriz ? "#ffe082" : "#fffde7"};
   box-shadow: ${({ $activo }) =>

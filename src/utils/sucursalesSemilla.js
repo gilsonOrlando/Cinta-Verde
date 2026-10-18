@@ -27,20 +27,26 @@ export function ubicarSucursales(sucursales) {
   const ubicadas = [];
 
   matrices.forEach((item, index) => {
-    const total = Math.max(matrices.length, 1);
+    const esSuperior = item.nombre === "CATAMAYO" || (item.nombre !== "BODEGA CENTRAL" && index === 0);
     ubicadas.push({
       ...item,
-      x: total === 1 ? 50 : 38 + index * 24,
-      y: 48,
+      x: 80,
+      y: matrices.length === 1 ? 50 : esSuperior ? 18 : 82,
     });
   });
 
+  const columnas = 2;
+  const filas = Math.max(1, Math.ceil(agencias.length / columnas));
+
   agencias.forEach((item, index) => {
-    const angulo = (index / Math.max(agencias.length, 1)) * Math.PI * 2 - Math.PI / 2;
+    const columna = index < filas ? 0 : 1;
+    const fila = columna === 0 ? index : index - filas;
+    const filasColumna = columna === 0 ? filas : agencias.length - filas;
+
     ubicadas.push({
       ...item,
-      x: 50 + Math.cos(angulo) * 38,
-      y: 50 + Math.sin(angulo) * 35,
+      x: columna === 0 ? 13 : 32,
+      y: filasColumna <= 1 ? 50 : 8 + (fila * 84) / (filasColumna - 1),
     });
   });
 
