@@ -6,7 +6,7 @@
 
 - **Inicio:** carga de transferencias (PDF/Excel) e impresión de etiquetas
 - **Toma física:** carga de Excel, creación de proyectos con código de acceso, consulta y descarga en PDF
-- **App móvil SICOB:** escaneo de códigos para contabilizar cantidades físicas (APK en `src/app/`)
+- **App móvil CintaVerde:** escaneo de códigos para contabilizar cantidades físicas (APK en `src/app/`)
 
 ## Requisitos
 
