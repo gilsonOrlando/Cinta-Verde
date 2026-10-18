@@ -9,18 +9,20 @@ import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemilla";
 import { CrearRutaModal } from "../modals/CrearRutaModal";
 
-function conPosicion(sucursales) {
+function conPosicion(sucursales, rutas = []) {
+  const destinoIds = [...new Set(rutas.flatMap((ruta) => ruta.destinoIds ?? []))];
   return ubicarSucursales(
     sucursales.map((item) => ({
       id: item.id ?? item.nombre,
       nombre: item.nombre,
       tipo: item.tipo,
-    }))
+    })),
+    destinoIds
   );
 }
 
 function posicionNodoRuta(index) {
-  return { x: 78, y: 42 + index * 14 };
+  return { x: 50, y: 40 + index * 16 };
 }
 
 function formatearFecha(fecha) {
@@ -65,7 +67,12 @@ export function PizarraTransferencias() {
         try {
           const rutasDb = await listarRutas();
           if (!activo) return;
-          setRutas(rutasDb.map((ruta, index) => ({ ...ruta, ...posicionNodoRuta(index) })));
+          const rutasConPosicion = rutasDb.map((ruta, index) => ({
+            ...ruta,
+            ...posicionNodoRuta(index),
+          }));
+          setRutas(rutasConPosicion);
+          setBodegas(conPosicion(sucursales, rutasConPosicion));
         } catch (errorRutas) {
           console.error(errorRutas);
         }
@@ -177,11 +184,13 @@ export function PizarraTransferencias() {
           destinoIds,
           sucursales: bodegas,
         });
-        setRutas((prev) =>
-          prev.map((item) =>
+        setRutas((prev) => {
+          const siguiente = prev.map((item) =>
             item.id === ruta.id ? { ...item, ...ruta } : item
-          )
-        );
+          );
+          setBodegas((actuales) => conPosicion(actuales, siguiente));
+          return siguiente;
+        });
         setSeleccion(ruta.id);
         toast.success("Ruta actualizada.");
       } else {
@@ -192,7 +201,11 @@ export function PizarraTransferencias() {
           destinoIds,
           sucursales: bodegas,
         });
-        setRutas((prev) => [...prev, { ...ruta, ...posicionNodoRuta(prev.length) }]);
+        setRutas((prev) => {
+          const siguiente = [...prev, { ...ruta, ...posicionNodoRuta(prev.length) }];
+          setBodegas((actuales) => conPosicion(actuales, siguiente));
+          return siguiente;
+        });
         setSeleccion(ruta.id);
         toast.success("Ruta creada.");
       }
@@ -221,7 +234,11 @@ export function PizarraTransferencias() {
 
     try {
       await eliminarRuta(ruta.id);
-      setRutas((prev) => prev.filter((item) => item.id !== ruta.id));
+      setRutas((prev) => {
+        const siguiente = prev.filter((item) => item.id !== ruta.id);
+        setBodegas((actuales) => conPosicion(actuales, siguiente));
+        return siguiente;
+      });
       if (seleccion === ruta.id) setSeleccion(bodegas[0]?.id ?? null);
       toast.success("Ruta eliminada.");
     } catch (error) {
@@ -337,25 +354,31 @@ export function PizarraTransferencias() {
                 $activo={seleccion === ruta.id}
                 onPointerDown={(event) => iniciarArrastre(event, ruta.id, "ruta")}
               >
-                <BtnNodo
-                  type="button"
-                  aria-label="Eliminar ruta"
-                  title="Eliminar ruta"
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={(event) => handleEliminarRuta(ruta, event)}
-                >
-                  ×
-                </BtnNodo>
+                <AccionesNodo>
+                  <BtnNodo
+                    type="button"
+                    aria-label="Editar ruta"
+                    title="Editar ruta"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => handleEditarRuta(ruta, event)}
+                  >
+                    ✎
+                  </BtnNodo>
+                  <BtnNodo
+                    type="button"
+                    $peligro
+                    aria-label="Eliminar ruta"
+                    title="Eliminar ruta"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => handleEliminarRuta(ruta, event)}
+                  >
+                    ×
+                  </BtnNodo>
+                </AccionesNodo>
                 <NodoTipo>Ruta</NodoTipo>
-                <NodoChofer>{ruta.chofer}</NodoChofer>
                 <DestinosRuta>{nombresAgencias(ruta) || "Sin agencias"}</DestinosRuta>
-                <BtnEditar
-                  type="button"
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={(event) => handleEditarRuta(ruta, event)}
-                >
-                  Editar
-                </BtnEditar>
+                <NodoChofer>Chofer: {ruta.chofer}</NodoChofer>
+                <NodoTipo>{formatearFecha(ruta.fecha)}</NodoTipo>
               </NodoRuta>
             ))}
 
@@ -629,7 +652,7 @@ const NodoRuta = styled.div`
   width: 168px;
   border: none;
   border-radius: 12px;
-  padding: 16px 12px 8px;
+  padding: 18px 12px 10px;
   background: ${({ $activo }) => ($activo ? "#c8e6c9" : "#a5d6a7")};
   box-shadow: ${({ $activo }) =>
     $activo
@@ -644,38 +667,30 @@ const NodoRuta = styled.div`
   }
 `;
 
-const BtnNodo = styled.button`
+const AccionesNodo = styled.div`
   position: absolute;
   top: 0;
   right: 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+`;
+
+const BtnNodo = styled.button`
   border: none;
   background: transparent;
-  color: #b71c1c;
+  color: ${({ $peligro }) => ($peligro ? "#b71c1c" : "#1b5e20")};
   cursor: pointer;
   padding: 0;
-  font-size: 1.35rem;
+  font-size: ${({ $peligro }) => ($peligro ? "1.35rem" : "1.05rem")};
   font-weight: 700;
   line-height: 1;
-  width: 22px;
+  width: 20px;
   height: 22px;
 
   &:hover {
-    color: #7f0000;
+    color: ${({ $peligro }) => ($peligro ? "#7f0000" : "#0d3d14")};
   }
-`;
-
-const BtnEditar = styled.button`
-  border: none;
-  background: transparent;
-  color: #1b5e20;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  text-decoration: underline;
-  cursor: pointer;
-  margin-top: 4px;
-  padding: 0;
 `;
 
 const NodoChofer = styled.strong`
