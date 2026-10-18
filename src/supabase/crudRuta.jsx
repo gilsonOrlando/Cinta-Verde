@@ -28,21 +28,13 @@ export async function listarRutas() {
 }
 
 export async function crearRuta({ origenId, fecha, chofer, destinoIds, sucursales = [] }) {
-  const origen = sucursales.find((item) => item.id === origenId);
-  if (!origen || !esMatriz(origen.tipo)) {
-    throw new Error("El origen debe ser una sucursal matriz.");
-  }
-
-  const fechaValor = String(fecha ?? "").trim();
-  const choferValor = String(chofer ?? "").trim().toUpperCase();
-  const destinos = [...new Set((destinoIds ?? []).filter(Boolean))];
-
-  if (!fechaValor) throw new Error("Ingresa la fecha de la ruta.");
-  if (!choferValor) throw new Error("Ingresa el nombre del chofer.");
-  if (destinos.length === 0) throw new Error("Selecciona al menos un destino.");
-  if (destinos.includes(origenId)) {
-    throw new Error("El destino no puede ser la misma sucursal de origen.");
-  }
+  const { fechaValor, choferValor, destinos } = validarRuta({
+    origenId,
+    fecha,
+    chofer,
+    destinoIds,
+    sucursales,
+  });
 
   const { data, error } = await supabase
     .from("ruta")
@@ -72,4 +64,79 @@ export async function crearRuta({ origenId, fecha, chofer, destinoIds, sucursale
     ...data,
     destinoIds: destinos,
   };
+}
+
+function validarRuta({ origenId, fecha, chofer, destinoIds, sucursales = [] }) {
+  const origen = sucursales.find((item) => item.id === origenId);
+  if (!origen || !esMatriz(origen.tipo)) {
+    throw new Error("El origen debe ser una sucursal matriz.");
+  }
+
+  const fechaValor = String(fecha ?? "").trim();
+  const choferValor = String(chofer ?? "").trim().toUpperCase();
+  const destinos = [...new Set((destinoIds ?? []).filter(Boolean))];
+
+  if (!fechaValor) throw new Error("Ingresa la fecha de la ruta.");
+  if (!choferValor) throw new Error("Ingresa el nombre del chofer.");
+  if (destinos.length === 0) throw new Error("Selecciona al menos un destino.");
+  if (destinos.includes(origenId)) {
+    throw new Error("El destino no puede ser la misma sucursal de origen.");
+  }
+
+  return { origenId, fechaValor, choferValor, destinos };
+}
+
+export async function actualizarRuta({
+  id,
+  origenId,
+  fecha,
+  chofer,
+  destinoIds,
+  sucursales = [],
+}) {
+  if (!id) throw new Error("No se encontró la ruta a editar.");
+
+  const { fechaValor, choferValor, destinos } = validarRuta({
+    origenId,
+    fecha,
+    chofer,
+    destinoIds,
+    sucursales,
+  });
+
+  const { data, error } = await supabase
+    .from("ruta")
+    .update({
+      origen_id: origenId,
+      fecha: fechaValor,
+      chofer: choferValor,
+    })
+    .eq("id", id)
+    .select("id, origen_id, fecha, chofer, created_at")
+    .single();
+
+  if (error) throw error;
+
+  const { error: errorBorrar } = await supabase.from("ruta_destino").delete().eq("ruta_id", id);
+  if (errorBorrar) throw errorBorrar;
+
+  const { error: errorDestinos } = await supabase.from("ruta_destino").insert(
+    destinos.map((sucursalId) => ({
+      ruta_id: id,
+      sucursal_id: sucursalId,
+    }))
+  );
+  if (errorDestinos) throw errorDestinos;
+
+  return {
+    ...data,
+    destinoIds: destinos,
+  };
+}
+
+export async function eliminarRuta(id) {
+  if (!id) throw new Error("No se encontró la ruta a eliminar.");
+
+  const { error } = await supabase.from("ruta").delete().eq("id", id);
+  if (error) throw error;
 }

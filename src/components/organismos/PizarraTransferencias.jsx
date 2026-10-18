@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
-import { RiCloseLine, RiMenuLine } from "react-icons/ri";
+import { RiCloseLine, RiMenuLine, RiPencilLine } from "react-icons/ri";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { esMatriz, listarSucursales } from "../../supabase/crudSucursal";
-import { crearRuta, listarRutas } from "../../supabase/crudRuta";
+import { actualizarRuta, crearRuta, eliminarRuta, listarRutas } from "../../supabase/crudRuta";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemilla";
 import { CrearRutaModal } from "../modals/CrearRutaModal";
@@ -40,6 +40,7 @@ export function PizarraTransferencias() {
   const [cargando, setCargando] = useState(true);
   const [menuGestionAbierto, setMenuGestionAbierto] = useState(false);
   const [mostrarRutaModal, setMostrarRutaModal] = useState(false);
+  const [rutaEdicion, setRutaEdicion] = useState(null);
   const [guardandoRuta, setGuardandoRuta] = useState(false);
   const menuGestionRef = useRef(null);
 
@@ -158,25 +159,74 @@ export function PizarraTransferencias() {
     arrastreRef.current = null;
   };
 
-  const handleCrearRuta = async ({ origenId, fecha, chofer, destinoIds }) => {
+  const nombresAgencias = (ruta) =>
+    (ruta.destinoIds ?? [])
+      .map((id) => mapa[id]?.nombre)
+      .filter(Boolean)
+      .join(" · ");
+
+  const handleGuardarRuta = async ({ origenId, fecha, chofer, destinoIds }) => {
     setGuardandoRuta(true);
     try {
-      const ruta = await crearRuta({
-        origenId,
-        fecha,
-        chofer,
-        destinoIds,
-        sucursales: bodegas,
-      });
-      setRutas((prev) => [...prev, { ...ruta, ...posicionNodoRuta(prev.length) }]);
-      setSeleccion(ruta.id);
+      if (rutaEdicion?.id) {
+        const ruta = await actualizarRuta({
+          id: rutaEdicion.id,
+          origenId,
+          fecha,
+          chofer,
+          destinoIds,
+          sucursales: bodegas,
+        });
+        setRutas((prev) =>
+          prev.map((item) =>
+            item.id === ruta.id ? { ...item, ...ruta } : item
+          )
+        );
+        setSeleccion(ruta.id);
+        toast.success("Ruta actualizada.");
+      } else {
+        const ruta = await crearRuta({
+          origenId,
+          fecha,
+          chofer,
+          destinoIds,
+          sucursales: bodegas,
+        });
+        setRutas((prev) => [...prev, { ...ruta, ...posicionNodoRuta(prev.length) }]);
+        setSeleccion(ruta.id);
+        toast.success("Ruta creada.");
+      }
       setMostrarRutaModal(false);
-      toast.success("Ruta creada.");
+      setRutaEdicion(null);
     } catch (error) {
       console.error(error);
       toast.error(interpretarErrorSupabase(error));
     } finally {
       setGuardandoRuta(false);
+    }
+  };
+
+  const handleEditarRuta = (ruta, event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    setRutaEdicion(ruta);
+    setMostrarRutaModal(true);
+  };
+
+  const handleEliminarRuta = async (ruta, event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    const ok = window.confirm(`¿Eliminar la ruta de ${ruta.chofer}?`);
+    if (!ok) return;
+
+    try {
+      await eliminarRuta(ruta.id);
+      setRutas((prev) => prev.filter((item) => item.id !== ruta.id));
+      if (seleccion === ruta.id) setSeleccion(bodegas[0]?.id ?? null);
+      toast.success("Ruta eliminada.");
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
     }
   };
 
@@ -210,6 +260,7 @@ export function PizarraTransferencias() {
                   role="menuitem"
                   onClick={() => {
                     setMenuGestionAbierto(false);
+                    setRutaEdicion(null);
                     setMostrarRutaModal(true);
                   }}
                 >
@@ -286,9 +337,29 @@ export function PizarraTransferencias() {
                 $activo={seleccion === ruta.id}
                 onPointerDown={(event) => iniciarArrastre(event, ruta.id, "ruta")}
               >
+                <AccionesNodo>
+                  <BtnNodo
+                    type="button"
+                    aria-label="Editar ruta"
+                    title="Editar ruta"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => handleEditarRuta(ruta, event)}
+                  >
+                    <RiPencilLine />
+                  </BtnNodo>
+                  <BtnNodo
+                    type="button"
+                    $peligro
+                    aria-label="Eliminar ruta"
+                    title="Eliminar ruta"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => handleEliminarRuta(ruta, event)}
+                  >
+                    <RiCloseLine />
+                  </BtnNodo>
+                </AccionesNodo>
                 <NodoTipo>Ruta</NodoTipo>
-                <NodoNombre>{ruta.chofer}</NodoNombre>
-                <NodoTipo>{formatearFecha(ruta.fecha)}</NodoTipo>
+                <DestinosRuta>{nombresAgencias(ruta) || "Sin agencias"}</DestinosRuta>
               </NodoRuta>
             ))}
 
@@ -356,10 +427,14 @@ export function PizarraTransferencias() {
       {mostrarRutaModal && (
         <CrearRutaModal
           sucursales={bodegas}
+          rutaInicial={rutaEdicion}
           guardando={guardandoRuta}
-          onConfirmar={handleCrearRuta}
+          onConfirmar={handleGuardarRuta}
           onClose={() => {
-            if (!guardandoRuta) setMostrarRutaModal(false);
+            if (!guardandoRuta) {
+              setMostrarRutaModal(false);
+              setRutaEdicion(null);
+            }
           }}
         />
       )}
@@ -550,15 +625,15 @@ const Nodo = styled.button`
   }
 `;
 
-const NodoRuta = styled.button`
+const NodoRuta = styled.div`
   position: absolute;
   left: ${({ $x }) => `${$x}%`};
   top: ${({ $y }) => `${$y}%`};
   transform: translate(-50%, -50%);
-  width: 132px;
+  width: 168px;
   border: none;
-  border-radius: 999px;
-  padding: 10px 10px 8px;
+  border-radius: 12px;
+  padding: 18px 10px 8px;
   background: ${({ $activo }) => ($activo ? "#c8e6c9" : "#a5d6a7")};
   box-shadow: ${({ $activo }) =>
     $activo
@@ -570,6 +645,34 @@ const NodoRuta = styled.button`
 
   &:active {
     cursor: grabbing;
+  }
+`;
+
+const AccionesNodo = styled.div`
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 4px;
+`;
+
+const BtnNodo = styled.button`
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ $peligro }) => ($peligro ? "#c62828" : "#2e7d32")};
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.85rem;
+  line-height: 1;
+
+  &:hover {
+    background: ${({ $peligro }) => ($peligro ? "#b71c1c" : "#1b5e20")};
   }
 `;
 
@@ -593,6 +696,15 @@ const NodoTipo = styled.small`
   text-transform: uppercase;
   color: #8d6e63;
   font-weight: 700;
+`;
+
+const DestinosRuta = styled.strong`
+  display: block;
+  margin-top: 2px;
+  color: #1b5e20;
+  font-size: 0.62rem;
+  line-height: 1.25;
+  word-break: break-word;
 `;
 
 const NodoNombre = styled.strong`

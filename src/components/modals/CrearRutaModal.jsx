@@ -6,7 +6,7 @@ function fechaHoy() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function CrearRutaModal({ sucursales, guardando, onConfirmar, onClose }) {
+export function CrearRutaModal({ sucursales, rutaInicial, guardando, onConfirmar, onClose }) {
   const matrices = useMemo(
     () => sucursales.filter((item) => esMatriz(item.tipo)),
     [sucursales]
@@ -15,11 +15,14 @@ export function CrearRutaModal({ sucursales, guardando, onConfirmar, onClose }) 
     () => sucursales.filter((item) => !esMatriz(item.tipo)),
     [sucursales]
   );
+  const editando = Boolean(rutaInicial?.id);
 
-  const [origenId, setOrigenId] = useState(matrices[0]?.id ?? "");
-  const [fecha, setFecha] = useState(fechaHoy);
-  const [chofer, setChofer] = useState("");
-  const [destinoIds, setDestinoIds] = useState([]);
+  const [origenId, setOrigenId] = useState(rutaInicial?.origen_id ?? matrices[0]?.id ?? "");
+  const [fecha, setFecha] = useState(
+    String(rutaInicial?.fecha ?? "").slice(0, 10) || fechaHoy()
+  );
+  const [chofer, setChofer] = useState(rutaInicial?.chofer ?? "");
+  const [destinoIds, setDestinoIds] = useState(rutaInicial?.destinoIds ?? []);
 
   useEffect(() => {
     if (!origenId && matrices[0]?.id) setOrigenId(matrices[0].id);
@@ -57,7 +60,7 @@ export function CrearRutaModal({ sucursales, guardando, onConfirmar, onClose }) 
         aria-labelledby="crear-ruta-titulo"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 id="crear-ruta-titulo">Crear ruta</h2>
+        <h2 id="crear-ruta-titulo">{editando ? "Editar ruta" : "Crear ruta"}</h2>
         <p>El origen es una matriz. Puedes marcar varias agencias como destino.</p>
 
         <Form onSubmit={handleSubmit}>
@@ -126,7 +129,7 @@ export function CrearRutaModal({ sucursales, guardando, onConfirmar, onClose }) 
               Cancelar
             </BtnSecundario>
             <BtnPrimario type="submit" disabled={guardando}>
-              {guardando ? "Guardando..." : "Crear ruta"}
+              {guardando ? "Guardando..." : editando ? "Guardar cambios" : "Crear ruta"}
             </BtnPrimario>
           </Footer>
         </Form>
