@@ -1,5 +1,5 @@
 export const NavLinksPublicos = [
-  { label: "Inicio", to: "/" },
+  { label: "Etiquetas", to: "/" },
   { label: "Motos", to: "/motos" },
   { label: "Toma física", to: "/toma-fisica" },
 ];

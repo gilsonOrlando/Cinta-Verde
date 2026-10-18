@@ -12,20 +12,20 @@ export function SiteFooter() {
               <RiQrScan2Line />
             </IconWrap>
             <div>
-              <CintaVerdeTitulo>CintaVerde</CintaVerdeTitulo>
+              <CintaVerdeTitulo>SICOB</CintaVerdeTitulo>
               <CintaVerdeSubtitulo>App móvil para escaneo de toma física</CintaVerdeSubtitulo>
             </div>
           </CintaVerdeHeader>
 
           <CintaVerdeTexto>
-            Descarga e instala <strong>CintaVerde</strong> en tu celular para conectarte a un
+            Descarga e instala <strong>SICOB</strong> en tu celular para conectarte a un
             proyecto con su código de acceso, escanear códigos de producto y registrar la
             cantidad física comparándola con la cantidad del sistema.
           </CintaVerdeTexto>
 
           <BtnDescarga href={cintaVerdeApk} download="appCintaVerde.apk">
             <RiDownloadLine />
-            Descargar CintaVerde (APK)
+            Descargar SICOB (APK)
           </BtnDescarga>
         </CintaVerdeCard>
 

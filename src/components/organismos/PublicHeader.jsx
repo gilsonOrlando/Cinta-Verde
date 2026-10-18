@@ -6,11 +6,12 @@ export function PublicHeader() {
   return (
     <HeaderBar>
       <Inner>
-        <Logo to="/">
-          <LogoMark>
-            <span>Cinta</span>
-            <span>Verde</span>
-          </LogoMark>
+        <Logo to="/" aria-label="SICOB, Sistema de Control de Bodegas">
+          <LogoMark>SICOB</LogoMark>
+          <BrandText>
+            <strong>SICOB</strong>
+            <span>Sistema de Control de Bodegas</span>
+          </BrandText>
         </Logo>
 
         <Nav>
@@ -51,25 +52,56 @@ const Inner = styled.div`
 const Logo = styled(NavLink)`
   text-decoration: none;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 `;
 
 const LogoMark = styled.div`
   min-width: 72px;
   height: 72px;
-  padding: 0 14px;
+  padding: 0 10px;
   border-radius: 50%;
   background: #2e7d32;
   color: #fff;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  line-height: 1.15;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
   text-transform: uppercase;
   box-shadow: 0 2px 8px rgba(46, 125, 50, 0.25);
+`;
+
+const BrandText = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  strong {
+    color: #1b5e20;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1.1;
+  }
+
+  span {
+    color: #555;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.25;
+  }
+
+  @media (max-width: 640px) {
+    span {
+      display: none;
+    }
+  }
 `;
 
 const Nav = styled.nav`
