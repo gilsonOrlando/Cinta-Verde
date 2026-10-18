@@ -2,6 +2,77 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { urlArchivoTransferencia } from "../../supabase/crudTransferencia";
 
+function esPdf(file) {
+  const nombre = String(file?.name ?? "").toLowerCase();
+  const tipo = String(file?.type ?? "");
+  return tipo === "application/pdf" || nombre.endsWith(".pdf");
+}
+
+function pdfsDesde(list) {
+  return [...(list ?? [])].filter(esPdf);
+}
+
+function nombreArchivo(file) {
+  if (!file) return "";
+  const kb = file.size / 1024;
+  const tamano = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(kb))} KB`;
+  return `${file.name} · ${tamano}`;
+}
+
+function ZonaPdf({ id, etiqueta, archivo, disabled, onArchivos }) {
+  const [sobre, setSobre] = useState(false);
+
+  const tomar = (files) => {
+    const pdfs = pdfsDesde(files);
+    if (pdfs.length === 0) return;
+    onArchivos(pdfs);
+  };
+
+  return (
+    <Campo>
+      <label htmlFor={id}>{etiqueta}</label>
+      <Drop
+        $activo={Boolean(archivo)}
+        $sobre={sobre}
+        $disabled={disabled}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!disabled) setSobre(true);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!event.currentTarget.contains(event.relatedTarget)) setSobre(false);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setSobre(false);
+          if (!disabled) tomar(event.dataTransfer.files);
+        }}
+      >
+        <input
+          id={id}
+          type="file"
+          accept="application/pdf,.pdf"
+          disabled={disabled}
+          onChange={(event) => {
+            tomar(event.target.files);
+            event.target.value = "";
+          }}
+        />
+        <strong>{archivo ? nombreArchivo(archivo) : "Arrastra el PDF aquí"}</strong>
+        <small>{archivo ? "Suelta otro archivo para reemplazarlo" : "o haz clic para seleccionar"}</small>
+      </Drop>
+    </Campo>
+  );
+}
+
 export function CargarTransferenciaModal({
   ruta,
   transferencias = [],
@@ -11,6 +82,7 @@ export function CargarTransferenciaModal({
 }) {
   const [archivoTransferencia, setArchivoTransferencia] = useState(null);
   const [archivoGuia, setArchivoGuia] = useState(null);
+  const [aviso, setAviso] = useState("");
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -25,9 +97,26 @@ export function CargarTransferenciaModal({
     };
   }, [guardando, onClose]);
 
+  const asignar = (pdfs, destino) => {
+    if (pdfs.length === 0) {
+      setAviso("Solo se aceptan archivos PDF.");
+      return;
+    }
+
+    setAviso("");
+    if (pdfs.length >= 2) {
+      setArchivoTransferencia(pdfs[0]);
+      setArchivoGuia(pdfs[1]);
+      return;
+    }
+
+    if (destino === "guia") setArchivoGuia(pdfs[0]);
+    else setArchivoTransferencia(pdfs[0]);
+  };
+
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (guardando) return;
+    if (guardando || !archivoTransferencia || !archivoGuia) return;
     onConfirmar({ archivoTransferencia, archivoGuia });
   };
 
@@ -40,35 +129,29 @@ export function CargarTransferenciaModal({
       >
         <h2 id="cargar-transferencia-titulo">Cargar transferencia</h2>
         <p>
-          Cada transferencia lleva su guía. Ambos PDF son obligatorios, de máximo 5 MB y
+          Cada transferencia lleva su guía. Arrastra los PDF o selecciónalos. Máximo 5 MB y
           3 páginas. Ruta: {ruta?.chofer ?? "—"}.
         </p>
 
         <Form onSubmit={handleSubmit}>
           <Grid>
-            <Campo>
-              <label htmlFor="pdf-transferencia">PDF transferencia</label>
-              <input
-                id="pdf-transferencia"
-                type="file"
-                accept="application/pdf,.pdf"
-                disabled={guardando}
-                required
-                onChange={(event) => setArchivoTransferencia(event.target.files?.[0] ?? null)}
-              />
-            </Campo>
-            <Campo>
-              <label htmlFor="pdf-guia">PDF guía</label>
-              <input
-                id="pdf-guia"
-                type="file"
-                accept="application/pdf,.pdf"
-                disabled={guardando}
-                required
-                onChange={(event) => setArchivoGuia(event.target.files?.[0] ?? null)}
-              />
-            </Campo>
+            <ZonaPdf
+              id="pdf-transferencia"
+              etiqueta="PDF transferencia"
+              archivo={archivoTransferencia}
+              disabled={guardando}
+              onArchivos={(pdfs) => asignar(pdfs, "transferencia")}
+            />
+            <ZonaPdf
+              id="pdf-guia"
+              etiqueta="PDF guía"
+              archivo={archivoGuia}
+              disabled={guardando}
+              onArchivos={(pdfs) => asignar(pdfs, "guia")}
+            />
           </Grid>
+
+          {aviso && <Aviso>{aviso}</Aviso>}
 
           {transferencias.length > 0 && (
             <Lista>
@@ -117,8 +200,8 @@ const Overlay = styled.div`
 
 const Dialog = styled.div`
   width: 100%;
-  max-width: 640px;
-  max-height: min(90vh, 720px);
+  max-width: 720px;
+  max-height: min(90vh, 760px);
   overflow: auto;
   background: #fff;
   border-radius: 14px;
@@ -167,15 +250,49 @@ const Campo = styled.div`
     text-transform: uppercase;
     color: #666;
   }
+`;
 
-  input[type="file"] {
-    width: 100%;
-    padding: 10px 8px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 0.82rem;
-    background: #fff;
+const Drop = styled.div`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 132px;
+  padding: 16px 12px;
+  border: 2px dashed ${({ $sobre, $activo }) => ($sobre ? "#1b5e20" : $activo ? "#81c784" : "#cfd8dc")};
+  border-radius: 10px;
+  background: ${({ $sobre, $activo }) => ($sobre ? "#e8f5e9" : $activo ? "#f1f8e9" : "#fafafa")};
+  text-align: center;
+  cursor: ${({ $disabled }) => ($disabled ? "wait" : "pointer")};
+  pointer-events: ${({ $disabled }) => ($disabled ? "none" : "auto")};
+
+  input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
   }
+
+  strong {
+    font-size: 0.84rem;
+    color: #1b5e20;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+
+  small {
+    color: #777;
+    font-size: 0.76rem;
+  }
+`;
+
+const Aviso = styled.p`
+  margin: 0;
+  color: #c62828;
+  font-size: 0.84rem;
+  font-weight: 600;
 `;
 
 const Lista = styled.div`
