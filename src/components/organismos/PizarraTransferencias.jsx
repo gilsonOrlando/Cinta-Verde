@@ -9,49 +9,45 @@ import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemilla";
 import { CrearRutaModal } from "../modals/CrearRutaModal";
 
-const COLORES_RUTA = [
-  "#ffcdd2",
-  "#bbdefb",
-  "#c8e6c9",
-  "#ffe0b2",
-  "#e1bee7",
-  "#b2ebf2",
-  "#fff9c4",
-  "#d7ccc8",
-];
-
 const COLORES_MATRIZ = [
-  "#ffb74d",
-  "#4fc3f7",
-  "#f48fb1",
-  "#b39ddb",
-  "#ffd54f",
-  "#ff8a65",
+  ["#ffb74d", "#ffcc80", "#ff8a65", "#ffe082"],
+  ["#4fc3f7", "#81d4fa", "#26c6da", "#80deea"],
+  ["#f48fb1", "#f8bbd0", "#ce93d8", "#e1bee7"],
+  ["#b39ddb", "#c5cae9", "#9fa8da", "#d1c4e9"],
+  ["#ffd54f", "#fff176", "#ffca28", "#ffecb3"],
+  ["#a1887f", "#bcaaa4", "#8d6e63", "#d7ccc8"],
 ];
 
-function colorDeMatriz(item, sucursales = []) {
-  if (!esMatriz(item?.tipo)) return "#fffde7";
-
+function indiceMatriz(item, sucursales = []) {
   const matrices = sucursales
     .filter((sucursal) => esMatriz(sucursal.tipo))
     .slice()
     .sort((a, b) => String(a.nombre ?? "").localeCompare(String(b.nombre ?? ""), "es"));
-  let index = matrices.findIndex((sucursal) => sucursal.id === item.id);
+  let index = matrices.findIndex((sucursal) => sucursal.id === item?.id);
   if (index < 0) {
-    index = matrices.findIndex((sucursal) => sucursal.nombre === item.nombre);
+    index = matrices.findIndex((sucursal) => sucursal.nombre === item?.nombre);
   }
-  if (index < 0) index = 0;
-
-  return COLORES_MATRIZ[index % COLORES_MATRIZ.length];
+  return index < 0 ? 0 : index;
 }
 
-function colorDeRuta(id) {
-  const texto = String(id ?? "");
-  let hash = 0;
-  for (let i = 0; i < texto.length; i += 1) {
-    hash = (hash * 31 + texto.charCodeAt(i)) >>> 0;
-  }
-  return COLORES_RUTA[hash % COLORES_RUTA.length];
+function colorDeMatriz(item, sucursales = []) {
+  if (!esMatriz(item?.tipo)) return "#fffde7";
+  const familia = COLORES_MATRIZ[indiceMatriz(item, sucursales) % COLORES_MATRIZ.length];
+  return familia[0];
+}
+
+function colorDeRuta(ruta, sucursales = [], rutas = []) {
+  const origen = sucursales.find((item) => item.id === ruta?.origen_id);
+  const familia = COLORES_MATRIZ[indiceMatriz(origen, sucursales) % COLORES_MATRIZ.length];
+  const hermanas = rutas
+    .filter((item) => item.origen_id === ruta?.origen_id)
+    .slice()
+    .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  const index = Math.max(
+    0,
+    hermanas.findIndex((item) => item.id === ruta?.id)
+  );
+  return familia[(index + 1) % familia.length];
 }
 
 function conPosicion(sucursales) {
@@ -164,7 +160,7 @@ export function PizarraTransferencias() {
   const idsEnfoque = new Set(
     rutaEnfoque ? [rutaEnfoque.origen_id, ...(rutaEnfoque.destinoIds ?? [])] : []
   );
-  const colorEnfoque = rutaEnfoque ? colorDeRuta(rutaEnfoque.id) : "";
+  const colorEnfoque = rutaEnfoque ? colorDeRuta(rutaEnfoque, bodegas, rutas) : "";
 
   const iniciarArrastre = (event, id, tipo = "sucursal") => {
     event.preventDefault();
@@ -340,7 +336,7 @@ export function PizarraTransferencias() {
                 const origen = mapa[ruta.origen_id];
                 if (!origen) return null;
                 const activo = seleccion === ruta.id || rutaFoco === ruta.id;
-                const color = colorDeRuta(ruta.id);
+                const color = colorDeRuta(ruta, bodegas, rutas);
                 return (
                   <path
                     key={`${ruta.id}-origen`}
@@ -359,7 +355,7 @@ export function PizarraTransferencias() {
                 key={ruta.id}
                 $x={ruta.x}
                 $y={ruta.y}
-                $color={colorDeRuta(ruta.id)}
+                $color={colorDeRuta(ruta, bodegas, rutas)}
                 $activo={seleccion === ruta.id || rutaFoco === ruta.id}
                 onPointerDown={(event) => iniciarArrastre(event, ruta.id, "ruta")}
                 onPointerEnter={() => setRutaFoco(ruta.id)}
