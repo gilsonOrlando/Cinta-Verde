@@ -31,7 +31,8 @@ export function interpretarErrorSupabase(error) {
     texto.includes("listaproductos") ||
     texto.includes("catalogo_productos") ||
     texto.includes("motos") ||
-    texto.includes("ruta")
+    texto.includes("ruta") ||
+    texto.includes("transferencia")
   ) {
     return (
       "Falta una tabla en Supabase. Ejecuta en SQL Editor: " +

@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
-import { RiCloseLine, RiMenuLine } from "react-icons/ri";
+import { RiCloseLine, RiMenuLine, RiTruckFill } from "react-icons/ri";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { esMatriz, listarSucursales } from "../../supabase/crudSucursal";
 import { actualizarRuta, crearRuta, eliminarRuta, listarRutas } from "../../supabase/crudRuta";
+import { crearTransferencia, listarTransferencias } from "../../supabase/crudTransferencia";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemilla";
 import { CrearRutaModal } from "../modals/CrearRutaModal";
+import { CargarTransferenciaModal } from "../modals/CargarTransferenciaModal";
 
 const COLORES_MATRIZ = [
   ["#ffb74d", "#ffcc80", "#ff8a65", "#ffe082"],
@@ -84,6 +86,10 @@ export function PizarraTransferencias() {
   const [rutaEdicion, setRutaEdicion] = useState(null);
   const [guardandoRuta, setGuardandoRuta] = useState(false);
   const [rutaFoco, setRutaFoco] = useState(null);
+  const [transferencias, setTransferencias] = useState([]);
+  const [mostrarCargaModal, setMostrarCargaModal] = useState(false);
+  const [rutaCarga, setRutaCarga] = useState(null);
+  const [guardandoCarga, setGuardandoCarga] = useState(false);
   const menuGestionRef = useRef(null);
 
   useEffect(() => {
@@ -112,6 +118,12 @@ export function PizarraTransferencias() {
             ...posicionNodoRuta(index),
           }));
           setRutas(rutasConPosicion);
+          try {
+            const cargadas = await listarTransferencias();
+            if (activo) setTransferencias(cargadas);
+          } catch (errorTransferencias) {
+            console.error(errorTransferencias);
+          }
         } catch (errorRutas) {
           console.error(errorRutas);
         }
@@ -275,11 +287,44 @@ export function PizarraTransferencias() {
       setRutas((prev) => prev.filter((item) => item.id !== ruta.id));
       if (seleccion === ruta.id) setSeleccion(bodegas[0]?.id ?? null);
       toast.success("Ruta eliminada.");
+      setTransferencias((prev) => prev.filter((item) => item.ruta_id !== ruta.id));
     } catch (error) {
       console.error(error);
       toast.error(interpretarErrorSupabase(error));
     }
   };
+
+  const handleAbrirCarga = (ruta, event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    setSeleccion(ruta.id);
+    setRutaCarga(ruta);
+    setMostrarCargaModal(true);
+  };
+
+  const handleGuardarTransferencia = async ({ archivoTransferencia, archivoGuia }) => {
+    if (!rutaCarga?.id) return;
+    setGuardandoCarga(true);
+    try {
+      const creada = await crearTransferencia({
+        rutaId: rutaCarga.id,
+        archivoTransferencia,
+        archivoGuia,
+      });
+      setTransferencias((prev) => [...prev, creada]);
+      setMostrarCargaModal(false);
+      setRutaCarga(null);
+      toast.success("Transferencia y guía guardadas.");
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
+    } finally {
+      setGuardandoCarga(false);
+    }
+  };
+
+  const transferenciasDeRuta = (rutaId) =>
+    transferencias.filter((item) => item.ruta_id === rutaId);
 
   return (
     <Layout>
@@ -361,6 +406,18 @@ export function PizarraTransferencias() {
                 onPointerEnter={() => setRutaFoco(ruta.id)}
                 onPointerLeave={() => setRutaFoco(null)}
               >
+                <BtnCamion
+                  type="button"
+                  aria-label="Cargar transferencia y guía"
+                  title="Cargar transferencia y guía"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => handleAbrirCarga(ruta, event)}
+                >
+                  <RiTruckFill />
+                  {transferenciasDeRuta(ruta.id).length > 0 && (
+                    <BadgeCamion>{transferenciasDeRuta(ruta.id).length}</BadgeCamion>
+                  )}
+                </BtnCamion>
                 <AccionesNodo>
                   <BtnNodo
                     type="button"
@@ -425,6 +482,8 @@ export function PizarraTransferencias() {
                   .map((id) => mapa[id]?.nombre)
                   .filter(Boolean)
                   .join(", ") || "—"}
+                <br />
+                Transferencias: {transferenciasDeRuta(rutaActiva.id).length}
               </Nota>
             </>
           ) : (
@@ -451,11 +510,26 @@ export function PizarraTransferencias() {
             </span>
           </Leyenda>
           <Nota>
-            {bodegas.length} sucursales · {rutas.length} ruta(s). Usa Gestión → Ruta para
-            crear un recorrido.
+            {bodegas.length} sucursales · {rutas.length} ruta(s) · {transferencias.length}{" "}
+            transferencia(s). El camión de cada ruta carga transferencia y guía juntas.
           </Nota>
         </Panel>
       </Cuerpo>
+
+      {mostrarCargaModal && rutaCarga && (
+        <CargarTransferenciaModal
+          ruta={rutaCarga}
+          transferencias={transferenciasDeRuta(rutaCarga.id)}
+          guardando={guardandoCarga}
+          onConfirmar={handleGuardarTransferencia}
+          onClose={() => {
+            if (!guardandoCarga) {
+              setMostrarCargaModal(false);
+              setRutaCarga(null);
+            }
+          }}
+        />
+      )}
 
       {mostrarRutaModal && (
         <CrearRutaModal
@@ -667,10 +741,10 @@ const NodoRuta = styled.div`
   left: ${({ $x }) => `${$x}%`};
   top: ${({ $y }) => `${$y}%`};
   transform: translate(-50%, -50%);
-  width: 168px;
+  width: 176px;
   border: none;
   border-radius: 12px;
-  padding: 18px 12px 10px;
+  padding: 26px 12px 10px;
   background: ${({ $color }) => $color};
   box-shadow: ${({ $activo, $color }) =>
     $activo
@@ -684,6 +758,46 @@ const NodoRuta = styled.div`
   &:active {
     cursor: grabbing;
   }
+`;
+
+const BtnCamion = styled.button`
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  border: none;
+  background: transparent;
+  color: #1b5e20;
+  cursor: pointer;
+  padding: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  &:hover {
+    color: #0d3d14;
+  }
+`;
+
+const BadgeCamion = styled.span`
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: #1b5e20;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 14px;
 `;
 
 const AccionesNodo = styled.div`
