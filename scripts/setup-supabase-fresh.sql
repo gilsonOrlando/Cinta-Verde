@@ -58,6 +58,13 @@ create unique index if not exists motos_chasis_unique
 
 create index if not exists motos_codigo_idx on public.motos (codigo);
 
+create table if not exists public.sucursal (
+  id uuid primary key default gen_random_uuid(),
+  nombre text not null unique,
+  tipo text not null check (tipo in ('agencia', 'matriz')),
+  created_at timestamptz not null default now()
+);
+
 alter table public.proyectos enable row level security;
 alter table public.productos enable row level security;
 alter table public.listaproductos enable row level security;
@@ -67,3 +74,5 @@ create policy "proyectos_all_anon" on public.proyectos for all to anon, authenti
 create policy "productos_all_anon" on public.productos for all to anon, authenticated using (true) with check (true);
 create policy "listaproductos_all_anon" on public.listaproductos for all to anon, authenticated using (true) with check (true);
 create policy "motos_all_anon" on public.motos for all to anon, authenticated using (true) with check (true);
+alter table public.sucursal enable row level security;
+create policy "sucursal_all_anon" on public.sucursal for all to anon, authenticated using (true) with check (true);

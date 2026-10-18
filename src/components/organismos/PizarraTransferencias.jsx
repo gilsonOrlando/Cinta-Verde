@@ -1,30 +1,56 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
+import { supabaseConfigurado } from "../../supabase/supabase.config";
+import { esMatriz, listarSucursales } from "../../supabase/crudSucursal";
+import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemilla";
 
-const BODEGAS_INICIALES = [
-  { id: "compras", nombre: "Bodega de compras", tipo: "hub", x: 48, y: 46 },
-  { id: "catamayo", nombre: "Catamayo", tipo: "agencia", x: 78, y: 22 },
-  { id: "loja", nombre: "Loja", tipo: "agencia", x: 18, y: 24 },
-  { id: "machala", nombre: "Machala", tipo: "agencia", x: 16, y: 72 },
-  { id: "cuenca", nombre: "Cuenca", tipo: "agencia", x: 80, y: 70 },
-  { id: "zamora", nombre: "Zamora", tipo: "agencia", x: 50, y: 16 },
-];
-
-const FLUJOS = [
-  { id: "f1", from: "compras", to: "catamayo", cantidad: 12 },
-  { id: "f2", from: "compras", to: "loja", cantidad: 7 },
-  { id: "f3", from: "compras", to: "machala", cantidad: 9 },
-  { id: "f4", from: "compras", to: "cuenca", cantidad: 5 },
-  { id: "f5", from: "compras", to: "zamora", cantidad: 4 },
-  { id: "f6", from: "catamayo", to: "loja", cantidad: 2 },
-];
+function conPosicion(sucursales) {
+  return ubicarSucursales(
+    sucursales.map((item) => ({
+      id: item.id ?? item.nombre,
+      nombre: item.nombre,
+      tipo: item.tipo,
+    }))
+  );
+}
 
 export function PizarraTransferencias() {
   const tableroRef = useRef(null);
   const arrastreRef = useRef(null);
-  const [bodegas, setBodegas] = useState(BODEGAS_INICIALES);
-  const [seleccion, setSeleccion] = useState("compras");
-  const [flujoActivo, setFlujoActivo] = useState(null);
+  const originalesRef = useRef(conPosicion(SUCURSALES_SEMILLA));
+  const [bodegas, setBodegas] = useState(originalesRef.current);
+  const [seleccion, setSeleccion] = useState(originalesRef.current[0]?.id ?? null);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    let activo = true;
+
+    async function cargar() {
+      if (!supabaseConfigurado) {
+        setCargando(false);
+        return;
+      }
+
+      try {
+        const sucursales = await listarSucursales();
+        if (!activo || sucursales.length === 0) return;
+
+        const ubicadas = conPosicion(sucursales);
+        originalesRef.current = ubicadas;
+        setBodegas(ubicadas);
+        setSeleccion(ubicadas[0]?.id ?? null);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (activo) setCargando(false);
+      }
+    }
+
+    cargar();
+    return () => {
+      activo = false;
+    };
+  }, []);
 
   const mapa = useMemo(
     () => Object.fromEntries(bodegas.map((item) => [item.id, item])),
@@ -32,9 +58,6 @@ export function PizarraTransferencias() {
   );
 
   const bodegaActiva = mapa[seleccion];
-  const flujosBodega = FLUJOS.filter(
-    (flujo) => flujo.from === seleccion || flujo.to === seleccion
-  );
 
   const iniciarArrastre = (event, id) => {
     event.preventDefault();
@@ -49,7 +72,6 @@ export function PizarraTransferencias() {
       offsetY: ((event.clientY - rect.top) / rect.height) * 100 - nodo.y,
     };
     setSeleccion(id);
-    setFlujoActivo(null);
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
@@ -77,20 +99,20 @@ export function PizarraTransferencias() {
   };
 
   const restablecer = () => {
-    setBodegas(BODEGAS_INICIALES);
-    setSeleccion("compras");
-    setFlujoActivo(null);
+    setBodegas(originalesRef.current);
+    setSeleccion(originalesRef.current[0]?.id ?? null);
   };
 
   return (
     <Layout>
       <Cabecera>
         <div>
-          <Kicker>Diseño interactivo</Kicker>
+          <Kicker>Actores de transferencia</Kicker>
           <Titulo>Transferencias entre bodegas</Titulo>
           <Subtitulo>
-            Pizarra de flujo. Arrastra las bodegas, haz clic para resaltar conexiones y
-            explora el mapa. Los datos aún son de demostración.
+            {cargando
+              ? "Cargando sucursales…"
+              : "Arrastra las sucursales en la pizarra. Las matrices usan el color ámbar y las agencias el color crema."}
           </Subtitulo>
         </div>
         <BtnReset type="button" onClick={restablecer}>
@@ -106,98 +128,43 @@ export function PizarraTransferencias() {
             onPointerUp={terminarArrastre}
             onPointerLeave={terminarArrastre}
           >
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              <defs>
-                <marker
-                  id="flecha-pizarra"
-                  markerWidth="6"
-                  markerHeight="6"
-                  refX="5"
-                  refY="3"
-                  orient="auto"
+            {bodegas.map((bodega) => {
+              const matriz = esMatriz(bodega.tipo);
+              return (
+                <Nodo
+                  key={bodega.id}
+                  $x={bodega.x}
+                  $y={bodega.y}
+                  $matriz={matriz}
+                  $activo={seleccion === bodega.id}
+                  onPointerDown={(event) => iniciarArrastre(event, bodega.id)}
                 >
-                  <path d="M0,0 L6,3 L0,6 Z" fill="#f3e5ab" />
-                </marker>
-              </defs>
-              {FLUJOS.map((flujo) => {
-                const origen = mapa[flujo.from];
-                const destino = mapa[flujo.to];
-                if (!origen || !destino) return null;
-
-                const activo =
-                  flujoActivo === flujo.id ||
-                  seleccion === flujo.from ||
-                  seleccion === flujo.to;
-                const mx = (origen.x + destino.x) / 2;
-                const my = (origen.y + destino.y) / 2 - 4;
-
-                return (
-                  <g key={flujo.id} onClick={() => setFlujoActivo(flujo.id)}>
-                    <path
-                      d={`M ${origen.x} ${origen.y} Q ${mx} ${my} ${destino.x} ${destino.y}`}
-                      fill="none"
-                      stroke={activo ? "#ffec8a" : "rgba(243, 229, 171, 0.35)"}
-                      strokeWidth={activo ? 1.1 : 0.55}
-                      markerEnd="url(#flecha-pizarra)"
-                    />
-                    <text
-                      x={(origen.x + destino.x) / 2}
-                      y={(origen.y + destino.y) / 2 - 1.6}
-                      textAnchor="middle"
-                      fill={activo ? "#fff8dc" : "rgba(255,248,220,0.55)"}
-                      fontSize="2.4"
-                    >
-                      {flujo.cantidad}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-
-            {bodegas.map((bodega) => (
-              <Nodo
-                key={bodega.id}
-                $x={bodega.x}
-                $y={bodega.y}
-                $hub={bodega.tipo === "hub"}
-                $activo={seleccion === bodega.id}
-                onPointerDown={(event) => iniciarArrastre(event, bodega.id)}
-              >
-                <Pin aria-hidden="true" />
-                <NodoTipo>{bodega.tipo === "hub" ? "Origen" : "Agencia"}</NodoTipo>
-                <NodoNombre>{bodega.nombre}</NodoNombre>
-              </Nodo>
-            ))}
+                  <Pin aria-hidden="true" />
+                  <NodoTipo>{matriz ? "Matriz" : "Agencia"}</NodoTipo>
+                  <NodoNombre>{bodega.nombre}</NodoNombre>
+                </Nodo>
+              );
+            })}
           </Tablero>
         </Marco>
 
         <Panel>
-          <PanelTitulo>{bodegaActiva?.nombre ?? "Bodega"}</PanelTitulo>
+          <PanelTitulo>{bodegaActiva?.nombre ?? "Sucursal"}</PanelTitulo>
           <PanelDato>
-            {bodegaActiva?.tipo === "hub"
-              ? "Punto de despacho principal"
-              : "Agencia receptora"}
+            {esMatriz(bodegaActiva?.tipo) ? "Matriz" : "Agencia"}
           </PanelDato>
-          <ListaFlujos>
-            {flujosBodega.map((flujo) => {
-              const origen = mapa[flujo.from];
-              const destino = mapa[flujo.to];
-              return (
-                <FlujoItem
-                  key={flujo.id}
-                  $activo={flujoActivo === flujo.id}
-                  type="button"
-                  onClick={() => setFlujoActivo(flujo.id)}
-                >
-                  <span>
-                    {origen?.nombre} → {destino?.nombre}
-                  </span>
-                  <strong>{flujo.cantidad} envíos</strong>
-                </FlujoItem>
-              );
-            })}
-          </ListaFlujos>
-          <Nota>Próximo paso: conectar estas rutas con transferencias reales.</Nota>
+          <Leyenda>
+            <span>
+              <Muestra $matriz /> Matriz
+            </span>
+            <span>
+              <Muestra /> Agencia
+            </span>
+          </Leyenda>
+          <Nota>
+            {bodegas.length} sucursales registradas. Los flujos de transferencia se
+            conectarán en el siguiente paso.
+          </Nota>
         </Panel>
       </Cuerpo>
     </Layout>
@@ -258,7 +225,7 @@ const BtnReset = styled.button`
 
 const Cuerpo = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) 260px;
   gap: 16px;
   min-height: 620px;
 
@@ -300,25 +267,6 @@ const Tablero = styled.div`
     #1b4332;
   touch-action: none;
   user-select: none;
-
-  svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  svg g {
-    pointer-events: stroke;
-    cursor: pointer;
-  }
-
-  svg text {
-    font-family: Arial, Helvetica, sans-serif;
-    font-weight: 700;
-    pointer-events: none;
-  }
 `;
 
 const Nodo = styled.button`
@@ -326,18 +274,19 @@ const Nodo = styled.button`
   left: ${({ $x }) => `${$x}%`};
   top: ${({ $y }) => `${$y}%`};
   transform: translate(-50%, -50%);
-  width: 148px;
+  width: 128px;
   border: none;
   border-radius: 8px;
-  padding: 12px 10px 10px;
-  background: ${({ $hub, $activo }) =>
-    $activo ? "#fff8e1" : $hub ? "#ffe082" : "#fffde7"};
+  padding: 12px 8px 10px;
+  background: ${({ $matriz, $activo }) =>
+    $activo ? "#fff8e1" : $matriz ? "#ffe082" : "#fffde7"};
   box-shadow: ${({ $activo }) =>
     $activo
       ? "0 0 0 3px #ffec8a, 0 8px 18px rgba(0, 0, 0, 0.28)"
       : "0 6px 14px rgba(0, 0, 0, 0.22)"};
   cursor: grab;
   text-align: center;
+  z-index: ${({ $matriz }) => ($matriz ? 2 : 1)};
 
   &:active {
     cursor: grabbing;
@@ -359,7 +308,7 @@ const Pin = styled.span`
 const NodoTipo = styled.small`
   display: block;
   margin-top: 6px;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8d6e63;
@@ -370,7 +319,7 @@ const NodoNombre = styled.strong`
   display: block;
   margin-top: 2px;
   color: #3e2723;
-  font-size: 0.86rem;
+  font-size: 0.74rem;
   line-height: 1.2;
 `;
 
@@ -394,34 +343,31 @@ const PanelDato = styled.p`
   margin: 0;
   color: #6d4c41;
   font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
-const ListaFlujos = styled.div`
+const Leyenda = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-`;
-
-const FlujoItem = styled.button`
-  border: 1px solid ${({ $activo }) => ($activo ? "#2e7d32" : "#e8dfd0")};
-  background: ${({ $activo }) => ($activo ? "#e8f5e9" : "#fff")};
-  border-radius: 8px;
-  padding: 10px;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  font-size: 0.82rem;
+  color: #555;
 
   span {
-    color: #444;
-    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
+`;
 
-  strong {
-    color: #1b5e20;
-    font-size: 0.84rem;
-  }
+const Muestra = styled.i`
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: ${({ $matriz }) => ($matriz ? "#ffe082" : "#fffde7")};
+  border: 1px solid #d7ccc8;
 `;
 
 const Nota = styled.p`
