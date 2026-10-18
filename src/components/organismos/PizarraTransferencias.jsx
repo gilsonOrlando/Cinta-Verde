@@ -29,6 +29,28 @@ function colorDeRuta(id) {
   return COLORES_RUTA[hash % COLORES_RUTA.length];
 }
 
+const COLORES_MATRIZ = [
+  "#ffcc80",
+  "#90caf9",
+  "#f48fb1",
+  "#ce93d8",
+  "#ffab91",
+  "#fff176",
+  "#80deea",
+  "#bcaaa4",
+];
+
+function mapaColoresMatriz(sucursales) {
+  const matrices = sucursales
+    .filter((item) => esMatriz(item.tipo))
+    .slice()
+    .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), "es"));
+
+  return Object.fromEntries(
+    matrices.map((item, index) => [item.id, COLORES_MATRIZ[index % COLORES_MATRIZ.length]])
+  );
+}
+
 function conPosicion(sucursales) {
   return ubicarSucursales(
     sucursales.map((item) => ({
@@ -128,6 +150,15 @@ export function PizarraTransferencias() {
 
   const mapa = useMemo(
     () => Object.fromEntries(bodegas.map((item) => [item.id, item])),
+    [bodegas]
+  );
+  const coloresMatriz = useMemo(() => mapaColoresMatriz(bodegas), [bodegas]);
+  const matricesLeyenda = useMemo(
+    () =>
+      bodegas
+        .filter((item) => esMatriz(item.tipo))
+        .slice()
+        .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), "es")),
     [bodegas]
   );
 
@@ -376,6 +407,7 @@ export function PizarraTransferencias() {
                   $x={bodega.x}
                   $y={bodega.y}
                   $matriz={matriz}
+                  $color={matriz ? coloresMatriz[bodega.id] : ""}
                   $activo={seleccion === bodega.id}
                   $enfoque={idsEnfoque.has(bodega.id)}
                   $colorEnfoque={colorEnfoque}
@@ -414,9 +446,11 @@ export function PizarraTransferencias() {
             </>
           )}
           <Leyenda>
-            <span>
-              <Muestra $matriz /> Matriz
-            </span>
+            {matricesLeyenda.map((matriz) => (
+              <span key={matriz.id}>
+                <Muestra $color={coloresMatriz[matriz.id]} /> {matriz.nombre}
+              </span>
+            ))}
             <span>
               <Muestra /> Agencia
             </span>
@@ -618,8 +652,16 @@ const Nodo = styled.button`
     $enfoque ? `2px solid ${$colorEnfoque}` : "none"};
   border-radius: 8px;
   padding: ${({ $matriz }) => ($matriz ? "14px 10px 12px" : "7px 4px 6px")};
-  background: ${({ $matriz, $activo, $enfoque, $colorEnfoque }) =>
-    $enfoque ? $colorEnfoque : $activo ? "#fff8e1" : $matriz ? "#ffe082" : "#fffde7"};
+  background: ${({ $color, $matriz, $activo, $enfoque, $colorEnfoque }) =>
+    $enfoque
+      ? $colorEnfoque
+      : $color
+        ? $color
+        : $activo
+          ? "#fff8e1"
+          : $matriz
+            ? "#ffcc80"
+            : "#fffde7"};
   box-shadow: ${({ $activo, $enfoque, $colorEnfoque }) =>
     $enfoque
       ? `0 0 0 4px ${$colorEnfoque}88, 0 8px 18px rgba(0, 0, 0, 0.28)`
@@ -777,8 +819,8 @@ const Muestra = styled.i`
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  background: ${({ $matriz, $ruta }) =>
-    $ruta ? "#a5d6a7" : $matriz ? "#ffe082" : "#fffde7"};
+  background: ${({ $color, $ruta }) =>
+    $color ? $color : $ruta ? "#c8e6c9" : "#fffde7"};
   border: 1px solid #d7ccc8;
 `;
 
