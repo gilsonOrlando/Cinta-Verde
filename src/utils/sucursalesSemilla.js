@@ -21,35 +21,42 @@ export const SUCURSALES_SEMILLA = [
   { nombre: "PASAJE", tipo: "agencia" },
 ];
 
+function ordenarPorNombre(items) {
+  return items.slice().sort((a, b) =>
+    String(a.nombre).localeCompare(String(b.nombre), "es", { sensitivity: "base" })
+  );
+}
+
 export function ubicarSucursales(sucursales) {
-  const matrices = sucursales.filter((item) => item.tipo === "matriz");
-  const agencias = sucursales.filter((item) => item.tipo !== "matriz");
+  const matrices = ordenarPorNombre(sucursales.filter((item) => item.tipo === "matriz"));
+  const agencias = ordenarPorNombre(sucursales.filter((item) => item.tipo !== "matriz"));
   const ubicadas = [];
 
   matrices.forEach((item, index) => {
     const total = Math.max(matrices.length, 1);
-    const xInicial = total === 1 ? 80 : 64;
-    const xPaso = total === 1 ? 0 : 20;
+    const xInicial = total === 1 ? 82 : 66;
+    const xPaso = total === 1 ? 0 : 18;
 
     ubicadas.push({
       ...item,
       x: xInicial + index * xPaso,
-      y: 14,
+      y: 12,
     });
   });
 
-  const columnas = 2;
+  const columnas = agencias.length > 12 ? 3 : 2;
   const filas = Math.max(1, Math.ceil(agencias.length / columnas));
+  const xInicial = 11;
+  const xPaso = columnas === 3 ? 15.5 : 18;
 
   agencias.forEach((item, index) => {
-    const columna = index < filas ? 0 : 1;
-    const fila = columna === 0 ? index : index - filas;
-    const filasColumna = columna === 0 ? filas : agencias.length - filas;
+    const columna = index % columnas;
+    const fila = Math.floor(index / columnas);
 
     ubicadas.push({
       ...item,
-      x: columna === 0 ? 13 : 32,
-      y: filasColumna <= 1 ? 50 : 8 + (fila * 84) / (filasColumna - 1),
+      x: xInicial + columna * xPaso,
+      y: filas <= 1 ? 50 : 9 + (fila * 82) / (filas - 1),
     });
   });
 
