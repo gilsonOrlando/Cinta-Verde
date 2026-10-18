@@ -106,7 +106,7 @@ export function CrearRutaModal({ sucursales, guardando, onConfirmar, onClose }) 
 
           <Campo>
             <label>Destinos (agencias)</label>
-            <ListaDestinos $filas={Math.max(1, Math.ceil(agencias.length / 3))}>
+            <ListaDestinos>
               {agencias.map((item) => (
                 <Destino key={item.id}>
                   <input
@@ -148,7 +148,7 @@ const Overlay = styled.div`
 
 const Dialog = styled.div`
   width: 100%;
-  max-width: 680px;
+  max-width: 760px;
   max-height: min(90vh, 760px);
   overflow: auto;
   background: #fff;
@@ -222,23 +222,15 @@ const ListaDestinos = styled.div`
   overflow: auto;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 12px 14px;
   display: grid;
-  grid-auto-flow: column;
-  grid-template-rows: repeat(${({ $filas }) => $filas}, auto);
-  grid-template-columns: repeat(3, max-content);
-  justify-content: end;
-  justify-items: start;
-  column-gap: 28px;
-  row-gap: 8px;
-  margin-left: auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 16px;
+  row-gap: 6px;
   width: 100%;
 
   @media (max-width: 640px) {
-    grid-auto-flow: row;
-    grid-template-rows: none;
     grid-template-columns: 1fr 1fr;
-    justify-content: stretch;
   }
 
   @media (max-width: 480px) {
@@ -250,16 +242,18 @@ const Destino = styled.label`
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 34px;
-  padding: 6px 4px;
+  min-height: 32px;
+  padding: 4px 2px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.86rem;
-  line-height: 1.45;
+  font-size: 0.82rem;
+  line-height: 1;
   color: #333;
+  min-width: 0;
 
   span {
-    line-height: 1.45;
+    white-space: nowrap;
+    line-height: 1.2;
   }
 
   &:hover {
