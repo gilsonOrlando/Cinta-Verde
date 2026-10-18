@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
+import { RiCloseLine, RiMenuLine } from "react-icons/ri";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { esMatriz, listarSucursales } from "../../supabase/crudSucursal";
 import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemilla";
@@ -21,6 +22,8 @@ export function PizarraTransferencias() {
   const [bodegas, setBodegas] = useState(originalesRef.current);
   const [seleccion, setSeleccion] = useState(originalesRef.current[0]?.id ?? null);
   const [cargando, setCargando] = useState(true);
+  const [menuGestionAbierto, setMenuGestionAbierto] = useState(false);
+  const menuGestionRef = useRef(null);
 
   useEffect(() => {
     let activo = true;
@@ -49,6 +52,25 @@ export function PizarraTransferencias() {
     cargar();
     return () => {
       activo = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleClickFuera(event) {
+      if (!menuGestionRef.current?.contains(event.target)) {
+        setMenuGestionAbierto(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") setMenuGestionAbierto(false);
+    }
+
+    document.addEventListener("mousedown", handleClickFuera);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickFuera);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, []);
 
@@ -115,9 +137,33 @@ export function PizarraTransferencias() {
               : "Arrastra las sucursales en la pizarra. Las matrices usan el color ámbar y las agencias el color crema."}
           </Subtitulo>
         </div>
-        <BtnReset type="button" onClick={restablecer}>
-          Restablecer pizarra
-        </BtnReset>
+        <Acciones>
+          <MenuGestion ref={menuGestionRef}>
+            <BtnGestion
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={menuGestionAbierto}
+              onClick={() => setMenuGestionAbierto((abierto) => !abierto)}
+            >
+              {menuGestionAbierto ? <RiCloseLine /> : <RiMenuLine />}
+              Gestión
+            </BtnGestion>
+            {menuGestionAbierto && (
+              <MenuLista role="menu">
+                <MenuItem
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    restablecer();
+                    setMenuGestionAbierto(false);
+                  }}
+                >
+                  Restablecer pizarra
+                </MenuItem>
+              </MenuLista>
+            )}
+          </MenuGestion>
+        </Acciones>
       </Cabecera>
 
       <Cuerpo>
@@ -209,17 +255,69 @@ const Subtitulo = styled.p`
   line-height: 1.45;
 `;
 
-const BtnReset = styled.button`
+const Acciones = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+`;
+
+const MenuGestion = styled.div`
+  position: relative;
+`;
+
+const BtnGestion = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid #2e7d32;
-  background: #fff;
-  color: #2e7d32;
+  background: #2e7d32;
+  color: #fff;
   padding: 10px 14px;
   border-radius: 8px;
   font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  svg {
+    font-size: 1.2rem;
+  }
+
+  &:hover {
+    background: #1b5e20;
+    border-color: #1b5e20;
+  }
+`;
+
+const MenuLista = styled.div`
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 220px;
+  background: #fff;
+  border: 1px solid #d8e8d8;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+  padding: 6px;
+  z-index: 20;
+`;
+
+const MenuItem = styled.button`
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #333;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
 
   &:hover {
     background: #e8f5e9;
+    color: #1b5e20;
   }
 `;
 
