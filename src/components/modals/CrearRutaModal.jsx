@@ -251,9 +251,23 @@ const Destino = styled.label`
   color: #333;
   min-width: 0;
 
+  input[type="checkbox"] {
+    appearance: auto;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    padding: 0;
+    accent-color: #2e7d32;
+  }
+
   span {
+    flex: 1 1 auto;
+    min-width: 0;
     white-space: nowrap;
     line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &:hover {
