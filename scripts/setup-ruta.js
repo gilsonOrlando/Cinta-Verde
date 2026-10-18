@@ -44,7 +44,7 @@ const client = new pg.Client({
 try {
   await client.connect();
   await client.query(sql);
-  console.log("Tablas ruta y ruta_destino creadas correctamente.");
+  console.log("Relación matriz 1:N ruta aplicada correctamente.");
 } catch (error) {
   console.error("Error al crear ruta:", error.message);
   process.exit(1);

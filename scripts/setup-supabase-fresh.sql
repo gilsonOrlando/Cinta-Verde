@@ -62,7 +62,8 @@ create table if not exists public.sucursal (
   id uuid primary key default gen_random_uuid(),
   nombre text not null unique,
   tipo text not null check (tipo in ('agencia', 'matriz')),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (id, tipo)
 );
 
 alter table public.proyectos enable row level security;
@@ -76,10 +77,15 @@ create policy "listaproductos_all_anon" on public.listaproductos for all to anon
 create policy "motos_all_anon" on public.motos for all to anon, authenticated using (true) with check (true);
 create table if not exists public.ruta (
   id uuid primary key default gen_random_uuid(),
-  origen_id uuid not null references public.sucursal(id),
+  origen_id uuid not null references public.sucursal(id) on delete restrict,
+  origen_tipo text generated always as ('matriz') stored,
   fecha date not null,
   chofer text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint ruta_pertenece_a_matriz_fk
+    foreign key (origen_id, origen_tipo)
+    references public.sucursal (id, tipo)
+    on delete restrict
 );
 
 create table if not exists public.ruta_destino (

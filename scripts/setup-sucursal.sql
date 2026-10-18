@@ -10,6 +10,11 @@ create table if not exists public.sucursal (
 
 create index if not exists sucursal_tipo_idx on public.sucursal (tipo);
 
+alter table public.sucursal
+  drop constraint if exists sucursal_id_tipo_unique;
+alter table public.sucursal
+  add constraint sucursal_id_tipo_unique unique (id, tipo);
+
 do $$
 begin
   if not exists (

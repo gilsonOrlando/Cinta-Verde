@@ -43,6 +43,17 @@ export function interpretarErrorSupabase(error) {
     return "Faltan tablas en Supabase. En tu PC ejecuta: npm run setup:supabase";
   }
 
+  if (
+    codigo === "23503" &&
+    (texto.includes("ruta_pertenece_a_matriz") || texto.includes("origen_tipo"))
+  ) {
+    return "La ruta debe pertenecer a una sucursal matriz.";
+  }
+
+  if (codigo === "23503" && texto.includes("ruta_origen_id_fkey")) {
+    return "No se puede eliminar la matriz porque tiene rutas asociadas.";
+  }
+
   if (codigo === "PGRST301" || texto.includes("jwt")) {
     return "La clave VITE_APP_SUPABASE_ANON_KEY en Render es incorrecta.";
   }
