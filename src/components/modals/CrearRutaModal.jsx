@@ -12,15 +12,9 @@ export function CrearRutaModal({ sucursales, guardando, onConfirmar, onClose }) 
     [sucursales]
   );
   const agencias = useMemo(
-    () =>
-      sucursales
-        .filter((item) => !esMatriz(item.tipo))
-        .slice()
-        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+    () => sucursales.filter((item) => !esMatriz(item.tipo)),
     [sucursales]
   );
-  const filasDestino = Math.max(1, Math.ceil(agencias.length / 3));
-  const filasDestinoDos = Math.max(1, Math.ceil(agencias.length / 2));
 
   const [origenId, setOrigenId] = useState(matrices[0]?.id ?? "");
   const [fecha, setFecha] = useState(fechaHoy);
@@ -112,7 +106,7 @@ export function CrearRutaModal({ sucursales, guardando, onConfirmar, onClose }) 
 
           <Campo>
             <label>Destinos (agencias)</label>
-            <ListaDestinos $filas={filasDestino} $filasDos={filasDestinoDos}>
+            <ListaDestinos $filas={Math.max(1, Math.ceil(agencias.length / 3))}>
               {agencias.map((item) => (
                 <Destino key={item.id}>
                   <input
@@ -228,24 +222,27 @@ const ListaDestinos = styled.div`
   overflow: auto;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(${({ $filas }) => $filas}, auto);
   grid-auto-flow: column;
-  column-gap: 22px;
-  row-gap: 12px;
-  align-items: start;
+  grid-template-rows: repeat(${({ $filas }) => $filas}, auto);
+  grid-template-columns: repeat(3, max-content);
+  justify-content: end;
+  justify-items: start;
+  column-gap: 28px;
+  row-gap: 8px;
+  margin-left: auto;
+  width: 100%;
 
   @media (max-width: 640px) {
+    grid-auto-flow: row;
+    grid-template-rows: none;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: repeat(${({ $filasDos }) => $filasDos}, auto);
+    justify-content: stretch;
   }
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
-    grid-template-rows: none;
-    grid-auto-flow: row;
   }
 `;
 

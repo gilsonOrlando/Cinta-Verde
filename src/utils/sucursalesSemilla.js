@@ -38,19 +38,18 @@ export function ubicarSucursales(sucursales) {
     });
   });
 
-  const columnas = 3;
+  const columnas = 2;
   const filas = Math.max(1, Math.ceil(agencias.length / columnas));
-  const yInicio = 8;
-  const yFin = 92;
-  const yPaso = filas <= 1 ? 0 : (yFin - yInicio) / (filas - 1);
+  const yInicio = 7;
+  const yPaso = filas <= 1 ? 0 : 10.2;
 
   agencias.forEach((item, index) => {
-    const columna = Math.floor(index / filas);
-    const fila = index % filas;
+    const columna = index % columnas;
+    const fila = Math.floor(index / columnas);
 
     ubicadas.push({
       ...item,
-      x: 10 + columna * 13,
+      x: 11 + columna * 14,
       y: yInicio + fila * yPaso,
     });
   });
