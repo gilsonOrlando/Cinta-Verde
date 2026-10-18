@@ -148,7 +148,7 @@ const Overlay = styled.div`
 
 const Dialog = styled.div`
   width: 100%;
-  max-width: 560px;
+  max-width: 640px;
   max-height: min(90vh, 760px);
   overflow: auto;
   background: #fff;
@@ -218,29 +218,40 @@ const Campo = styled.div`
 `;
 
 const ListaDestinos = styled.div`
-  max-height: 220px;
+  max-height: 320px;
   overflow: auto;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 8px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
+  padding: 14px 16px;
+  column-count: 3;
+  column-gap: 28px;
 
-  @media (max-width: 560px) {
-    grid-template-columns: 1fr;
+  @media (max-width: 640px) {
+    column-count: 2;
+    column-gap: 18px;
+  }
+
+  @media (max-width: 480px) {
+    column-count: 1;
   }
 `;
 
 const Destino = styled.label`
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 10px;
+  padding: 7px 4px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.86rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
   color: #333;
+  break-inside: avoid;
+  page-break-inside: avoid;
+
+  span {
+    line-height: 1.7;
+  }
 
   &:hover {
     background: #f3f8f3;
