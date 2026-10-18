@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
-import { RiCloseLine, RiMenuLine, RiPencilLine } from "react-icons/ri";
+import { RiCloseLine, RiMenuLine } from "react-icons/ri";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { esMatriz, listarSucursales } from "../../supabase/crudSucursal";
 import { actualizarRuta, crearRuta, eliminarRuta, listarRutas } from "../../supabase/crudRuta";
@@ -337,29 +337,25 @@ export function PizarraTransferencias() {
                 $activo={seleccion === ruta.id}
                 onPointerDown={(event) => iniciarArrastre(event, ruta.id, "ruta")}
               >
-                <AccionesNodo>
-                  <BtnNodo
-                    type="button"
-                    aria-label="Editar ruta"
-                    title="Editar ruta"
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => handleEditarRuta(ruta, event)}
-                  >
-                    <RiPencilLine />
-                  </BtnNodo>
-                  <BtnNodo
-                    type="button"
-                    $peligro
-                    aria-label="Eliminar ruta"
-                    title="Eliminar ruta"
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => handleEliminarRuta(ruta, event)}
-                  >
-                    <RiCloseLine />
-                  </BtnNodo>
-                </AccionesNodo>
+                <BtnNodo
+                  type="button"
+                  aria-label="Eliminar ruta"
+                  title="Eliminar ruta"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => handleEliminarRuta(ruta, event)}
+                >
+                  ×
+                </BtnNodo>
                 <NodoTipo>Ruta</NodoTipo>
+                <NodoChofer>{ruta.chofer}</NodoChofer>
                 <DestinosRuta>{nombresAgencias(ruta) || "Sin agencias"}</DestinosRuta>
+                <BtnEditar
+                  type="button"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => handleEditarRuta(ruta, event)}
+                >
+                  Editar
+                </BtnEditar>
               </NodoRuta>
             ))}
 
@@ -633,7 +629,7 @@ const NodoRuta = styled.div`
   width: 168px;
   border: none;
   border-radius: 12px;
-  padding: 18px 10px 8px;
+  padding: 16px 12px 8px;
   background: ${({ $activo }) => ($activo ? "#c8e6c9" : "#a5d6a7")};
   box-shadow: ${({ $activo }) =>
     $activo
@@ -648,32 +644,46 @@ const NodoRuta = styled.div`
   }
 `;
 
-const AccionesNodo = styled.div`
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  display: flex;
-  gap: 4px;
-`;
-
 const BtnNodo = styled.button`
-  width: 20px;
-  height: 20px;
+  position: absolute;
+  top: 0;
+  right: 4px;
   border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${({ $peligro }) => ($peligro ? "#c62828" : "#2e7d32")};
-  color: #fff;
+  background: transparent;
+  color: #b71c1c;
   cursor: pointer;
   padding: 0;
-  font-size: 0.85rem;
+  font-size: 1.35rem;
+  font-weight: 700;
   line-height: 1;
+  width: 22px;
+  height: 22px;
 
   &:hover {
-    background: ${({ $peligro }) => ($peligro ? "#b71c1c" : "#1b5e20")};
+    color: #7f0000;
   }
+`;
+
+const BtnEditar = styled.button`
+  border: none;
+  background: transparent;
+  color: #1b5e20;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-top: 4px;
+  padding: 0;
+`;
+
+const NodoChofer = styled.strong`
+  display: block;
+  margin-top: 2px;
+  color: #1b5e20;
+  font-size: 0.72rem;
+  line-height: 1.2;
 `;
 
 const Pin = styled.span`
