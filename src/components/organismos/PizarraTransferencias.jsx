@@ -10,14 +10,14 @@ import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemi
 import { CrearRutaModal } from "../modals/CrearRutaModal";
 
 const COLORES_RUTA = [
-  "#ef5350",
-  "#42a5f5",
-  "#66bb6a",
-  "#ffa726",
-  "#ab47bc",
-  "#26c6da",
-  "#f9a825",
-  "#8d6e63",
+  "#ffcdd2",
+  "#bbdefb",
+  "#c8e6c9",
+  "#ffe0b2",
+  "#e1bee7",
+  "#b2ebf2",
+  "#fff9c4",
+  "#d7ccc8",
 ];
 
 function colorDeRuta(id) {
@@ -310,6 +310,25 @@ export function PizarraTransferencias() {
             onPointerUp={terminarArrastre}
             onPointerLeave={terminarArrastre}
           >
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              {rutas.map((ruta) => {
+                const origen = mapa[ruta.origen_id];
+                if (!origen) return null;
+                const activo = seleccion === ruta.id || rutaFoco === ruta.id;
+                const color = colorDeRuta(ruta.id);
+                return (
+                  <path
+                    key={`${ruta.id}-origen`}
+                    d={`M ${origen.x} ${origen.y} L ${ruta.x} ${ruta.y}`}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={activo ? 0.38 : 0.24}
+                    strokeOpacity={activo ? 0.95 : 0.8}
+                  />
+                );
+              })}
+            </svg>
+
             {rutas.map((ruta) => (
               <NodoRuta
                 key={ruta.id}
@@ -579,6 +598,14 @@ const Tablero = styled.div`
   touch-action: none;
   user-select: none;
 
+  svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
 `;
 
 const Nodo = styled.button`
@@ -602,7 +629,7 @@ const Nodo = styled.button`
   cursor: grab;
   text-align: center;
   z-index: ${({ $matriz, $enfoque }) => ($enfoque ? 5 : $matriz ? 3 : 2)};
-  color: ${({ $enfoque }) => ($enfoque ? "#fff" : "#3e2723")};
+  color: #3e2723;
 
   &:active {
     cursor: grabbing;
@@ -621,20 +648,15 @@ const NodoRuta = styled.div`
   background: ${({ $color }) => $color};
   box-shadow: ${({ $activo, $color }) =>
     $activo
-      ? `0 0 0 4px ${$color}99, 0 8px 18px rgba(0, 0, 0, 0.28)`
-      : "0 6px 14px rgba(0, 0, 0, 0.22)"};
-  color: #fff;
+      ? `0 0 0 3px ${$color}, 0 8px 18px rgba(0, 0, 0, 0.22)`
+      : "0 6px 14px rgba(0, 0, 0, 0.18)"};
+  color: #3e2723;
   cursor: grab;
   text-align: center;
   z-index: 4;
 
   &:active {
     cursor: grabbing;
-  }
-
-  small,
-  strong {
-    color: #fff;
   }
 `;
 
@@ -650,7 +672,7 @@ const AccionesNodo = styled.div`
 const BtnNodo = styled.button`
   border: none;
   background: transparent;
-  color: ${({ $peligro }) => ($peligro ? "#ffcdd2" : "#fff")};
+  color: ${({ $peligro }) => ($peligro ? "#b71c1c" : "#1b5e20")};
   cursor: pointer;
   padding: 0;
   font-size: ${({ $peligro }) => ($peligro ? "1.35rem" : "1.05rem")};
@@ -660,7 +682,7 @@ const BtnNodo = styled.button`
   height: 22px;
 
   &:hover {
-    color: ${({ $peligro }) => ($peligro ? "#fff" : "#fffde7")};
+    color: ${({ $peligro }) => ($peligro ? "#7f0000" : "#0d3d14")};
   }
 `;
 
