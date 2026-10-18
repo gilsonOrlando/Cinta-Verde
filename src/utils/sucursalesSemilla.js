@@ -27,11 +27,14 @@ export function ubicarSucursales(sucursales) {
   const ubicadas = [];
 
   matrices.forEach((item, index) => {
-    const esSuperior = item.nombre === "CATAMAYO" || (item.nombre !== "BODEGA CENTRAL" && index === 0);
+    const total = Math.max(matrices.length, 1);
+    const xInicial = total === 1 ? 80 : 64;
+    const xPaso = total === 1 ? 0 : 20;
+
     ubicadas.push({
       ...item,
-      x: 80,
-      y: matrices.length === 1 ? 50 : esSuperior ? 18 : 82,
+      x: xInicial + index * xPaso,
+      y: 14,
     });
   });
 
