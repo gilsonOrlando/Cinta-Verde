@@ -20,6 +20,31 @@ const COLORES_RUTA = [
   "#d7ccc8",
 ];
 
+const COLORES_MATRIZ = [
+  "#ffb74d",
+  "#4fc3f7",
+  "#f48fb1",
+  "#b39ddb",
+  "#ffd54f",
+  "#ff8a65",
+];
+
+function colorDeMatriz(item, sucursales = []) {
+  if (!esMatriz(item?.tipo)) return "#fffde7";
+
+  const matrices = sucursales
+    .filter((sucursal) => esMatriz(sucursal.tipo))
+    .slice()
+    .sort((a, b) => String(a.nombre ?? "").localeCompare(String(b.nombre ?? ""), "es"));
+  let index = matrices.findIndex((sucursal) => sucursal.id === item.id);
+  if (index < 0) {
+    index = matrices.findIndex((sucursal) => sucursal.nombre === item.nombre);
+  }
+  if (index < 0) index = 0;
+
+  return COLORES_MATRIZ[index % COLORES_MATRIZ.length];
+}
+
 function colorDeRuta(id) {
   const texto = String(id ?? "");
   let hash = 0;
@@ -27,28 +52,6 @@ function colorDeRuta(id) {
     hash = (hash * 31 + texto.charCodeAt(i)) >>> 0;
   }
   return COLORES_RUTA[hash % COLORES_RUTA.length];
-}
-
-const COLORES_MATRIZ = [
-  "#ffcc80",
-  "#90caf9",
-  "#f48fb1",
-  "#ce93d8",
-  "#ffab91",
-  "#fff176",
-  "#80deea",
-  "#bcaaa4",
-];
-
-function mapaColoresMatriz(sucursales) {
-  const matrices = sucursales
-    .filter((item) => esMatriz(item.tipo))
-    .slice()
-    .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), "es"));
-
-  return Object.fromEntries(
-    matrices.map((item, index) => [item.id, COLORES_MATRIZ[index % COLORES_MATRIZ.length]])
-  );
 }
 
 function conPosicion(sucursales) {
@@ -150,15 +153,6 @@ export function PizarraTransferencias() {
 
   const mapa = useMemo(
     () => Object.fromEntries(bodegas.map((item) => [item.id, item])),
-    [bodegas]
-  );
-  const coloresMatriz = useMemo(() => mapaColoresMatriz(bodegas), [bodegas]);
-  const matricesLeyenda = useMemo(
-    () =>
-      bodegas
-        .filter((item) => esMatriz(item.tipo))
-        .slice()
-        .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), "es")),
     [bodegas]
   );
 
@@ -300,7 +294,7 @@ export function PizarraTransferencias() {
           <Subtitulo>
             {cargando
               ? "Cargando sucursales…"
-              : "Arrastra las sucursales en la pizarra. Las matrices usan el color ámbar y las agencias el color crema."}
+              : "Arrastra las sucursales en la pizarra. Cada matriz tiene un color propio y las agencias usan crema."}
           </Subtitulo>
         </div>
         <Acciones>
@@ -407,7 +401,7 @@ export function PizarraTransferencias() {
                   $x={bodega.x}
                   $y={bodega.y}
                   $matriz={matriz}
-                  $color={matriz ? coloresMatriz[bodega.id] : ""}
+                  $colorNodo={colorDeMatriz(bodega, bodegas)}
                   $activo={seleccion === bodega.id}
                   $enfoque={idsEnfoque.has(bodega.id)}
                   $colorEnfoque={colorEnfoque}
@@ -446,11 +440,13 @@ export function PizarraTransferencias() {
             </>
           )}
           <Leyenda>
-            {matricesLeyenda.map((matriz) => (
-              <span key={matriz.id}>
-                <Muestra $color={coloresMatriz[matriz.id]} /> {matriz.nombre}
-              </span>
-            ))}
+            {bodegas
+              .filter((item) => esMatriz(item.tipo))
+              .map((item) => (
+                <span key={item.id}>
+                  <Muestra $color={colorDeMatriz(item, bodegas)} /> {item.nombre}
+                </span>
+              ))}
             <span>
               <Muestra /> Agencia
             </span>
@@ -652,21 +648,13 @@ const Nodo = styled.button`
     $enfoque ? `2px solid ${$colorEnfoque}` : "none"};
   border-radius: 8px;
   padding: ${({ $matriz }) => ($matriz ? "14px 10px 12px" : "7px 4px 6px")};
-  background: ${({ $color, $matriz, $activo, $enfoque, $colorEnfoque }) =>
-    $enfoque
-      ? $colorEnfoque
-      : $color
-        ? $color
-        : $activo
-          ? "#fff8e1"
-          : $matriz
-            ? "#ffcc80"
-            : "#fffde7"};
-  box-shadow: ${({ $activo, $enfoque, $colorEnfoque }) =>
+  background: ${({ $colorNodo, $enfoque, $colorEnfoque }) =>
+    $enfoque ? $colorEnfoque : $colorNodo};
+  box-shadow: ${({ $activo, $enfoque, $colorEnfoque, $colorNodo }) =>
     $enfoque
       ? `0 0 0 4px ${$colorEnfoque}88, 0 8px 18px rgba(0, 0, 0, 0.28)`
       : $activo
-        ? "0 0 0 3px #ffec8a, 0 8px 18px rgba(0, 0, 0, 0.28)"
+        ? `0 0 0 3px ${$colorNodo}, 0 8px 18px rgba(0, 0, 0, 0.28)`
         : "0 6px 14px rgba(0, 0, 0, 0.22)"};
   cursor: grab;
   text-align: center;
@@ -820,7 +808,7 @@ const Muestra = styled.i`
   height: 16px;
   border-radius: 4px;
   background: ${({ $color, $ruta }) =>
-    $color ? $color : $ruta ? "#c8e6c9" : "#fffde7"};
+    $color ?? ($ruta ? "#c8e6c9" : "#fffde7")};
   border: 1px solid #d7ccc8;
 `;
 
