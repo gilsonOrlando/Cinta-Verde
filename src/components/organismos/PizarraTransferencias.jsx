@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
+import toast from "react-hot-toast";
 import { RiCloseLine, RiMenuLine } from "react-icons/ri";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { esMatriz, listarSucursales } from "../../supabase/crudSucursal";
+import { crearRuta, listarRutas } from "../../supabase/crudRuta";
+import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemilla";
+import { CrearRutaModal } from "../modals/CrearRutaModal";
 
 function conPosicion(sucursales) {
   return ubicarSucursales(
@@ -15,14 +19,28 @@ function conPosicion(sucursales) {
   );
 }
 
+function posicionNodoRuta(index) {
+  return { x: 56, y: 26 + index * 16 };
+}
+
+function formatearFecha(fecha) {
+  const texto = String(fecha ?? "").slice(0, 10);
+  const [anio, mes, dia] = texto.split("-");
+  if (!anio || !mes || !dia) return texto;
+  return `${dia}/${mes}/${anio}`;
+}
+
 export function PizarraTransferencias() {
   const tableroRef = useRef(null);
   const arrastreRef = useRef(null);
   const originalesRef = useRef(conPosicion(SUCURSALES_SEMILLA));
   const [bodegas, setBodegas] = useState(originalesRef.current);
+  const [rutas, setRutas] = useState([]);
   const [seleccion, setSeleccion] = useState(originalesRef.current[0]?.id ?? null);
   const [cargando, setCargando] = useState(true);
   const [menuGestionAbierto, setMenuGestionAbierto] = useState(false);
+  const [mostrarRutaModal, setMostrarRutaModal] = useState(false);
+  const [guardandoRuta, setGuardandoRuta] = useState(false);
   const menuGestionRef = useRef(null);
 
   useEffect(() => {
@@ -42,6 +60,14 @@ export function PizarraTransferencias() {
         originalesRef.current = ubicadas;
         setBodegas(ubicadas);
         setSeleccion(ubicadas[0]?.id ?? null);
+
+        try {
+          const rutasDb = await listarRutas();
+          if (!activo) return;
+          setRutas(rutasDb.map((ruta, index) => ({ ...ruta, ...posicionNodoRuta(index) })));
+        } catch (errorRutas) {
+          console.error(errorRutas);
+        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -80,16 +106,21 @@ export function PizarraTransferencias() {
   );
 
   const bodegaActiva = mapa[seleccion];
+  const rutaActiva = rutas.find((item) => item.id === seleccion);
 
-  const iniciarArrastre = (event, id) => {
+  const iniciarArrastre = (event, id, tipo = "sucursal") => {
     event.preventDefault();
     event.stopPropagation();
     const rect = tableroRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const nodo = mapa[id];
+    const nodo =
+      tipo === "ruta" ? rutas.find((item) => item.id === id) : mapa[id];
+    if (!nodo) return;
+
     arrastreRef.current = {
       id,
+      tipo,
       offsetX: ((event.clientX - rect.left) / rect.width) * 100 - nodo.x,
       offsetY: ((event.clientY - rect.top) / rect.height) * 100 - nodo.y,
     };
@@ -111,6 +142,13 @@ export function PizarraTransferencias() {
       Math.max(12, ((event.clientY - rect.top) / rect.height) * 100 - arrastre.offsetY)
     );
 
+    if (arrastre.tipo === "ruta") {
+      setRutas((prev) =>
+        prev.map((item) => (item.id === arrastre.id ? { ...item, x, y } : item))
+      );
+      return;
+    }
+
     setBodegas((prev) =>
       prev.map((item) => (item.id === arrastre.id ? { ...item, x, y } : item))
     );
@@ -120,9 +158,26 @@ export function PizarraTransferencias() {
     arrastreRef.current = null;
   };
 
-  const restablecer = () => {
-    setBodegas(originalesRef.current);
-    setSeleccion(originalesRef.current[0]?.id ?? null);
+  const handleCrearRuta = async ({ origenId, fecha, chofer, destinoIds }) => {
+    setGuardandoRuta(true);
+    try {
+      const ruta = await crearRuta({
+        origenId,
+        fecha,
+        chofer,
+        destinoIds,
+        sucursales: bodegas,
+      });
+      setRutas((prev) => [...prev, { ...ruta, ...posicionNodoRuta(prev.length) }]);
+      setSeleccion(ruta.id);
+      setMostrarRutaModal(false);
+      toast.success("Ruta creada.");
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
+    } finally {
+      setGuardandoRuta(false);
+    }
   };
 
   return (
@@ -154,11 +209,11 @@ export function PizarraTransferencias() {
                   type="button"
                   role="menuitem"
                   onClick={() => {
-                    restablecer();
                     setMenuGestionAbierto(false);
+                    setMostrarRutaModal(true);
                   }}
                 >
-                  Restablecer pizarra
+                  Ruta
                 </MenuItem>
               </MenuLista>
             )}
@@ -174,6 +229,69 @@ export function PizarraTransferencias() {
             onPointerUp={terminarArrastre}
             onPointerLeave={terminarArrastre}
           >
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <marker
+                  id="flecha-ruta"
+                  markerWidth="5"
+                  markerHeight="5"
+                  refX="4.2"
+                  refY="2.5"
+                  orient="auto"
+                >
+                  <path d="M0,0 L5,2.5 L0,5 Z" fill="#ffec8a" />
+                </marker>
+              </defs>
+              {rutas.flatMap((ruta) => {
+                const origen = mapa[ruta.origen_id];
+                if (!origen) return [];
+                const activo =
+                  seleccion === ruta.id ||
+                  seleccion === ruta.origen_id ||
+                  ruta.destinoIds.includes(seleccion);
+                const color = activo ? "#ffec8a" : "rgba(255, 236, 138, 0.38)";
+                const ancho = activo ? 0.9 : 0.45;
+                const lineas = [
+                  <path
+                    key={`${ruta.id}-origen`}
+                    d={`M ${origen.x} ${origen.y} L ${ruta.x} ${ruta.y}`}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={ancho}
+                  />,
+                ];
+                for (const destinoId of ruta.destinoIds) {
+                  const destino = mapa[destinoId];
+                  if (!destino) continue;
+                  lineas.push(
+                    <path
+                      key={`${ruta.id}-${destinoId}`}
+                      d={`M ${ruta.x} ${ruta.y} L ${destino.x} ${destino.y}`}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth={ancho}
+                      markerEnd="url(#flecha-ruta)"
+                    />
+                  );
+                }
+                return lineas;
+              })}
+            </svg>
+
+            {rutas.map((ruta) => (
+              <NodoRuta
+                key={ruta.id}
+                $x={ruta.x}
+                $y={ruta.y}
+                $activo={seleccion === ruta.id}
+                onPointerDown={(event) => iniciarArrastre(event, ruta.id, "ruta")}
+              >
+                <NodoTipo>Ruta</NodoTipo>
+                <NodoNombre>{ruta.chofer}</NodoNombre>
+                <NodoTipo>{formatearFecha(ruta.fecha)}</NodoTipo>
+              </NodoRuta>
+            ))}
+
             {bodegas.map((bodega) => {
               const matriz = esMatriz(bodega.tipo);
               return (
@@ -195,10 +313,28 @@ export function PizarraTransferencias() {
         </Marco>
 
         <Panel>
-          <PanelTitulo>{bodegaActiva?.nombre ?? "Sucursal"}</PanelTitulo>
-          <PanelDato>
-            {esMatriz(bodegaActiva?.tipo) ? "Matriz" : "Agencia"}
-          </PanelDato>
+          {rutaActiva ? (
+            <>
+              <PanelTitulo>{rutaActiva.chofer}</PanelTitulo>
+              <PanelDato>Ruta · {formatearFecha(rutaActiva.fecha)}</PanelDato>
+              <Nota>
+                Origen: {mapa[rutaActiva.origen_id]?.nombre ?? "—"}
+                <br />
+                Destinos:{" "}
+                {rutaActiva.destinoIds
+                  .map((id) => mapa[id]?.nombre)
+                  .filter(Boolean)
+                  .join(", ") || "—"}
+              </Nota>
+            </>
+          ) : (
+            <>
+              <PanelTitulo>{bodegaActiva?.nombre ?? "Sucursal"}</PanelTitulo>
+              <PanelDato>
+                {esMatriz(bodegaActiva?.tipo) ? "Matriz" : "Agencia"}
+              </PanelDato>
+            </>
+          )}
           <Leyenda>
             <span>
               <Muestra $matriz /> Matriz
@@ -206,13 +342,27 @@ export function PizarraTransferencias() {
             <span>
               <Muestra /> Agencia
             </span>
+            <span>
+              <Muestra $ruta /> Ruta
+            </span>
           </Leyenda>
           <Nota>
-            {bodegas.length} sucursales registradas. Los flujos de transferencia se
-            conectarán en el siguiente paso.
+            {bodegas.length} sucursales · {rutas.length} ruta(s). Usa Gestión → Ruta para
+            crear un recorrido.
           </Nota>
         </Panel>
       </Cuerpo>
+
+      {mostrarRutaModal && (
+        <CrearRutaModal
+          sucursales={bodegas}
+          guardando={guardandoRuta}
+          onConfirmar={handleCrearRuta}
+          onClose={() => {
+            if (!guardandoRuta) setMostrarRutaModal(false);
+          }}
+        />
+      )}
     </Layout>
   );
 }
@@ -365,6 +515,15 @@ const Tablero = styled.div`
     #1b4332;
   touch-action: none;
   user-select: none;
+
+  svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
 `;
 
 const Nodo = styled.button`
@@ -384,7 +543,30 @@ const Nodo = styled.button`
       : "0 6px 14px rgba(0, 0, 0, 0.22)"};
   cursor: grab;
   text-align: center;
-  z-index: ${({ $matriz }) => ($matriz ? 2 : 1)};
+  z-index: ${({ $matriz }) => ($matriz ? 3 : 2)};
+
+  &:active {
+    cursor: grabbing;
+  }
+`;
+
+const NodoRuta = styled.button`
+  position: absolute;
+  left: ${({ $x }) => `${$x}%`};
+  top: ${({ $y }) => `${$y}%`};
+  transform: translate(-50%, -50%);
+  width: 132px;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 10px 8px;
+  background: ${({ $activo }) => ($activo ? "#c8e6c9" : "#a5d6a7")};
+  box-shadow: ${({ $activo }) =>
+    $activo
+      ? "0 0 0 3px #fff59d, 0 8px 18px rgba(0, 0, 0, 0.28)"
+      : "0 6px 14px rgba(0, 0, 0, 0.22)"};
+  cursor: grab;
+  text-align: center;
+  z-index: 4;
 
   &:active {
     cursor: grabbing;
@@ -464,7 +646,8 @@ const Muestra = styled.i`
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  background: ${({ $matriz }) => ($matriz ? "#ffe082" : "#fffde7")};
+  background: ${({ $matriz, $ruta }) =>
+    $ruta ? "#a5d6a7" : $matriz ? "#ffe082" : "#fffde7"};
   border: 1px solid #d7ccc8;
 `;
 

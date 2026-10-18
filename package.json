@@ -16,7 +16,8 @@
     "setup:supabase": "node scripts/setup-supabase.js",
     "setup:listaproductos": "node scripts/setup-listaproductos.js",
     "setup:motos": "node scripts/setup-motos.js",
-    "setup:sucursal": "node scripts/setup-sucursal.js"
+    "setup:sucursal": "node scripts/setup-sucursal.js",
+    "setup:ruta": "node scripts/setup-ruta.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.4",

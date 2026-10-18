@@ -74,5 +74,25 @@ create policy "proyectos_all_anon" on public.proyectos for all to anon, authenti
 create policy "productos_all_anon" on public.productos for all to anon, authenticated using (true) with check (true);
 create policy "listaproductos_all_anon" on public.listaproductos for all to anon, authenticated using (true) with check (true);
 create policy "motos_all_anon" on public.motos for all to anon, authenticated using (true) with check (true);
+create table if not exists public.ruta (
+  id uuid primary key default gen_random_uuid(),
+  origen_id uuid not null references public.sucursal(id),
+  fecha date not null,
+  chofer text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.ruta_destino (
+  id uuid primary key default gen_random_uuid(),
+  ruta_id uuid not null references public.ruta(id) on delete cascade,
+  sucursal_id uuid not null references public.sucursal(id),
+  created_at timestamptz not null default now(),
+  unique (ruta_id, sucursal_id)
+);
+
 alter table public.sucursal enable row level security;
 create policy "sucursal_all_anon" on public.sucursal for all to anon, authenticated using (true) with check (true);
+alter table public.ruta enable row level security;
+alter table public.ruta_destino enable row level security;
+create policy "ruta_all_anon" on public.ruta for all to anon, authenticated using (true) with check (true);
+create policy "ruta_destino_all_anon" on public.ruta_destino for all to anon, authenticated using (true) with check (true);

@@ -30,7 +30,8 @@ export function interpretarErrorSupabase(error) {
     texto.includes("could not find the table") ||
     texto.includes("listaproductos") ||
     texto.includes("catalogo_productos") ||
-    texto.includes("motos")
+    texto.includes("motos") ||
+    texto.includes("ruta")
   ) {
     return (
       "Falta una tabla en Supabase. Ejecuta en SQL Editor: " +
