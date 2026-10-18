@@ -40,12 +40,13 @@ export function ubicarSucursales(sucursales) {
 
   const columnas = 3;
   const filas = Math.max(1, Math.ceil(agencias.length / columnas));
-  const yInicio = 28;
-  const yPaso = filas <= 1 ? 0 : 8.4;
+  const yInicio = 8;
+  const yFin = 92;
+  const yPaso = filas <= 1 ? 0 : (yFin - yInicio) / (filas - 1);
 
   agencias.forEach((item, index) => {
-    const fila = Math.floor(index / columnas);
-    const columna = index % columnas;
+    const columna = Math.floor(index / filas);
+    const fila = index % filas;
 
     ubicadas.push({
       ...item,

@@ -12,9 +12,15 @@ export function CrearRutaModal({ sucursales, guardando, onConfirmar, onClose }) 
     [sucursales]
   );
   const agencias = useMemo(
-    () => sucursales.filter((item) => !esMatriz(item.tipo)),
+    () =>
+      sucursales
+        .filter((item) => !esMatriz(item.tipo))
+        .slice()
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
     [sucursales]
   );
+  const filasDestino = Math.max(1, Math.ceil(agencias.length / 3));
+  const filasDestinoDos = Math.max(1, Math.ceil(agencias.length / 2));
 
   const [origenId, setOrigenId] = useState(matrices[0]?.id ?? "");
   const [fecha, setFecha] = useState(fechaHoy);
@@ -106,7 +112,7 @@ export function CrearRutaModal({ sucursales, guardando, onConfirmar, onClose }) 
 
           <Campo>
             <label>Destinos (agencias)</label>
-            <ListaDestinos>
+            <ListaDestinos $filas={filasDestino} $filasDos={filasDestinoDos}>
               {agencias.map((item) => (
                 <Destino key={item.id}>
                   <input
@@ -225,15 +231,21 @@ const ListaDestinos = styled.div`
   padding: 12px 14px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: 18px;
-  row-gap: 10px;
+  grid-template-rows: repeat(${({ $filas }) => $filas}, auto);
+  grid-auto-flow: column;
+  column-gap: 22px;
+  row-gap: 12px;
+  align-items: start;
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(${({ $filasDos }) => $filasDos}, auto);
   }
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-auto-flow: row;
   }
 `;
 
