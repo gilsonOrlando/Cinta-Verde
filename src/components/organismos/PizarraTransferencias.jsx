@@ -20,7 +20,7 @@ function conPosicion(sucursales) {
 }
 
 function posicionNodoRuta(index) {
-  return { x: 56, y: 26 + index * 16 };
+  return { x: 78, y: 42 + index * 14 };
 }
 
 function formatearFecha(fecha) {
@@ -233,13 +233,13 @@ export function PizarraTransferencias() {
               <defs>
                 <marker
                   id="flecha-ruta"
-                  markerWidth="5"
-                  markerHeight="5"
-                  refX="4.2"
-                  refY="2.5"
+                  markerWidth="3.2"
+                  markerHeight="3.2"
+                  refX="2.8"
+                  refY="1.6"
                   orient="auto"
                 >
-                  <path d="M0,0 L5,2.5 L0,5 Z" fill="#ffec8a" />
+                  <path d="M0,0 L3.2,1.6 L0,3.2 Z" fill="#ffffff" />
                 </marker>
               </defs>
               {rutas.flatMap((ruta) => {
@@ -249,8 +249,8 @@ export function PizarraTransferencias() {
                   seleccion === ruta.id ||
                   seleccion === ruta.origen_id ||
                   ruta.destinoIds.includes(seleccion);
-                const color = activo ? "#ffec8a" : "rgba(255, 236, 138, 0.38)";
-                const ancho = activo ? 0.9 : 0.45;
+                const color = activo ? "#ffffff" : "rgba(255, 255, 255, 0.72)";
+                const ancho = activo ? 0.28 : 0.16;
                 const lineas = [
                   <path
                     key={`${ruta.id}-origen`}
