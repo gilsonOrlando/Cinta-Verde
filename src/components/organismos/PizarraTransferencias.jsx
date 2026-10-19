@@ -360,12 +360,17 @@ export function PizarraTransferencias() {
   const handleAbrirAsignar = (bodega, event) => {
     event.stopPropagation();
     event.preventDefault();
+    if (!puedeGestionarRutas(sesion) || !mismoId(sesion?.sucursal_id, bodega.id)) return;
     setSeleccion(bodega.id);
     setMatrizAsignar(bodega);
     setMostrarAsignar(true);
   };
 
   const handleMoverPendientes = async ({ ids, rutaId }) => {
+    if (!puedeGestionarRutas(sesion) || !mismoId(sesion?.sucursal_id, matrizAsignar?.id)) {
+      toast.error("Solo un usuario matriz puede pasar estas transferencias.");
+      return;
+    }
     setGuardandoAsignar(true);
     try {
       await moverTransferenciasARuta({ ids, rutaId });
@@ -654,7 +659,9 @@ export function PizarraTransferencias() {
                   $colorEnfoque={colorEnfoque}
                   onPointerDown={(event) => iniciarArrastre(event, bodega.id)}
                 >
-                  {matriz && (
+                  {matriz &&
+                    puedeGestionar &&
+                    mismoId(sesion?.sucursal_id, bodega.id) && (
                     <BtnCamion
                       type="button"
                       aria-label="Pasar transferencias pendientes a una ruta"
@@ -804,7 +811,10 @@ export function PizarraTransferencias() {
         />
       )}
 
-      {mostrarAsignar && matrizAsignar && (
+      {mostrarAsignar &&
+        matrizAsignar &&
+        puedeGestionar &&
+        mismoId(sesion?.sucursal_id, matrizAsignar.id) && (
         <AsignarTransferenciasModal
           matriz={matrizAsignar}
           pendientes={transferenciasDeRuta(transitoriaDe(matrizAsignar.id)?.id)}
