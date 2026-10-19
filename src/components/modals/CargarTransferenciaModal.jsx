@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import {
-  esOrigenDeTransferencia,
+  puedeGestionarItemTransferencia,
   urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
+import { esRutaTransitoria } from "../../supabase/crudRuta";
 
 function esPdf(file) {
   const nombre = String(file?.name ?? "").toLowerCase();
@@ -93,6 +94,7 @@ export function CargarTransferenciaModal({
   guardando,
   onConfirmar,
   onEliminar,
+  onDevolver,
   onClose,
 }) {
   const [archivoTransferencia, setArchivoTransferencia] = useState(null);
@@ -145,8 +147,8 @@ export function CargarTransferenciaModal({
     if (!puedeEditar || guardando || !archivoTransferencia || !archivoGuia || !sucursalId) {
       return;
     }
-    if (editandoId && !esOrigenDeTransferencia(sesion, itemEditando)) {
-      setAviso("Solo la agencia origen puede editar esta transferencia.");
+    if (editandoId && !puedeGestionarItemTransferencia(sesion, itemEditando, ruta)) {
+      setAviso("Solo la agencia origen o la matriz de la ruta pueden editar esta transferencia.");
       return;
     }
     onConfirmar({
@@ -245,7 +247,7 @@ export function CargarTransferenciaModal({
                   <a href={urlArchivoTransferencia(item.guia)} target="_blank" rel="noreferrer">
                     Guía
                   </a>
-                  {puedeEditar && esOrigenDeTransferencia(sesion, item) && (
+                  {puedeEditar && puedeGestionarItemTransferencia(sesion, item, ruta) && (
                     <>
                       <BtnTexto
                         type="button"
@@ -257,14 +259,23 @@ export function CargarTransferenciaModal({
                       >
                         {editandoId === item.id ? "Editando" : "Editar"}
                       </BtnTexto>
+                      {!esRutaTransitoria(ruta) && (
                         <BtnTexto
                           type="button"
-                          $peligro
                           disabled={guardando}
-                          onClick={() => onEliminar?.(item)}
+                          onClick={() => onDevolver?.(item)}
                         >
-                          Eliminar
+                          A transitorio
                         </BtnTexto>
+                      )}
+                      <BtnTexto
+                        type="button"
+                        $peligro
+                        disabled={guardando}
+                        onClick={() => onEliminar?.(item)}
+                      >
+                        Eliminar
+                      </BtnTexto>
                     </>
                   )}
                 </Fila>

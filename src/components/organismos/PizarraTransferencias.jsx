@@ -26,10 +26,11 @@ import {
 import {
   actualizarTransferencia,
   crearTransferencia,
+  devolverTransferenciaATransitorio,
   eliminarTransferencia,
-  esOrigenDeTransferencia,
   listarTransferencias,
   moverTransferenciasARuta,
+  puedeGestionarItemTransferencia,
   urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
@@ -411,8 +412,8 @@ export function PizarraTransferencias() {
     if (!rutaCarga?.id) return;
     if (id) {
       const existente = transferencias.find((item) => String(item.id) === String(id));
-      if (!esOrigenDeTransferencia(sesion, existente)) {
-        toast.error("Solo la agencia origen puede editar esta transferencia.");
+      if (!puedeGestionarItemTransferencia(sesion, existente, rutaCarga)) {
+        toast.error("Solo la agencia origen o la matriz de la ruta pueden editar esta transferencia.");
         return;
       }
     }
@@ -423,6 +424,7 @@ export function PizarraTransferencias() {
           id,
           rutaId: rutaCarga.id,
           sucursalSesionId: sesion?.sucursal_id,
+          tipoSesion: sesion?.tipo,
           sucursalId,
           archivoTransferencia,
           archivoGuia,
@@ -456,9 +458,43 @@ export function PizarraTransferencias() {
     const ok = window.confirm("¿Eliminar esta transferencia y su guía?");
     if (!ok) return;
     try {
-      await eliminarTransferencia(item, { sucursalId: sesion?.sucursal_id });
+      await eliminarTransferencia(item, {
+        sucursalId: sesion?.sucursal_id,
+        tipoSesion: sesion?.tipo,
+      });
       setTransferencias((prev) => prev.filter((actual) => actual.id !== item.id));
       toast.success("Transferencia eliminada.");
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
+    }
+  };
+
+  const handleDevolverTransferencia = async (item) => {
+    const ok = window.confirm(
+      "¿Regresar esta transferencia a la ruta transitorio de la matriz?"
+    );
+    if (!ok) return;
+    try {
+      const resultado = await devolverTransferenciaATransitorio(item, {
+        sucursalSesionId: sesion?.sucursal_id,
+        tipoSesion: sesion?.tipo,
+      });
+      setTransferencias((prev) =>
+        prev.map((actual) =>
+          String(actual.id) === String(resultado.transferencia.id)
+            ? resultado.transferencia
+            : actual
+        )
+      );
+      if (resultado.transitoria) {
+        setRutas((prev) =>
+          prev.some((ruta) => String(ruta.id) === String(resultado.transitoria.id))
+            ? prev
+            : [...prev, resultado.transitoria]
+        );
+      }
+      toast.success("Transferencia regresada a la ruta transitorio.");
     } catch (error) {
       console.error(error);
       toast.error(interpretarErrorSupabase(error));
@@ -753,6 +789,24 @@ export function PizarraTransferencias() {
                           >
                             Guía
                           </a>
+                          {puedeGestionarItemTransferencia(sesion, item, rutaActiva) &&
+                            !esRutaTransitoria(rutaActiva) && (
+                              <BtnEliminar
+                                type="button"
+                                $neutro
+                                onClick={() => handleDevolverTransferencia(item)}
+                              >
+                                A transitorio
+                              </BtnEliminar>
+                            )}
+                          {puedeGestionarItemTransferencia(sesion, item, rutaActiva) && (
+                            <BtnEliminar
+                              type="button"
+                              onClick={() => handleEliminarTransferencia(item)}
+                            >
+                              Eliminar
+                            </BtnEliminar>
+                          )}
                         </div>
                       </FilaPanel>
                     ))
@@ -802,15 +856,18 @@ export function PizarraTransferencias() {
                             >
                               Guía
                             </a>
-                            {puedeGestionar &&
-                              mismoId(sesion?.sucursal_id, bodegaActiva.id) && (
-                                <BtnEliminar
-                                  type="button"
-                                  onClick={() => handleEliminarTransferencia(item)}
-                                >
-                                  Eliminar
-                                </BtnEliminar>
-                              )}
+                            {puedeGestionarItemTransferencia(
+                              sesion,
+                              item,
+                              rutaTransitoriaActiva
+                            ) && (
+                              <BtnEliminar
+                                type="button"
+                                onClick={() => handleEliminarTransferencia(item)}
+                              >
+                                Eliminar
+                              </BtnEliminar>
+                            )}
                           </div>
                         </FilaPanel>
                       ))
@@ -881,6 +938,7 @@ export function PizarraTransferencias() {
           guardando={guardandoCarga}
           onConfirmar={handleGuardarTransferencia}
           onEliminar={handleEliminarTransferencia}
+          onDevolver={handleDevolverTransferencia}
           onClose={() => {
             if (!guardandoCarga) {
               setMostrarCargaModal(false);
@@ -1394,7 +1452,7 @@ const BtnEliminar = styled.button`
   border: none;
   background: transparent;
   padding: 0;
-  color: #c62828;
+  color: ${({ $neutro }) => ($neutro ? "#1565c0" : "#c62828")};
   font-weight: 700;
   font-size: 0.76rem;
   cursor: pointer;

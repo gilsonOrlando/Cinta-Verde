@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.config";
 import { validarPdfTransferencia } from "../utils/validarPdfTransferencia";
+import { asegurarRutaTransitoria } from "./crudRuta";
 
 export const BUCKET_TRANSFERENCIAS = "transferencias";
 
@@ -12,6 +13,48 @@ function validarOrigenYSucursal(origenId, sucursalId) {
   if (String(origenId) === String(sucursalId)) {
     throw new Error("La sucursal no puede ser la misma que la agencia origen.");
   }
+}
+
+export function esOrigenDeTransferencia(sesion, item) {
+  return Boolean(sesion?.sucursal_id) && String(sesion.sucursal_id) === String(item?.origen_id ?? "");
+}
+
+export function puedeGestionarItemTransferencia(sesion, item, ruta) {
+  if (!sesion?.sucursal_id || !item) return false;
+  if (esOrigenDeTransferencia(sesion, item)) return true;
+  return (
+    String(sesion.tipo ?? "").toLowerCase() === "matriz" &&
+    String(sesion.sucursal_id) === String(ruta?.origen_id ?? "")
+  );
+}
+
+async function cargarRutaDeTransferencia(rutaId) {
+  const { data, error } = await supabase
+    .from("ruta")
+    .select("id, origen_id, transitorio")
+    .eq("id", rutaId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+async function exigirPermisoGestion({ sucursalSesionId, tipoSesion, item }) {
+  if (!sucursalSesionId) {
+    throw new Error("Inicia sesión para gestionar esta transferencia.");
+  }
+
+  const ruta = await cargarRutaDeTransferencia(item.ruta_id);
+  if (!ruta?.id) throw new Error("No se encontró la ruta de la transferencia.");
+
+  const sesion = { sucursal_id: sucursalSesionId, tipo: tipoSesion };
+  if (!puedeGestionarItemTransferencia(sesion, item, ruta)) {
+    throw new Error(
+      "Solo la agencia origen o la matriz que creó la ruta pueden gestionar esta transferencia."
+    );
+  }
+
+  return ruta;
 }
 
 export function urlArchivoTransferencia(path) {
@@ -93,28 +136,24 @@ export async function actualizarTransferencia({
   id,
   rutaId,
   sucursalSesionId,
+  tipoSesion,
   sucursalId,
   archivoTransferencia,
   archivoGuia,
 }) {
   if (!id) throw new Error("No se encontró la transferencia a editar.");
   if (!rutaId) throw new Error("Selecciona una ruta para editar la transferencia.");
-  if (!sucursalSesionId) {
-    throw new Error("Inicia sesión para editar una transferencia.");
-  }
 
   const { data: actual, error: errorLectura } = await supabase
     .from("transferencia")
-    .select("id, origen_id")
+    .select("id, origen_id, ruta_id")
     .eq("id", id)
     .maybeSingle();
 
   if (errorLectura) throw errorLectura;
   if (!actual?.id) throw new Error("No se encontró la transferencia a editar.");
-  if (String(actual.origen_id ?? "") !== String(sucursalSesionId)) {
-    throw new Error("Solo la agencia origen puede editar esta transferencia.");
-  }
 
+  await exigirPermisoGestion({ sucursalSesionId, tipoSesion, item: actual });
   validarOrigenYSucursal(actual.origen_id, sucursalId);
 
   await validarPdfTransferencia(archivoTransferencia, "Transferencia");
@@ -147,7 +186,6 @@ export async function actualizarTransferencia({
       guia: pathGuia,
     })
     .eq("id", id)
-    .eq("origen_id", sucursalSesionId)
     .select(CAMPOS_TRANSFERENCIA)
     .single();
 
@@ -168,15 +206,41 @@ export async function moverTransferenciasARuta({ ids, rutaId }) {
   if (error) throw error;
 }
 
-export function esOrigenDeTransferencia(sesion, item) {
-  return Boolean(sesion?.sucursal_id) && String(sesion.sucursal_id) === String(item?.origen_id ?? "");
+export async function devolverTransferenciaATransitorio(item, { sucursalSesionId, tipoSesion } = {}) {
+  if (!item?.id) throw new Error("No se encontró la transferencia a devolver.");
+
+  const { data: actual, error: errorLectura } = await supabase
+    .from("transferencia")
+    .select(CAMPOS_TRANSFERENCIA)
+    .eq("id", item.id)
+    .maybeSingle();
+
+  if (errorLectura) throw errorLectura;
+  if (!actual?.id) throw new Error("No se encontró la transferencia a devolver.");
+
+  const ruta = await exigirPermisoGestion({ sucursalSesionId, tipoSesion, item: actual });
+  if (ruta.transitorio) {
+    throw new Error("Esta transferencia ya está en la ruta transitorio.");
+  }
+
+  const transitoria = await asegurarRutaTransitoria(ruta.origen_id);
+  if (String(transitoria.id) === String(actual.ruta_id)) {
+    throw new Error("Esta transferencia ya está en la ruta transitorio.");
+  }
+
+  const { data, error } = await supabase
+    .from("transferencia")
+    .update({ ruta_id: transitoria.id })
+    .eq("id", actual.id)
+    .select(CAMPOS_TRANSFERENCIA)
+    .single();
+
+  if (error) throw error;
+  return { transferencia: data, transitoria };
 }
 
-export async function eliminarTransferencia(item, { sucursalId } = {}) {
+export async function eliminarTransferencia(item, { sucursalId, tipoSesion } = {}) {
   if (!item?.id) throw new Error("No se encontró la transferencia a eliminar.");
-  if (!sucursalId) {
-    throw new Error("Inicia sesión para eliminar una transferencia.");
-  }
 
   const { data: actual, error: errorLectura } = await supabase
     .from("transferencia")
@@ -187,26 +251,7 @@ export async function eliminarTransferencia(item, { sucursalId } = {}) {
   if (errorLectura) throw errorLectura;
   if (!actual?.id) throw new Error("No se encontró la transferencia a eliminar.");
 
-  const esOrigen = String(actual.origen_id ?? "") === String(sucursalId);
-  let enTransitorioPropio = false;
-
-  if (!esOrigen) {
-    const { data: ruta, error: errorRuta } = await supabase
-      .from("ruta")
-      .select("id, origen_id, transitorio")
-      .eq("id", actual.ruta_id)
-      .maybeSingle();
-
-    if (errorRuta) throw errorRuta;
-    enTransitorioPropio =
-      Boolean(ruta?.transitorio) && String(ruta?.origen_id ?? "") === String(sucursalId);
-  }
-
-  if (!esOrigen && !enTransitorioPropio) {
-    throw new Error(
-      "Solo la agencia origen o la matriz de la ruta transitorio pueden eliminar esta transferencia."
-    );
-  }
+  await exigirPermisoGestion({ sucursalSesionId: sucursalId, tipoSesion, item: actual });
 
   const { error } = await supabase.from("transferencia").delete().eq("id", actual.id);
   if (error) throw error;
