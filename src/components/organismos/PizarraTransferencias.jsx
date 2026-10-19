@@ -615,21 +615,6 @@ export function PizarraTransferencias() {
           ) : (
             <PanelTitulo>Sucursal</PanelTitulo>
           )}
-          <Leyenda>
-            {bodegas
-              .filter((item) => esMatriz(item.tipo))
-              .map((item) => (
-                <span key={item.id}>
-                  <Muestra $color={colorDeMatriz(item, bodegas)} /> {item.nombre}
-                </span>
-              ))}
-            <span>
-              <Muestra /> Agencia
-            </span>
-            <span>
-              <Muestra $ruta /> Ruta
-            </span>
-          </Leyenda>
           <Nota>
             {bodegas.length} sucursales · {rutas.length} ruta(s) · {transferencias.length}{" "}
             transferencia(s). Usa Credencial para ingresar como matriz o agencia.
@@ -1134,29 +1119,6 @@ const PanelDato = styled.p`
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-`;
-
-const Leyenda = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.82rem;
-  color: #555;
-
-  span {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-`;
-
-const Muestra = styled.i`
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  background: ${({ $color, $ruta }) =>
-    $color ?? ($ruta ? "#c8e6c9" : "#fffde7")};
-  border: 1px solid #d7ccc8;
 `;
 
 const Nota = styled.p`
