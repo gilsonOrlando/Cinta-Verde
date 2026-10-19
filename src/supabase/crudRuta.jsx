@@ -5,6 +5,13 @@ export function esRutaTransitoria(ruta) {
   return Boolean(ruta?.transitorio);
 }
 
+export function esDuenioDeRuta(sesion, ruta) {
+  return (
+    Boolean(sesion?.sucursal_id) &&
+    String(sesion.sucursal_id) === String(ruta?.origen_id ?? "")
+  );
+}
+
 export async function asegurarRutaTransitoria(origenId) {
   if (!origenId) throw new Error("Falta la matriz para la ruta transitoria.");
 
@@ -177,7 +184,7 @@ export async function actualizarRuta({
   };
 }
 
-export async function eliminarRuta(id) {
+export async function eliminarRuta(id, { sucursalId } = {}) {
   if (!id) throw new Error("No se encontró la ruta a eliminar.");
 
   const { data: ruta, error: errorRuta } = await supabase
@@ -190,6 +197,9 @@ export async function eliminarRuta(id) {
   if (esRutaTransitoria(ruta)) {
     throw new Error("No se puede eliminar la ruta transitoria de la matriz.");
   }
+  if (sucursalId && String(ruta.origen_id) !== String(sucursalId)) {
+    throw new Error("Solo la matriz que creó la ruta puede eliminarla.");
+  }
 
   const transitoria = await asegurarRutaTransitoria(ruta.origen_id);
   const { error: errorMover } = await supabase
@@ -199,7 +209,9 @@ export async function eliminarRuta(id) {
 
   if (errorMover) throw errorMover;
 
-  const { error } = await supabase.from("ruta").delete().eq("id", id);
+  let consulta = supabase.from("ruta").delete().eq("id", id);
+  if (sucursalId) consulta = consulta.eq("origen_id", sucursalId);
+  const { error } = await consulta;
   if (error) throw error;
   return transitoria;
 }

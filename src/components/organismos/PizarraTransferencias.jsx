@@ -21,6 +21,7 @@ import {
   asegurarRutaTransitoria,
   crearRuta,
   eliminarRuta,
+  esDuenioDeRuta,
   esRutaTransitoria,
   listarRutas,
 } from "../../supabase/crudRuta";
@@ -340,6 +341,10 @@ export function PizarraTransferencias() {
   const handleEditarRuta = (ruta, event) => {
     event.stopPropagation();
     event.preventDefault();
+    if (!esDuenioDeRuta(sesion, ruta)) {
+      toast.error("Solo puedes editar las rutas que creó tu matriz.");
+      return;
+    }
     setRutaEdicion(ruta);
     setMostrarRutaModal(true);
   };
@@ -347,6 +352,10 @@ export function PizarraTransferencias() {
   const handleEliminarRuta = async (ruta, event) => {
     event.stopPropagation();
     event.preventDefault();
+    if (!esDuenioDeRuta(sesion, ruta)) {
+      toast.error("Solo puedes eliminar las rutas que creó tu matriz.");
+      return;
+    }
     const guiasPropias = guiasSubidasPorMatriz(transferencias, {
       rutaId: ruta.id,
       matrizId: sesion?.sucursal_id,
@@ -376,7 +385,9 @@ export function PizarraTransferencias() {
     if (!resultado.isConfirmed) return;
 
     try {
-      const transitoria = await eliminarRuta(ruta.id);
+      const transitoria = await eliminarRuta(ruta.id, {
+        sucursalId: sesion?.sucursal_id,
+      });
       setRutas((prev) => {
         const resto = prev.filter((item) => item.id !== ruta.id);
         if (transitoria && !resto.some((item) => item.id === transitoria.id)) {
@@ -771,7 +782,7 @@ export function PizarraTransferencias() {
                     <BadgeCamion>{transferenciasDeRuta(ruta.id).length}</BadgeCamion>
                   )}
                 </BtnCamion>
-                {puedeGestionar && (
+                {puedeGestionar && esDuenioDeRuta(sesion, ruta) && (
                 <AccionesNodo>
                   <BtnNodo
                     type="button"
