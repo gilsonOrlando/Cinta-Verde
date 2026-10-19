@@ -379,8 +379,16 @@ export function PizarraTransferencias() {
     }
   };
 
+  const mismoId = (a, b) => String(a ?? "") === String(b ?? "");
   const transferenciasDeRuta = (rutaId) =>
-    transferencias.filter((item) => item.ruta_id === rutaId);
+    transferencias.filter((item) => mismoId(item.ruta_id, rutaId));
+  const transferenciasDeMatriz = bodegaActiva
+    ? transferencias.filter((item) =>
+        rutas.some(
+          (ruta) => mismoId(ruta.id, item.ruta_id) && mismoId(ruta.origen_id, bodegaActiva.id)
+        )
+      )
+    : [];
   const puedeGestionar = puedeGestionarRutas(sesion);
   const puedeEditarTransferencias = puedeCrudTransferencias(sesion);
 
@@ -621,40 +629,33 @@ export function PizarraTransferencias() {
               </NombreSucursal>
               {esMatriz(bodegaActiva.tipo) && (
                 <ListaPanel>
-                  <span>Transferencias de sus rutas</span>
+                  <span>Transferencias</span>
                   <ListaScroll>
-                    {rutas
-                      .filter((ruta) => ruta.origen_id === bodegaActiva.id)
-                      .flatMap((ruta) =>
-                        transferenciasDeRuta(ruta.id).map((item, index) => (
-                          <FilaPanel key={item.id}>
-                            <RiFilePdfFill />
-                            <div>
-                              <strong>
-                                {ruta.chofer} · #{index + 1}
-                              </strong>
-                              <a
-                                href={urlArchivoTransferencia(item.transferencia)}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Transferencia
-                              </a>
-                              <a
-                                href={urlArchivoTransferencia(item.guia)}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Guía
-                              </a>
-                            </div>
-                          </FilaPanel>
-                        ))
-                      )}
-                    {rutas
-                      .filter((ruta) => ruta.origen_id === bodegaActiva.id)
-                      .every((ruta) => transferenciasDeRuta(ruta.id).length === 0) && (
-                      <em>Sin transferencias asignadas</em>
+                    {transferenciasDeMatriz.length === 0 ? (
+                      <em>Sin transferencias</em>
+                    ) : (
+                      transferenciasDeMatriz.map((item, index) => (
+                        <FilaPanel key={item.id}>
+                          <RiFilePdfFill />
+                          <div>
+                            <strong>PDF #{index + 1}</strong>
+                            <a
+                              href={urlArchivoTransferencia(item.transferencia)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Transferencia
+                            </a>
+                            <a
+                              href={urlArchivoTransferencia(item.guia)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Guía
+                            </a>
+                          </div>
+                        </FilaPanel>
+                      ))
                     )}
                   </ListaScroll>
                 </ListaPanel>
