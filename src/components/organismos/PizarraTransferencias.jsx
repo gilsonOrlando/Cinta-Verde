@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 import {
   RiBuildingFill,
   RiCalendarFill,
@@ -26,8 +27,10 @@ import {
 import {
   actualizarTransferencia,
   crearTransferencia,
+  descargarGuiasDeMatriz,
   devolverTransferenciaATransitorio,
   eliminarTransferencia,
+  guiasSubidasPorMatriz,
   listarTransferencias,
   moverTransferenciasARuta,
   puedeGestionarItemTransferencia,
@@ -44,6 +47,7 @@ import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemi
 import { CrearRutaModal } from "../modals/CrearRutaModal";
 import { CargarTransferenciaModal } from "../modals/CargarTransferenciaModal";
 import { AsignarTransferenciasModal } from "../modals/AsignarTransferenciasModal";
+import { BajarGuiasModal } from "../modals/BajarGuiasModal";
 import { LoginTransferencias } from "./LoginTransferencias";
 import {
   ICONO_VERIFICAR_TRANSFERENCIAS,
@@ -136,6 +140,9 @@ export function PizarraTransferencias() {
   const [matrizAsignar, setMatrizAsignar] = useState(null);
   const [guardandoAsignar, setGuardandoAsignar] = useState(false);
   const [mostrarVisor, setMostrarVisor] = useState(false);
+  const [mostrarBajarGuias, setMostrarBajarGuias] = useState(false);
+  const [rutaBajarId, setRutaBajarId] = useState(null);
+  const [descargandoGuias, setDescargandoGuias] = useState(false);
   const menuGestionRef = useRef(null);
 
   useEffect(() => {
@@ -340,8 +347,33 @@ export function PizarraTransferencias() {
   const handleEliminarRuta = async (ruta, event) => {
     event.stopPropagation();
     event.preventDefault();
-    const ok = window.confirm(`¿Eliminar la ruta de ${ruta.chofer}?`);
-    if (!ok) return;
+    const guiasPropias = guiasSubidasPorMatriz(transferencias, {
+      rutaId: ruta.id,
+      matrizId: sesion?.sucursal_id,
+    });
+    const resultado = await Swal.fire({
+      title: "Descarga las guías antes de eliminar",
+      html: `La ruta de <strong>${ruta.chofer}</strong> se eliminará y las transferencias pasarán a la ruta transitorio.<br/><br/>Antes debes descargar las <strong>guías</strong> de las transferencias que subió tu matriz; sirven como evidencia.${
+        guiasPropias.length
+          ? `<br/><br/>Hay <strong>${guiasPropias.length}</strong> guía(s) de tu matriz en esta ruta.`
+          : "<br/><br/>En esta ruta no hay guías subidas por tu matriz."
+      }`,
+      icon: "warning",
+      showCancelButton: true,
+      showDenyButton: guiasPropias.length > 0,
+      confirmButtonText: "Ya descargué, eliminar",
+      denyButtonText: "Bajar guías",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#c62828",
+      denyButtonColor: "#2e7d32",
+    });
+
+    if (resultado.isDenied) {
+      setRutaBajarId(ruta.id);
+      setMostrarBajarGuias(true);
+      return;
+    }
+    if (!resultado.isConfirmed) return;
 
     try {
       const transitoria = await eliminarRuta(ruta.id);
@@ -397,6 +429,62 @@ export function PizarraTransferencias() {
       toast.error(interpretarErrorSupabase(error));
     } finally {
       setGuardandoAsignar(false);
+    }
+  };
+
+  const grupoGuiasDeRuta = (ruta) => {
+    const items = guiasSubidasPorMatriz(transferencias, {
+      rutaId: ruta.id,
+      matrizId: sesion?.sucursal_id,
+    }).map((item) => ({
+      ...item,
+      etiqueta: `${
+        bodegas.find((bodega) => String(bodega.id) === String(item.origen_id))?.nombre ??
+        "origen"
+      }-${
+        bodegas.find((bodega) => String(bodega.id) === String(item.sucursal_id))?.nombre ??
+        "destino"
+      }`,
+    }));
+    return {
+      ...ruta,
+      destinos: nombresAgencias(ruta),
+      guias: items,
+      items,
+      nombre: `${ruta.chofer} ${String(ruta.fecha ?? "").slice(0, 10)}`,
+    };
+  };
+
+  const handleDescargarGuiasRuta = async (ruta) => {
+    setDescargandoGuias(true);
+    try {
+      const grupo = grupoGuiasDeRuta(ruta);
+      await descargarGuiasDeMatriz({
+        grupos: [grupo],
+        nombreZip: `guias-${grupo.nombre}`,
+      });
+      toast.success("Guías descargadas.");
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
+    } finally {
+      setDescargandoGuias(false);
+    }
+  };
+
+  const handleDescargarTodasGuias = async (rutasLista) => {
+    setDescargandoGuias(true);
+    try {
+      await descargarGuiasDeMatriz({
+        grupos: rutasLista.map((ruta) => grupoGuiasDeRuta(ruta)),
+        nombreZip: `guias-${sesion?.sucursal_nombre ?? "matriz"}`,
+      });
+      toast.success("Guías descargadas.");
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
+    } finally {
+      setDescargandoGuias(false);
     }
   };
 
@@ -573,17 +661,30 @@ export function PizarraTransferencias() {
             {menuGestionAbierto && (
               <MenuLista role="menu">
                 {puedeGestionar ? (
-                  <MenuItem
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuGestionAbierto(false);
-                      setRutaEdicion(null);
-                      setMostrarRutaModal(true);
-                    }}
-                  >
-                    Ruta
-                  </MenuItem>
+                  <>
+                    <MenuItem
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuGestionAbierto(false);
+                        setRutaEdicion(null);
+                        setMostrarRutaModal(true);
+                      }}
+                    >
+                      Ruta
+                    </MenuItem>
+                    <MenuItem
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuGestionAbierto(false);
+                        setRutaBajarId(null);
+                        setMostrarBajarGuias(true);
+                      }}
+                    >
+                      Bajar guías
+                    </MenuItem>
+                  </>
                 ) : (
                   <MenuItem type="button" role="menuitem" disabled>
                     Inicia sesión como matriz para crear rutas
@@ -979,6 +1080,25 @@ export function PizarraTransferencias() {
           onEliminar={handleEliminarTransferencia}
           onDevolver={handleDevolverTransferencia}
           onClose={() => setMostrarVisor(false)}
+        />
+      )}
+
+      {mostrarBajarGuias && puedeGestionar && (
+        <BajarGuiasModal
+          matrizNombre={sesion?.sucursal_nombre}
+          rutas={rutasDeMatriz(sesion?.sucursal_id).map((ruta) => grupoGuiasDeRuta(ruta))}
+          rutaResaltadaId={rutaBajarId}
+          descargando={descargandoGuias}
+          onDescargarRuta={handleDescargarGuiasRuta}
+          onDescargarTodas={() =>
+            handleDescargarTodasGuias(rutasDeMatriz(sesion?.sucursal_id))
+          }
+          onClose={() => {
+            if (!descargandoGuias) {
+              setMostrarBajarGuias(false);
+              setRutaBajarId(null);
+            }
+          }}
         />
       )}
 

@@ -258,3 +258,58 @@ export async function eliminarTransferencia(item, { sucursalId, tipoSesion } = {
 
   await borrarArchivos([actual.transferencia, actual.guia]);
 }
+
+function slugArchivo(texto) {
+  const limpio = String(texto ?? "guia")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+  return (limpio || "guia").slice(0, 48);
+}
+
+function dispararDescarga(blob, nombre) {
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombre;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+export function guiasSubidasPorMatriz(transferencias, { rutaId, matrizId }) {
+  return (transferencias ?? []).filter(
+    (item) =>
+      String(item.ruta_id) === String(rutaId) &&
+      String(item.origen_id) === String(matrizId) &&
+      item.guia
+  );
+}
+
+export async function descargarGuiasDeMatriz({ grupos, nombreZip }) {
+  const lista = (grupos ?? []).filter((grupo) => grupo.items?.length);
+  if (lista.length === 0) {
+    throw new Error("No hay guías subidas por tu matriz para descargar.");
+  }
+
+  const JSZip = (await import("jszip")).default;
+  const zip = new JSZip();
+
+  for (const grupo of lista) {
+    const carpeta = lista.length > 1 ? zip.folder(slugArchivo(grupo.nombre) || "ruta") : zip;
+    for (let i = 0; i < grupo.items.length; i += 1) {
+      const item = grupo.items[i];
+      const respuesta = await fetch(urlArchivoTransferencia(item.guia));
+      if (!respuesta.ok) throw new Error("No se pudo descargar una de las guías.");
+      const blob = await respuesta.blob();
+      const etiqueta = item.etiqueta || `guia-${i + 1}`;
+      carpeta.file(`${slugArchivo(etiqueta)}.pdf`, blob);
+    }
+  }
+
+  const contenido = await zip.generateAsync({ type: "blob" });
+  dispararDescarga(contenido, `${slugArchivo(nombreZip)}.zip`);
+}
