@@ -69,6 +69,51 @@ export async function crearTransferencia({ rutaId, archivoTransferencia, archivo
   }
 }
 
+export async function actualizarTransferencia({
+  id,
+  rutaId,
+  archivoTransferencia,
+  archivoGuia,
+}) {
+  if (!id) throw new Error("No se encontró la transferencia a editar.");
+  if (!rutaId) throw new Error("Selecciona una ruta para editar la transferencia.");
+
+  await validarPdfTransferencia(archivoTransferencia, "Transferencia");
+  await validarPdfTransferencia(archivoGuia, "Guía");
+
+  const pathTransferencia = `${rutaId}/${id}/transferencia.pdf`;
+  const pathGuia = `${rutaId}/${id}/guia.pdf`;
+
+  const { error: errorT } = await supabase.storage
+    .from(BUCKET_TRANSFERENCIAS)
+    .upload(pathTransferencia, archivoTransferencia, {
+      contentType: "application/pdf",
+      upsert: true,
+    });
+  if (errorT) throw errorT;
+
+  const { error: errorG } = await supabase.storage
+    .from(BUCKET_TRANSFERENCIAS)
+    .upload(pathGuia, archivoGuia, {
+      contentType: "application/pdf",
+      upsert: true,
+    });
+  if (errorG) throw errorG;
+
+  const { data, error } = await supabase
+    .from("transferencia")
+    .update({
+      transferencia: pathTransferencia,
+      guia: pathGuia,
+    })
+    .eq("id", id)
+    .select("id, ruta_id, transferencia, guia, created_at")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function eliminarTransferencia(item) {
   if (!item?.id) throw new Error("No se encontró la transferencia a eliminar.");
 

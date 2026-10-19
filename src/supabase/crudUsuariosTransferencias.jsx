@@ -26,6 +26,18 @@ export function esUsuarioMatriz(sesion) {
   return String(sesion?.tipo ?? "").toLowerCase() === "matriz";
 }
 
+export function esUsuarioAgencia(sesion) {
+  return String(sesion?.tipo ?? "").toLowerCase() === "agencia";
+}
+
+export function puedeGestionarRutas(sesion) {
+  return esUsuarioMatriz(sesion);
+}
+
+export function puedeCrudTransferencias(sesion) {
+  return esUsuarioMatriz(sesion) || esUsuarioAgencia(sesion);
+}
+
 export async function iniciarSesionTransferencia({ usuario, clave }) {
   const usuarioValor = String(usuario ?? "").trim();
   const claveValor = String(clave ?? "");

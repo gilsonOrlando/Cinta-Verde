@@ -1,16 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
-import { RiCloseLine, RiMenuLine, RiTruckFill } from "react-icons/ri";
+import { RiCloseLine, RiKey2Fill, RiMenuLine, RiTruckFill } from "react-icons/ri";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { esMatriz, listarSucursales } from "../../supabase/crudSucursal";
 import { actualizarRuta, crearRuta, eliminarRuta, listarRutas } from "../../supabase/crudRuta";
-import { crearTransferencia, listarTransferencias } from "../../supabase/crudTransferencia";
+import {
+  actualizarTransferencia,
+  crearTransferencia,
+  eliminarTransferencia,
+  listarTransferencias,
+} from "../../supabase/crudTransferencia";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
-import { esUsuarioMatriz } from "../../supabase/crudUsuariosTransferencias";
+import {
+  borrarSesionTransferencia,
+  leerSesionTransferencia,
+  puedeCrudTransferencias,
+  puedeGestionarRutas,
+} from "../../supabase/crudUsuariosTransferencias";
 import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemilla";
 import { CrearRutaModal } from "../modals/CrearRutaModal";
 import { CargarTransferenciaModal } from "../modals/CargarTransferenciaModal";
+import { LoginTransferencias } from "./LoginTransferencias";
 
 const COLORES_MATRIZ = [
   ["#ffb74d", "#ffcc80", "#ff8a65", "#ffe082"],
@@ -74,7 +85,7 @@ function formatearFecha(fecha) {
   return `${dia}/${mes}/${anio}`;
 }
 
-export function PizarraTransferencias({ sesion = null }) {
+export function PizarraTransferencias() {
   const tableroRef = useRef(null);
   const arrastreRef = useRef(null);
   const originalesRef = useRef(conPosicion(SUCURSALES_SEMILLA));
@@ -91,6 +102,8 @@ export function PizarraTransferencias({ sesion = null }) {
   const [mostrarCargaModal, setMostrarCargaModal] = useState(false);
   const [rutaCarga, setRutaCarga] = useState(null);
   const [guardandoCarga, setGuardandoCarga] = useState(false);
+  const [sesion, setSesion] = useState(() => leerSesionTransferencia());
+  const [mostrarCredencial, setMostrarCredencial] = useState(false);
   const menuGestionRef = useRef(null);
 
   useEffect(() => {
@@ -303,19 +316,36 @@ export function PizarraTransferencias({ sesion = null }) {
     setMostrarCargaModal(true);
   };
 
-  const handleGuardarTransferencia = async ({ archivoTransferencia, archivoGuia }) => {
+  const handleGuardarTransferencia = async ({
+    id,
+    archivoTransferencia,
+    archivoGuia,
+  }) => {
     if (!rutaCarga?.id) return;
     setGuardandoCarga(true);
     try {
-      const creada = await crearTransferencia({
-        rutaId: rutaCarga.id,
-        archivoTransferencia,
-        archivoGuia,
-      });
-      setTransferencias((prev) => [...prev, creada]);
+      if (id) {
+        const actualizada = await actualizarTransferencia({
+          id,
+          rutaId: rutaCarga.id,
+          archivoTransferencia,
+          archivoGuia,
+        });
+        setTransferencias((prev) =>
+          prev.map((item) => (item.id === actualizada.id ? actualizada : item))
+        );
+        toast.success("Transferencia actualizada.");
+      } else {
+        const creada = await crearTransferencia({
+          rutaId: rutaCarga.id,
+          archivoTransferencia,
+          archivoGuia,
+        });
+        setTransferencias((prev) => [...prev, creada]);
+        toast.success("Transferencia y guía guardadas.");
+      }
       setMostrarCargaModal(false);
       setRutaCarga(null);
-      toast.success("Transferencia y guía guardadas.");
     } catch (error) {
       console.error(error);
       toast.error(interpretarErrorSupabase(error));
@@ -324,9 +354,23 @@ export function PizarraTransferencias({ sesion = null }) {
     }
   };
 
+  const handleEliminarTransferencia = async (item) => {
+    const ok = window.confirm("¿Eliminar esta transferencia y su guía?");
+    if (!ok) return;
+    try {
+      await eliminarTransferencia(item);
+      setTransferencias((prev) => prev.filter((actual) => actual.id !== item.id));
+      toast.success("Transferencia eliminada.");
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
+    }
+  };
+
   const transferenciasDeRuta = (rutaId) =>
     transferencias.filter((item) => item.ruta_id === rutaId);
-  const puedeGestionar = esUsuarioMatriz(sesion);
+  const puedeGestionar = puedeGestionarRutas(sesion);
+  const puedeEditarTransferencias = puedeCrudTransferencias(sesion);
 
   return (
     <Layout>
@@ -341,7 +385,15 @@ export function PizarraTransferencias({ sesion = null }) {
           </Subtitulo>
         </div>
         <Acciones>
-          {puedeGestionar && (
+          <BtnCredencial
+            type="button"
+            aria-label="Credencial"
+            title={sesion ? `${sesion.sucursal_nombre} · ${sesion.tipo}` : "Credencial"}
+            $activo={Boolean(sesion)}
+            onClick={() => setMostrarCredencial(true)}
+          >
+            <RiKey2Fill />
+          </BtnCredencial>
           <MenuGestion ref={menuGestionRef}>
             <BtnGestion
               type="button"
@@ -354,21 +406,26 @@ export function PizarraTransferencias({ sesion = null }) {
             </BtnGestion>
             {menuGestionAbierto && (
               <MenuLista role="menu">
-                <MenuItem
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuGestionAbierto(false);
-                    setRutaEdicion(null);
-                    setMostrarRutaModal(true);
-                  }}
-                >
-                  Ruta
-                </MenuItem>
+                {puedeGestionar ? (
+                  <MenuItem
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuGestionAbierto(false);
+                      setRutaEdicion(null);
+                      setMostrarRutaModal(true);
+                    }}
+                  >
+                    Ruta
+                  </MenuItem>
+                ) : (
+                  <MenuItem type="button" role="menuitem" disabled>
+                    Inicia sesión como matriz para crear rutas
+                  </MenuItem>
+                )}
               </MenuLista>
             )}
           </MenuGestion>
-          )}
         </Acciones>
       </Cabecera>
 
@@ -412,8 +469,16 @@ export function PizarraTransferencias({ sesion = null }) {
               >
                 <BtnCamion
                   type="button"
-                  aria-label="Cargar transferencia y guía"
-                  title="Cargar transferencia y guía"
+                  aria-label={
+                    puedeEditarTransferencias
+                      ? "Gestionar transferencia y guía"
+                      : "Ver transferencias"
+                  }
+                  title={
+                    puedeEditarTransferencias
+                      ? "Gestionar transferencia y guía"
+                      : "Ver transferencias"
+                  }
                   onPointerDown={(event) => event.stopPropagation()}
                   onClick={(event) => handleAbrirCarga(ruta, event)}
                 >
@@ -517,17 +582,37 @@ export function PizarraTransferencias({ sesion = null }) {
           </Leyenda>
           <Nota>
             {bodegas.length} sucursales · {rutas.length} ruta(s) · {transferencias.length}{" "}
-            transferencia(s). El camión de cada ruta carga transferencia y guía juntas.
+            transferencia(s). Usa Credencial para ingresar como matriz o agencia.
           </Nota>
         </Panel>
       </Cuerpo>
+
+      {mostrarCredencial && (
+        <LoginTransferencias
+          sesion={sesion}
+          onSesion={(siguiente) => {
+            setSesion(siguiente);
+            setMostrarCredencial(false);
+            toast.success(`Sesión de ${siguiente.sucursal_nombre}.`);
+          }}
+          onSalir={() => {
+            borrarSesionTransferencia();
+            setSesion(null);
+            setMostrarCredencial(false);
+            toast.success("Sesión cerrada.");
+          }}
+          onClose={() => setMostrarCredencial(false)}
+        />
+      )}
 
       {mostrarCargaModal && rutaCarga && (
         <CargarTransferenciaModal
           ruta={rutaCarga}
           transferencias={transferenciasDeRuta(rutaCarga.id)}
+          puedeEditar={puedeEditarTransferencias}
           guardando={guardandoCarga}
           onConfirmar={handleGuardarTransferencia}
+          onEliminar={handleEliminarTransferencia}
           onClose={() => {
             if (!guardandoCarga) {
               setMostrarCargaModal(false);
@@ -600,6 +685,29 @@ const Acciones = styled.div`
   flex-wrap: wrap;
 `;
 
+const BtnCredencial = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid ${({ $activo }) => ($activo ? "#1b5e20" : "#2e7d32")};
+  background: ${({ $activo }) => ($activo ? "#1b5e20" : "#fff")};
+  color: ${({ $activo }) => ($activo ? "#fff" : "#2e7d32")};
+  border-radius: 8px;
+  cursor: pointer;
+
+  svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  &:hover {
+    background: #2e7d32;
+    color: #fff;
+  }
+`;
+
 const MenuGestion = styled.div`
   position: relative;
 `;
@@ -653,9 +761,14 @@ const MenuItem = styled.button`
   font-weight: 600;
   cursor: pointer;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: #e8f5e9;
     color: #1b5e20;
+  }
+
+  &:disabled {
+    color: #888;
+    cursor: default;
   }
 `;
 

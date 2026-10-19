@@ -76,13 +76,16 @@ function ZonaPdf({ id, etiqueta, archivo, disabled, onArchivos }) {
 export function CargarTransferenciaModal({
   ruta,
   transferencias = [],
+  puedeEditar = false,
   guardando,
   onConfirmar,
+  onEliminar,
   onClose,
 }) {
   const [archivoTransferencia, setArchivoTransferencia] = useState(null);
   const [archivoGuia, setArchivoGuia] = useState(null);
   const [aviso, setAviso] = useState("");
+  const [editandoId, setEditandoId] = useState(null);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -116,8 +119,8 @@ export function CargarTransferenciaModal({
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (guardando || !archivoTransferencia || !archivoGuia) return;
-    onConfirmar({ archivoTransferencia, archivoGuia });
+    if (!puedeEditar || guardando || !archivoTransferencia || !archivoGuia) return;
+    onConfirmar({ id: editandoId, archivoTransferencia, archivoGuia });
   };
 
   return (
@@ -127,29 +130,34 @@ export function CargarTransferenciaModal({
         aria-labelledby="cargar-transferencia-titulo"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 id="cargar-transferencia-titulo">Cargar transferencia</h2>
+        <h2 id="cargar-transferencia-titulo">
+          {puedeEditar ? "Gestionar transferencia" : "Transferencias de la ruta"}
+        </h2>
         <p>
-          Cada transferencia lleva su guía. Arrastra los PDF o selecciónalos. Máximo 5 MB y
-          3 páginas. Ruta: {ruta?.chofer ?? "—"}.
+          {puedeEditar
+            ? `Cada transferencia lleva su guía. Arrastra los PDF o selecciónalos. Máximo 5 MB y 3 páginas. Ruta: ${ruta?.chofer ?? "—"}.`
+            : `Consulta los PDF de esta ruta. Ruta: ${ruta?.chofer ?? "—"}.`}
         </p>
 
         <Form onSubmit={handleSubmit}>
-          <Grid>
-            <ZonaPdf
-              id="pdf-transferencia"
-              etiqueta="PDF transferencia"
-              archivo={archivoTransferencia}
-              disabled={guardando}
-              onArchivos={(pdfs) => asignar(pdfs, "transferencia")}
-            />
-            <ZonaPdf
-              id="pdf-guia"
-              etiqueta="PDF guía"
-              archivo={archivoGuia}
-              disabled={guardando}
-              onArchivos={(pdfs) => asignar(pdfs, "guia")}
-            />
-          </Grid>
+          {puedeEditar && (
+            <Grid>
+              <ZonaPdf
+                id="pdf-transferencia"
+                etiqueta="PDF transferencia"
+                archivo={archivoTransferencia}
+                disabled={guardando}
+                onArchivos={(pdfs) => asignar(pdfs, "transferencia")}
+              />
+              <ZonaPdf
+                id="pdf-guia"
+                etiqueta="PDF guía"
+                archivo={archivoGuia}
+                disabled={guardando}
+                onArchivos={(pdfs) => asignar(pdfs, "guia")}
+              />
+            </Grid>
+          )}
 
           {aviso && <Aviso>{aviso}</Aviso>}
 
@@ -165,21 +173,49 @@ export function CargarTransferenciaModal({
                   <a href={urlArchivoTransferencia(item.guia)} target="_blank" rel="noreferrer">
                     Guía
                   </a>
+                  {puedeEditar && (
+                    <>
+                      <BtnTexto
+                        type="button"
+                        disabled={guardando}
+                        onClick={() => setEditandoId(item.id)}
+                      >
+                        {editandoId === item.id ? "Editando" : "Editar"}
+                      </BtnTexto>
+                      <BtnTexto
+                        type="button"
+                        $peligro
+                        disabled={guardando}
+                        onClick={() => onEliminar?.(item)}
+                      >
+                        Eliminar
+                      </BtnTexto>
+                    </>
+                  )}
                 </Fila>
               ))}
             </Lista>
           )}
+          {!puedeEditar && transferencias.length === 0 && (
+            <Aviso>Esta ruta aún no tiene transferencias.</Aviso>
+          )}
 
           <Footer>
             <BtnSecundario type="button" onClick={onClose} disabled={guardando}>
-              Cancelar
+              {puedeEditar ? "Cancelar" : "Cerrar"}
             </BtnSecundario>
-            <BtnPrimario
-              type="submit"
-              disabled={guardando || !archivoTransferencia || !archivoGuia}
-            >
-              {guardando ? "Subiendo..." : "Guardar ambos PDF"}
-            </BtnPrimario>
+            {puedeEditar && (
+              <BtnPrimario
+                type="submit"
+                disabled={guardando || !archivoTransferencia || !archivoGuia}
+              >
+                {guardando
+                  ? "Subiendo..."
+                  : editandoId
+                    ? "Actualizar ambos PDF"
+                    : "Guardar ambos PDF"}
+              </BtnPrimario>
+            )}
           </Footer>
         </Form>
       </Dialog>
@@ -316,6 +352,7 @@ const Fila = styled.div`
   align-items: center;
   gap: 12px;
   font-size: 0.86rem;
+  flex-wrap: wrap;
 
   strong {
     color: #1b5e20;
@@ -324,6 +361,20 @@ const Fila = styled.div`
   a {
     color: #2e7d32;
     font-weight: 600;
+  }
+`;
+
+const BtnTexto = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: ${({ $peligro }) => ($peligro ? "#c62828" : "#1565c0")};
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: wait;
   }
 `;
 
