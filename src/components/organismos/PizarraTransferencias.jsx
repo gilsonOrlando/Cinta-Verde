@@ -27,6 +27,7 @@ import {
   actualizarTransferencia,
   crearTransferencia,
   eliminarTransferencia,
+  esOrigenDeTransferencia,
   listarTransferencias,
   moverTransferenciasARuta,
   urlArchivoTransferencia,
@@ -408,13 +409,20 @@ export function PizarraTransferencias() {
     archivoGuia,
   }) => {
     if (!rutaCarga?.id) return;
+    if (id) {
+      const existente = transferencias.find((item) => String(item.id) === String(id));
+      if (!esOrigenDeTransferencia(sesion, existente)) {
+        toast.error("Solo la agencia origen puede editar esta transferencia.");
+        return;
+      }
+    }
     setGuardandoCarga(true);
     try {
       if (id) {
         const actualizada = await actualizarTransferencia({
           id,
           rutaId: rutaCarga.id,
-          origenId,
+          sucursalSesionId: sesion?.sucursal_id,
           sucursalId,
           archivoTransferencia,
           archivoGuia,

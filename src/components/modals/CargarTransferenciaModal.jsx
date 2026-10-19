@@ -145,6 +145,10 @@ export function CargarTransferenciaModal({
     if (!puedeEditar || guardando || !archivoTransferencia || !archivoGuia || !sucursalId) {
       return;
     }
+    if (editandoId && !esOrigenDeTransferencia(sesion, itemEditando)) {
+      setAviso("Solo la agencia origen puede editar esta transferencia.");
+      return;
+    }
     onConfirmar({
       id: editandoId,
       origenId,
@@ -241,7 +245,7 @@ export function CargarTransferenciaModal({
                   <a href={urlArchivoTransferencia(item.guia)} target="_blank" rel="noreferrer">
                     Guía
                   </a>
-                  {puedeEditar && (
+                  {puedeEditar && esOrigenDeTransferencia(sesion, item) && (
                     <>
                       <BtnTexto
                         type="button"
@@ -253,7 +257,6 @@ export function CargarTransferenciaModal({
                       >
                         {editandoId === item.id ? "Editando" : "Editar"}
                       </BtnTexto>
-                      {esOrigenDeTransferencia(sesion, item) && (
                         <BtnTexto
                           type="button"
                           $peligro
@@ -262,7 +265,6 @@ export function CargarTransferenciaModal({
                         >
                           Eliminar
                         </BtnTexto>
-                      )}
                     </>
                   )}
                 </Fila>

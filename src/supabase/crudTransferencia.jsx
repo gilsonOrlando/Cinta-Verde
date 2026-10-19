@@ -92,14 +92,30 @@ export async function crearTransferencia({
 export async function actualizarTransferencia({
   id,
   rutaId,
-  origenId,
+  sucursalSesionId,
   sucursalId,
   archivoTransferencia,
   archivoGuia,
 }) {
   if (!id) throw new Error("No se encontró la transferencia a editar.");
   if (!rutaId) throw new Error("Selecciona una ruta para editar la transferencia.");
-  validarOrigenYSucursal(origenId, sucursalId);
+  if (!sucursalSesionId) {
+    throw new Error("Inicia sesión para editar una transferencia.");
+  }
+
+  const { data: actual, error: errorLectura } = await supabase
+    .from("transferencia")
+    .select("id, origen_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (errorLectura) throw errorLectura;
+  if (!actual?.id) throw new Error("No se encontró la transferencia a editar.");
+  if (String(actual.origen_id ?? "") !== String(sucursalSesionId)) {
+    throw new Error("Solo la agencia origen puede editar esta transferencia.");
+  }
+
+  validarOrigenYSucursal(actual.origen_id, sucursalId);
 
   await validarPdfTransferencia(archivoTransferencia, "Transferencia");
   await validarPdfTransferencia(archivoGuia, "Guía");
@@ -126,12 +142,12 @@ export async function actualizarTransferencia({
   const { data, error } = await supabase
     .from("transferencia")
     .update({
-      origen_id: origenId,
       sucursal_id: sucursalId,
       transferencia: pathTransferencia,
       guia: pathGuia,
     })
     .eq("id", id)
+    .eq("origen_id", sucursalSesionId)
     .select(CAMPOS_TRANSFERENCIA)
     .single();
 
