@@ -1,3 +1,15 @@
+export function slugSucursal(nombre) {
+  return String(nombre ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+export function claveUsuarioTransferencia(nombre) {
+  return `Sicob-${slugSucursal(nombre)}`;
+}
+
 export const SUCURSALES_SEMILLA = [
   { nombre: "LOJA", tipo: "agencia" },
   { nombre: "ZAMORA", tipo: "agencia" },

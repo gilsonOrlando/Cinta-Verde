@@ -18,7 +18,8 @@
     "setup:motos": "node scripts/setup-motos.js",
     "setup:sucursal": "node scripts/setup-sucursal.js",
     "setup:ruta": "node scripts/setup-ruta.js",
-    "setup:transferencia": "node scripts/setup-transferencia.js"
+    "setup:transferencia": "node scripts/setup-transferencia.js",
+    "setup:usuarios-transferencias": "node scripts/setup-usuariostransferencias.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.4",

@@ -7,6 +7,7 @@ import { esMatriz, listarSucursales } from "../../supabase/crudSucursal";
 import { actualizarRuta, crearRuta, eliminarRuta, listarRutas } from "../../supabase/crudRuta";
 import { crearTransferencia, listarTransferencias } from "../../supabase/crudTransferencia";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
+import { esUsuarioMatriz } from "../../supabase/crudUsuariosTransferencias";
 import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemilla";
 import { CrearRutaModal } from "../modals/CrearRutaModal";
 import { CargarTransferenciaModal } from "../modals/CargarTransferenciaModal";
@@ -73,7 +74,7 @@ function formatearFecha(fecha) {
   return `${dia}/${mes}/${anio}`;
 }
 
-export function PizarraTransferencias() {
+export function PizarraTransferencias({ sesion = null }) {
   const tableroRef = useRef(null);
   const arrastreRef = useRef(null);
   const originalesRef = useRef(conPosicion(SUCURSALES_SEMILLA));
@@ -325,6 +326,7 @@ export function PizarraTransferencias() {
 
   const transferenciasDeRuta = (rutaId) =>
     transferencias.filter((item) => item.ruta_id === rutaId);
+  const puedeGestionar = esUsuarioMatriz(sesion);
 
   return (
     <Layout>
@@ -339,6 +341,7 @@ export function PizarraTransferencias() {
           </Subtitulo>
         </div>
         <Acciones>
+          {puedeGestionar && (
           <MenuGestion ref={menuGestionRef}>
             <BtnGestion
               type="button"
@@ -365,6 +368,7 @@ export function PizarraTransferencias() {
               </MenuLista>
             )}
           </MenuGestion>
+          )}
         </Acciones>
       </Cabecera>
 
@@ -418,6 +422,7 @@ export function PizarraTransferencias() {
                     <BadgeCamion>{transferenciasDeRuta(ruta.id).length}</BadgeCamion>
                   )}
                 </BtnCamion>
+                {puedeGestionar && (
                 <AccionesNodo>
                   <BtnNodo
                     type="button"
@@ -439,6 +444,7 @@ export function PizarraTransferencias() {
                     ×
                   </BtnNodo>
                 </AccionesNodo>
+                )}
                 <NodoTipo>Ruta</NodoTipo>
                 <DestinosRuta>{nombresAgencias(ruta) || "Sin agencias"}</DestinosRuta>
                 <NodoChofer>Chofer: {ruta.chofer}</NodoChofer>
