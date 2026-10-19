@@ -28,6 +28,13 @@ export function CrearRutaModal({
     sucursales.find((item) => item.id === origenId)?.nombre ??
     sesion?.sucursal_nombre ??
     "Matriz";
+  const destinosDisponibles = useMemo(
+    () => [
+      ...matrices.filter((item) => item.id !== origenId),
+      ...agencias,
+    ],
+    [matrices, agencias, origenId]
+  );
 
   const [fecha, setFecha] = useState(
     String(rutaInicial?.fecha ?? "").slice(0, 10) || fechaHoy()
@@ -68,7 +75,10 @@ export function CrearRutaModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="crear-ruta-titulo">{editando ? "Editar ruta" : "Crear ruta"}</h2>
-        <p>El origen es la matriz autenticada. Puedes marcar varias agencias como destino.</p>
+        <p>
+          El origen es la matriz autenticada. Puedes marcar la otra matriz y varias agencias
+          como destino.
+        </p>
 
         <Form onSubmit={handleSubmit}>
           <Campo>
@@ -105,7 +115,7 @@ export function CrearRutaModal({
           <Campo>
             <label>Destinos (agencias)</label>
             <ListaDestinos>
-              {agencias.map((item) => (
+              {destinosDisponibles.map((item) => (
                 <Destino key={item.id}>
                   <input
                     type="checkbox"
@@ -113,7 +123,10 @@ export function CrearRutaModal({
                     onChange={() => toggleDestino(item.id)}
                     disabled={guardando}
                   />
-                  <span>{item.nombre}</span>
+                  <span>
+                    {item.nombre}
+                    {esMatriz(item.tipo) ? " (Matriz)" : ""}
+                  </span>
                 </Destino>
               ))}
             </ListaDestinos>
