@@ -156,30 +156,43 @@ export function esOrigenDeTransferencia(sesion, item) {
   return Boolean(sesion?.sucursal_id) && String(sesion.sucursal_id) === String(item?.origen_id ?? "");
 }
 
-export async function eliminarTransferencia(item, { sucursalOrigenId } = {}) {
+export async function eliminarTransferencia(item, { sucursalId } = {}) {
   if (!item?.id) throw new Error("No se encontró la transferencia a eliminar.");
-  if (!sucursalOrigenId) {
+  if (!sucursalId) {
     throw new Error("Inicia sesión para eliminar una transferencia.");
   }
 
   const { data: actual, error: errorLectura } = await supabase
     .from("transferencia")
-    .select("id, origen_id, transferencia, guia")
+    .select("id, origen_id, ruta_id, transferencia, guia")
     .eq("id", item.id)
     .maybeSingle();
 
   if (errorLectura) throw errorLectura;
   if (!actual?.id) throw new Error("No se encontró la transferencia a eliminar.");
-  if (String(actual.origen_id ?? "") !== String(sucursalOrigenId)) {
-    throw new Error("Solo la agencia origen puede eliminar esta transferencia.");
+
+  const esOrigen = String(actual.origen_id ?? "") === String(sucursalId);
+  let enTransitorioPropio = false;
+
+  if (!esOrigen) {
+    const { data: ruta, error: errorRuta } = await supabase
+      .from("ruta")
+      .select("id, origen_id, transitorio")
+      .eq("id", actual.ruta_id)
+      .maybeSingle();
+
+    if (errorRuta) throw errorRuta;
+    enTransitorioPropio =
+      Boolean(ruta?.transitorio) && String(ruta?.origen_id ?? "") === String(sucursalId);
   }
 
-  const { error } = await supabase
-    .from("transferencia")
-    .delete()
-    .eq("id", actual.id)
-    .eq("origen_id", sucursalOrigenId);
+  if (!esOrigen && !enTransitorioPropio) {
+    throw new Error(
+      "Solo la agencia origen o la matriz de la ruta transitorio pueden eliminar esta transferencia."
+    );
+  }
 
+  const { error } = await supabase.from("transferencia").delete().eq("id", actual.id);
   if (error) throw error;
 
   await borrarArchivos([actual.transferencia, actual.guia]);

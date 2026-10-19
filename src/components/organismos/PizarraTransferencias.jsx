@@ -27,7 +27,6 @@ import {
   actualizarTransferencia,
   crearTransferencia,
   eliminarTransferencia,
-  esOrigenDeTransferencia,
   listarTransferencias,
   moverTransferenciasARuta,
   urlArchivoTransferencia,
@@ -446,14 +445,10 @@ export function PizarraTransferencias() {
   };
 
   const handleEliminarTransferencia = async (item) => {
-    if (!esOrigenDeTransferencia(sesion, item)) {
-      toast.error("Solo la agencia origen puede eliminar esta transferencia.");
-      return;
-    }
     const ok = window.confirm("¿Eliminar esta transferencia y su guía?");
     if (!ok) return;
     try {
-      await eliminarTransferencia(item, { sucursalOrigenId: sesion.sucursal_id });
+      await eliminarTransferencia(item, { sucursalId: sesion?.sucursal_id });
       setTransferencias((prev) => prev.filter((actual) => actual.id !== item.id));
       toast.success("Transferencia eliminada.");
     } catch (error) {
@@ -799,6 +794,15 @@ export function PizarraTransferencias() {
                             >
                               Guía
                             </a>
+                            {puedeGestionar &&
+                              mismoId(sesion?.sucursal_id, bodegaActiva.id) && (
+                                <BtnEliminar
+                                  type="button"
+                                  onClick={() => handleEliminarTransferencia(item)}
+                                >
+                                  Eliminar
+                                </BtnEliminar>
+                              )}
                           </div>
                         </FilaPanel>
                       ))
@@ -849,6 +853,7 @@ export function PizarraTransferencias() {
           puedeMover={puedeGestionar && mismoId(sesion?.sucursal_id, matrizAsignar.id)}
           guardando={guardandoAsignar}
           onConfirmar={handleMoverPendientes}
+          onEliminar={handleEliminarTransferencia}
           onClose={() => {
             if (!guardandoAsignar) {
               setMostrarAsignar(false);
@@ -1375,6 +1380,16 @@ const FilaPanel = styled.div`
     color: #2e7d32;
     font-weight: 600;
   }
+`;
+
+const BtnEliminar = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: #c62828;
+  font-weight: 700;
+  font-size: 0.76rem;
+  cursor: pointer;
 `;
 
 const PanelDato = styled.p`

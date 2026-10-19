@@ -24,11 +24,21 @@ export function AsignarTransferenciasModal({
   puedeMover,
   guardando,
   onConfirmar,
+  onEliminar,
   onClose,
 }) {
   const [seleccionadas, setSeleccionadas] = useState([]);
   const [rutaId, setRutaId] = useState(rutasEntreMatrices[0]?.id ?? "");
   const [sobreRuta, setSobreRuta] = useState(null);
+
+  useEffect(() => {
+    setSeleccionadas((prev) => {
+      const next = prev.filter((id) =>
+        pendientes.some((item) => String(item.id) === String(id))
+      );
+      return next.length === prev.length ? prev : next;
+    });
+  }, [pendientes]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -135,6 +145,18 @@ export function AsignarTransferenciasModal({
                         >
                           Guía
                         </a>
+                        {puedeMover && (
+                          <BtnEliminar
+                            type="button"
+                            disabled={guardando}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onEliminar?.(item);
+                            }}
+                          >
+                            Eliminar
+                          </BtnEliminar>
+                        )}
                       </div>
                     </Item>
                   ))
@@ -345,6 +367,20 @@ const Item = styled.div`
   a {
     color: #2e7d32;
     font-weight: 600;
+  }
+`;
+
+const BtnEliminar = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: #c62828;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: wait;
   }
 `;
 
