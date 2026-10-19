@@ -5,6 +5,7 @@ import {
   RiBuildingFill,
   RiCalendarFill,
   RiCloseLine,
+  RiFilePdfFill,
   RiKey2Fill,
   RiMapPinFill,
   RiMenuLine,
@@ -30,6 +31,7 @@ import {
   listarTransferencias,
   moverTransferenciasARuta,
   puedeGestionarItemTransferencia,
+  urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 import {
@@ -782,6 +784,61 @@ export function PizarraTransferencias() {
                   <BadgeVerificar>{transferenciasDeRuta(rutaActiva.id).length}</BadgeVerificar>
                 )}
               </BtnVerificar>
+              <ListaPanel>
+                <span>Transferencias</span>
+                <ListaScroll>
+                  {transferenciasDeRuta(rutaActiva.id).length === 0 ? (
+                    <em>Sin transferencias en esta ruta</em>
+                  ) : (
+                    transferenciasDeRuta(rutaActiva.id).map((item) => (
+                      <FilaPanel key={item.id}>
+                        <RiFilePdfFill />
+                        <div>
+                          <strong>
+                            {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
+                              ?.nombre ?? "—"}{" "}
+                            →{" "}
+                            {bodegas.find((bodega) => mismoId(bodega.id, item.sucursal_id))
+                              ?.nombre ?? "—"}
+                          </strong>
+                          <a
+                            href={urlArchivoTransferencia(item.transferencia)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Transferencia
+                          </a>
+                          <a
+                            href={urlArchivoTransferencia(item.guia)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Guía
+                          </a>
+                          {puedeGestionarItemTransferencia(sesion, item, rutaActiva) &&
+                            !esRutaTransitoria(rutaActiva) && (
+                              <BtnLista
+                                type="button"
+                                onClick={() => handleDevolverTransferencia(item)}
+                              >
+                                A transitorio
+                              </BtnLista>
+                            )}
+                          {puedeGestionarItemTransferencia(sesion, item, rutaActiva) && (
+                            <BtnLista
+                              type="button"
+                              $peligro
+                              onClick={() => handleEliminarTransferencia(item)}
+                            >
+                              Eliminar
+                            </BtnLista>
+                          )}
+                        </div>
+                      </FilaPanel>
+                    ))
+                  )}
+                </ListaScroll>
+              </ListaPanel>
             </>
           ) : bodegaActiva ? (
             <>
@@ -804,6 +861,59 @@ export function PizarraTransferencias() {
                     <BadgeVerificar>{transferenciasDeMatriz.length}</BadgeVerificar>
                   )}
                 </BtnVerificar>
+              )}
+              {esMatriz(bodegaActiva.tipo) && (
+                <ListaPanel>
+                  <span>Ruta transitorio · pendientes</span>
+                  <ListaScroll>
+                    {transferenciasDeMatriz.length === 0 ? (
+                      <em>Sin transferencias</em>
+                    ) : (
+                      transferenciasDeMatriz.map((item) => (
+                        <FilaPanel key={item.id}>
+                          <RiFilePdfFill />
+                          <div>
+                            <strong>
+                              {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
+                                ?.nombre ?? "—"}{" "}
+                              →{" "}
+                              {bodegas.find((bodega) =>
+                                mismoId(bodega.id, item.sucursal_id)
+                              )?.nombre ?? "—"}
+                            </strong>
+                            <a
+                              href={urlArchivoTransferencia(item.transferencia)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Transferencia
+                            </a>
+                            <a
+                              href={urlArchivoTransferencia(item.guia)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Guía
+                            </a>
+                            {puedeGestionarItemTransferencia(
+                              sesion,
+                              item,
+                              rutaTransitoriaActiva
+                            ) && (
+                              <BtnLista
+                                type="button"
+                                $peligro
+                                onClick={() => handleEliminarTransferencia(item)}
+                              >
+                                Eliminar
+                              </BtnLista>
+                            )}
+                          </div>
+                        </FilaPanel>
+                      ))
+                    )}
+                  </ListaScroll>
+                </ListaPanel>
               )}
             </>
           ) : (
@@ -1345,6 +1455,87 @@ const BtnVerificar = styled.button`
   &:hover img {
     transform: scale(1.04);
   }
+`;
+
+const ListaPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  min-height: 0;
+
+  span {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #8d6e63;
+  }
+
+  em {
+    font-size: 0.8rem;
+    color: #888;
+    font-style: normal;
+  }
+`;
+
+const ListaScroll = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #cbbba8;
+    border-radius: 999px;
+  }
+`;
+
+const FilaPanel = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  svg {
+    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    color: #2e7d32;
+  }
+
+  div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  strong {
+    width: 100%;
+    color: #3e2723;
+    font-size: 0.78rem;
+  }
+
+  a {
+    color: #2e7d32;
+    font-weight: 600;
+  }
+`;
+
+const BtnLista = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: ${({ $peligro }) => ($peligro ? "#c62828" : "#1565c0")};
+  font-weight: 700;
+  font-size: 0.76rem;
+  cursor: pointer;
 `;
 
 const BadgeVerificar = styled.span`
