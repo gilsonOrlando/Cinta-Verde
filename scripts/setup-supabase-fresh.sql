@@ -110,6 +110,8 @@ create policy "ruta_destino_all_anon" on public.ruta_destino for all to anon, au
 create table if not exists public.transferencia (
   id uuid primary key default gen_random_uuid(),
   ruta_id uuid not null references public.ruta(id) on delete cascade,
+  origen_id uuid references public.sucursal(id),
+  sucursal_id uuid references public.sucursal(id),
   transferencia text not null,
   guia text not null,
   created_at timestamptz not null default now(),

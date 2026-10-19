@@ -402,6 +402,8 @@ export function PizarraTransferencias() {
 
   const handleGuardarTransferencia = async ({
     id,
+    origenId,
+    sucursalId,
     archivoTransferencia,
     archivoGuia,
   }) => {
@@ -412,6 +414,8 @@ export function PizarraTransferencias() {
         const actualizada = await actualizarTransferencia({
           id,
           rutaId: rutaCarga.id,
+          origenId,
+          sucursalId,
           archivoTransferencia,
           archivoGuia,
         });
@@ -422,6 +426,8 @@ export function PizarraTransferencias() {
       } else {
         const creada = await crearTransferencia({
           rutaId: rutaCarga.id,
+          origenId: sesion?.sucursal_id,
+          sucursalId,
           archivoTransferencia,
           archivoGuia,
         });
@@ -719,6 +725,13 @@ export function PizarraTransferencias() {
                         <RiFilePdfFill />
                         <div>
                           <strong>#{index + 1}</strong>
+                          <small>
+                            {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
+                              ?.nombre ?? "—"}{" "}
+                            →{" "}
+                            {bodegas.find((bodega) => mismoId(bodega.id, item.sucursal_id))
+                              ?.nombre ?? "—"}
+                          </small>
                           <a
                             href={urlArchivoTransferencia(item.transferencia)}
                             target="_blank"
@@ -761,6 +774,14 @@ export function PizarraTransferencias() {
                           <RiFilePdfFill />
                           <div>
                             <strong>PDF #{index + 1}</strong>
+                            <small>
+                              {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
+                                ?.nombre ?? "—"}{" "}
+                              →{" "}
+                              {bodegas.find((bodega) =>
+                                mismoId(bodega.id, item.sucursal_id)
+                              )?.nombre ?? "—"}
+                            </small>
                             <a
                               href={urlArchivoTransferencia(item.transferencia)}
                               target="_blank"
@@ -838,6 +859,8 @@ export function PizarraTransferencias() {
         <CargarTransferenciaModal
           ruta={rutaCarga}
           transferencias={transferenciasDeRuta(rutaCarga.id)}
+          sucursales={bodegas}
+          sesion={sesion}
           puedeEditar={puedeEditarTransferencias}
           guardando={guardandoCarga}
           onConfirmar={handleGuardarTransferencia}
@@ -1337,6 +1360,12 @@ const FilaPanel = styled.div`
     width: 100%;
     color: #3e2723;
     font-size: 0.78rem;
+  }
+
+  small {
+    width: 100%;
+    color: #666;
+    font-size: 0.72rem;
   }
 
   a {

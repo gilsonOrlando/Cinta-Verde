@@ -73,9 +73,19 @@ function ZonaPdf({ id, etiqueta, archivo, disabled, onArchivos }) {
   );
 }
 
+function mismoId(a, b) {
+  return String(a ?? "") === String(b ?? "");
+}
+
+function nombreSucursal(sucursales, id) {
+  return sucursales.find((item) => mismoId(item.id, id))?.nombre ?? "—";
+}
+
 export function CargarTransferenciaModal({
   ruta,
   transferencias = [],
+  sucursales = [],
+  sesion,
   puedeEditar = false,
   guardando,
   onConfirmar,
@@ -84,8 +94,18 @@ export function CargarTransferenciaModal({
 }) {
   const [archivoTransferencia, setArchivoTransferencia] = useState(null);
   const [archivoGuia, setArchivoGuia] = useState(null);
+  const [sucursalId, setSucursalId] = useState("");
   const [aviso, setAviso] = useState("");
   const [editandoId, setEditandoId] = useState(null);
+  const itemEditando = transferencias.find((item) => mismoId(item.id, editandoId));
+  const origenId = itemEditando?.origen_id || sesion?.sucursal_id || "";
+  const origenNombre =
+    nombreSucursal(sucursales, origenId) !== "—"
+      ? nombreSucursal(sucursales, origenId)
+      : sesion?.sucursal_nombre ?? "—";
+  const sucursalesCombo = sucursales.filter(
+    (item) => !mismoId(item.id, sesion?.sucursal_id)
+  );
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -119,8 +139,16 @@ export function CargarTransferenciaModal({
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!puedeEditar || guardando || !archivoTransferencia || !archivoGuia) return;
-    onConfirmar({ id: editandoId, archivoTransferencia, archivoGuia });
+    if (!puedeEditar || guardando || !archivoTransferencia || !archivoGuia || !sucursalId) {
+      return;
+    }
+    onConfirmar({
+      id: editandoId,
+      origenId,
+      sucursalId,
+      archivoTransferencia,
+      archivoGuia,
+    });
   };
 
   return (
@@ -135,11 +163,45 @@ export function CargarTransferenciaModal({
         </h2>
         <p>
           {puedeEditar
-            ? `Cada transferencia lleva su guía. Arrastra los PDF o selecciónalos. Máximo 5 MB y 3 páginas. Ruta: ${ruta?.chofer ?? "—"}.`
+            ? `La agencia origen es la sucursal con la que ingresaste. Elige otra sucursal y carga ambos PDF (máximo 5 MB y 3 páginas). Ruta: ${ruta?.chofer ?? "—"}.`
             : `Consulta los PDF de esta ruta. Ruta: ${ruta?.chofer ?? "—"}.`}
         </p>
 
         <Form onSubmit={handleSubmit}>
+          {puedeEditar && (
+            <Grid>
+              <Campo>
+                <label htmlFor="transferencia-origen">Agencia origen</label>
+                <input
+                  id="transferencia-origen"
+                  value={origenNombre || "—"}
+                  readOnly
+                  disabled
+                />
+              </Campo>
+              <Campo>
+                <label htmlFor="transferencia-sucursal">Sucursal</label>
+                <select
+                  id="transferencia-sucursal"
+                  value={sucursalId}
+                  onChange={(event) => setSucursalId(event.target.value)}
+                  disabled={guardando}
+                  required
+                >
+                  <option value="">Selecciona una sucursal</option>
+                  {sucursalesCombo.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.nombre}
+                      {String(item.tipo ?? "").toLowerCase() === "matriz"
+                        ? " (Matriz)"
+                        : " (Agencia)"}
+                    </option>
+                  ))}
+                </select>
+              </Campo>
+            </Grid>
+          )}
+
           {puedeEditar && (
             <Grid>
               <ZonaPdf
@@ -167,6 +229,10 @@ export function CargarTransferenciaModal({
               {transferencias.map((item, index) => (
                 <Fila key={item.id}>
                   <strong>#{index + 1}</strong>
+                  <em>
+                    {nombreSucursal(sucursales, item.origen_id)} →{" "}
+                    {nombreSucursal(sucursales, item.sucursal_id)}
+                  </em>
                   <a href={urlArchivoTransferencia(item.transferencia)} target="_blank" rel="noreferrer">
                     Transferencia
                   </a>
@@ -178,7 +244,10 @@ export function CargarTransferenciaModal({
                       <BtnTexto
                         type="button"
                         disabled={guardando}
-                        onClick={() => setEditandoId(item.id)}
+                        onClick={() => {
+                          setEditandoId(item.id);
+                          setSucursalId(item.sucursal_id ?? "");
+                        }}
                       >
                         {editandoId === item.id ? "Editando" : "Editar"}
                       </BtnTexto>
@@ -207,7 +276,7 @@ export function CargarTransferenciaModal({
             {puedeEditar && (
               <BtnPrimario
                 type="submit"
-                disabled={guardando || !archivoTransferencia || !archivoGuia}
+                disabled={guardando || !archivoTransferencia || !archivoGuia || !sucursalId}
               >
                 {guardando
                   ? "Subiendo..."
@@ -286,6 +355,28 @@ const Campo = styled.div`
     text-transform: uppercase;
     color: #666;
   }
+
+  input,
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #222;
+    background: #fff;
+
+    &:disabled {
+      background: #f5f5f5;
+      color: #555;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #2e7d32;
+      box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.15);
+    }
+  }
 `;
 
 const Drop = styled.div`
@@ -356,6 +447,12 @@ const Fila = styled.div`
 
   strong {
     color: #1b5e20;
+  }
+
+  em {
+    font-style: normal;
+    color: #666;
+    font-size: 0.8rem;
   }
 
   a {

@@ -3,6 +3,17 @@ import { validarPdfTransferencia } from "../utils/validarPdfTransferencia";
 
 export const BUCKET_TRANSFERENCIAS = "transferencias";
 
+const CAMPOS_TRANSFERENCIA =
+  "id, ruta_id, origen_id, sucursal_id, transferencia, guia, created_at";
+
+function validarOrigenYSucursal(origenId, sucursalId) {
+  if (!origenId) throw new Error("Inicia sesión para registrar la agencia origen.");
+  if (!sucursalId) throw new Error("Selecciona la sucursal.");
+  if (String(origenId) === String(sucursalId)) {
+    throw new Error("La sucursal no puede ser la misma que la agencia origen.");
+  }
+}
+
 export function urlArchivoTransferencia(path) {
   if (!path) return "";
   const { data } = supabase.storage.from(BUCKET_TRANSFERENCIAS).getPublicUrl(path);
@@ -12,7 +23,7 @@ export function urlArchivoTransferencia(path) {
 export async function listarTransferencias(rutaId) {
   let consulta = supabase
     .from("transferencia")
-    .select("id, ruta_id, transferencia, guia, created_at")
+    .select(CAMPOS_TRANSFERENCIA)
     .order("created_at", { ascending: true });
 
   if (rutaId) consulta = consulta.eq("ruta_id", rutaId);
@@ -36,8 +47,15 @@ async function borrarArchivos(paths) {
   await supabase.storage.from(BUCKET_TRANSFERENCIAS).remove(limpios);
 }
 
-export async function crearTransferencia({ rutaId, archivoTransferencia, archivoGuia }) {
+export async function crearTransferencia({
+  rutaId,
+  origenId,
+  sucursalId,
+  archivoTransferencia,
+  archivoGuia,
+}) {
   if (!rutaId) throw new Error("Selecciona una ruta para cargar la transferencia.");
+  validarOrigenYSucursal(origenId, sucursalId);
 
   await validarPdfTransferencia(archivoTransferencia, "Transferencia");
   await validarPdfTransferencia(archivoGuia, "Guía");
@@ -55,10 +73,12 @@ export async function crearTransferencia({ rutaId, archivoTransferencia, archivo
       .insert({
         id,
         ruta_id: rutaId,
+        origen_id: origenId,
+        sucursal_id: sucursalId,
         transferencia: pathTransferencia,
         guia: pathGuia,
       })
-      .select("id, ruta_id, transferencia, guia, created_at")
+      .select(CAMPOS_TRANSFERENCIA)
       .single();
 
     if (error) throw error;
@@ -72,11 +92,14 @@ export async function crearTransferencia({ rutaId, archivoTransferencia, archivo
 export async function actualizarTransferencia({
   id,
   rutaId,
+  origenId,
+  sucursalId,
   archivoTransferencia,
   archivoGuia,
 }) {
   if (!id) throw new Error("No se encontró la transferencia a editar.");
   if (!rutaId) throw new Error("Selecciona una ruta para editar la transferencia.");
+  validarOrigenYSucursal(origenId, sucursalId);
 
   await validarPdfTransferencia(archivoTransferencia, "Transferencia");
   await validarPdfTransferencia(archivoGuia, "Guía");
@@ -103,11 +126,13 @@ export async function actualizarTransferencia({
   const { data, error } = await supabase
     .from("transferencia")
     .update({
+      origen_id: origenId,
+      sucursal_id: sucursalId,
       transferencia: pathTransferencia,
       guia: pathGuia,
     })
     .eq("id", id)
-    .select("id, ruta_id, transferencia, guia, created_at")
+    .select(CAMPOS_TRANSFERENCIA)
     .single();
 
   if (error) throw error;

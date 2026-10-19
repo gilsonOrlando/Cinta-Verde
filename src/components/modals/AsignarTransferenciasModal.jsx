@@ -3,6 +3,12 @@ import styled from "styled-components";
 import { RiFilePdfFill, RiTruckFill } from "react-icons/ri";
 import { urlArchivoTransferencia } from "../../supabase/crudTransferencia";
 
+function nombreDe(nombres, id) {
+  if (nombres[id]) return nombres[id];
+  const clave = Object.keys(nombres).find((item) => String(item) === String(id ?? ""));
+  return clave ? nombres[clave] : "—";
+}
+
 function formatearFecha(fecha) {
   const texto = String(fecha ?? "").slice(0, 10);
   const [anio, mes, dia] = texto.split("-");
@@ -110,6 +116,10 @@ export function AsignarTransferenciasModal({
                       <RiFilePdfFill />
                       <div>
                         <strong>PDF #{index + 1}</strong>
+                        <small>
+                          {nombreDe(nombresSucursal, item.origen_id)} →{" "}
+                          {nombreDe(nombresSucursal, item.sucursal_id)}
+                        </small>
                         <a
                           href={urlArchivoTransferencia(item.transferencia)}
                           target="_blank"
@@ -325,6 +335,12 @@ const Item = styled.div`
   strong {
     width: 100%;
     color: #1b5e20;
+  }
+
+  small {
+    width: 100%;
+    color: #666;
+    font-size: 0.74rem;
   }
 
   a {
