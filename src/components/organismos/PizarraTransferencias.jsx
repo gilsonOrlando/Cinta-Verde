@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
-import { RiCloseLine, RiKey2Fill, RiMenuLine, RiTruckFill } from "react-icons/ri";
+import {
+  RiBuildingFill,
+  RiCloseLine,
+  RiFileTextFill,
+  RiKey2Fill,
+  RiMenuLine,
+  RiStore2Fill,
+  RiTruckFill,
+} from "react-icons/ri";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { esMatriz, listarSucursales } from "../../supabase/crudSucursal";
 import { actualizarRuta, crearRuta, eliminarRuta, listarRutas } from "../../supabase/crudRuta";
@@ -10,6 +18,7 @@ import {
   crearTransferencia,
   eliminarTransferencia,
   listarTransferencias,
+  urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 import {
@@ -543,9 +552,11 @@ export function PizarraTransferencias() {
         <Panel>
           {rutaActiva ? (
             <>
+              <PanelDato>Ruta</PanelDato>
               <PanelTitulo>{rutaActiva.chofer}</PanelTitulo>
-              <PanelDato>Ruta · {formatearFecha(rutaActiva.fecha)}</PanelDato>
               <Nota>
+                {formatearFecha(rutaActiva.fecha)}
+                <br />
                 Origen: {mapa[rutaActiva.origen_id]?.nombre ?? "—"}
                 <br />
                 Destinos:{" "}
@@ -553,17 +564,56 @@ export function PizarraTransferencias() {
                   .map((id) => mapa[id]?.nombre)
                   .filter(Boolean)
                   .join(", ") || "—"}
-                <br />
-                Transferencias: {transferenciasDeRuta(rutaActiva.id).length}
               </Nota>
             </>
-          ) : (
+          ) : bodegaActiva ? (
             <>
-              <PanelTitulo>{bodegaActiva?.nombre ?? "Sucursal"}</PanelTitulo>
               <PanelDato>
-                {esMatriz(bodegaActiva?.tipo) ? "Matriz" : "Agencia"}
+                {esMatriz(bodegaActiva.tipo) ? "Matriz" : "Agencia"}
               </PanelDato>
+              <NombreSucursal>
+                {esMatriz(bodegaActiva.tipo) ? <RiBuildingFill /> : <RiStore2Fill />}
+                <span>{bodegaActiva.nombre}</span>
+              </NombreSucursal>
+              {esMatriz(bodegaActiva.tipo) && (
+                <ListaPanel>
+                  <span>Transferencias de sus rutas</span>
+                  {rutas
+                    .filter((ruta) => ruta.origen_id === bodegaActiva.id)
+                    .flatMap((ruta) =>
+                      transferenciasDeRuta(ruta.id).map((item, index) => (
+                        <FilaPanel key={item.id}>
+                          <RiFileTextFill />
+                          <div>
+                            <strong>
+                              {ruta.chofer} · #{index + 1}
+                            </strong>
+                            <a
+                              href={urlArchivoTransferencia(item.transferencia)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Transferencia
+                            </a>
+                            <a
+                              href={urlArchivoTransferencia(item.guia)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Guía
+                            </a>
+                          </div>
+                        </FilaPanel>
+                      ))
+                    )}
+                  {rutas.filter((ruta) => ruta.origen_id === bodegaActiva.id).every(
+                    (ruta) => transferenciasDeRuta(ruta.id).length === 0
+                  ) && <em>Sin transferencias asignadas</em>}
+                </ListaPanel>
+              )}
             </>
+          ) : (
+            <PanelTitulo>Sucursal</PanelTitulo>
           )}
           <Leyenda>
             {bodegas
@@ -1007,6 +1057,74 @@ const PanelTitulo = styled.h2`
   margin: 0;
   font-size: 1.05rem;
   color: #3e2723;
+`;
+
+const NombreSucursal = styled.h2`
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  color: #3e2723;
+
+  svg {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    color: #6d4c41;
+  }
+`;
+
+const ListaPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+
+  span {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #8d6e63;
+  }
+
+  em {
+    font-size: 0.8rem;
+    color: #888;
+    font-style: normal;
+  }
+`;
+
+const FilaPanel = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  svg {
+    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    color: #2e7d32;
+  }
+
+  div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  strong {
+    width: 100%;
+    color: #3e2723;
+    font-size: 0.78rem;
+  }
+
+  a {
+    color: #2e7d32;
+    font-weight: 600;
+  }
 `;
 
 const PanelDato = styled.p`
