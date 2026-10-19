@@ -62,10 +62,7 @@ export function LoginTransferencias({ sesion, onSesion, onSalir, onClose }) {
           </>
         ) : (
           <>
-            <p>
-              Ingresa con usuario <strong>matriz</strong> o <strong>agencia</strong>. La clave
-              es el usuario más el año, por ejemplo loja2026.
-            </p>
+            <p>Bienvenido. Ingresa tu credencial para continuar.</p>
             <Form onSubmit={handleSubmit}>
               <label htmlFor="usuario-transferencia">Usuario</label>
               <input
@@ -73,7 +70,7 @@ export function LoginTransferencias({ sesion, onSesion, onSalir, onClose }) {
                 value={usuario}
                 onChange={(event) => setUsuario(event.target.value)}
                 autoComplete="username"
-                placeholder="Ej. loja"
+                placeholder="Usuario"
                 disabled={guardando}
                 required
               />
