@@ -43,7 +43,10 @@ import { CrearRutaModal } from "../modals/CrearRutaModal";
 import { CargarTransferenciaModal } from "../modals/CargarTransferenciaModal";
 import { AsignarTransferenciasModal } from "../modals/AsignarTransferenciasModal";
 import { LoginTransferencias } from "./LoginTransferencias";
-import { VisorTransferenciasPanel } from "./VisorTransferenciasPanel";
+import {
+  ICONO_VERIFICAR_TRANSFERENCIAS,
+  VisorTransferenciasPanel,
+} from "./VisorTransferenciasPanel";
 
 const COLORES_MATRIZ = [
   ["#ffb74d", "#ffcc80", "#ff8a65", "#ffe082"],
@@ -130,6 +133,7 @@ export function PizarraTransferencias() {
   const [mostrarAsignar, setMostrarAsignar] = useState(false);
   const [matrizAsignar, setMatrizAsignar] = useState(null);
   const [guardandoAsignar, setGuardandoAsignar] = useState(false);
+  const [mostrarVisor, setMostrarVisor] = useState(false);
   const menuGestionRef = useRef(null);
 
   useEffect(() => {
@@ -767,17 +771,17 @@ export function PizarraTransferencias() {
                     .join(", ") || "—"}
                 </span>
               </Atributo>
-              <VisorTransferenciasPanel
-                titulo="Verificar transferencias"
-                transferencias={transferenciasDeRuta(rutaActiva.id)}
-                ruta={rutaActiva}
-                sucursales={bodegas}
-                sesion={sesion}
-                puedeEditar={puedeEditarTransferencias}
-                onEditar={(item) => handleAbrirEdicion(rutaActiva, item)}
-                onEliminar={handleEliminarTransferencia}
-                onDevolver={handleDevolverTransferencia}
-              />
+              <BtnVerificar
+                type="button"
+                title="Verificar transferencias"
+                aria-label="Verificar transferencias"
+                onClick={() => setMostrarVisor(true)}
+              >
+                <img src={ICONO_VERIFICAR_TRANSFERENCIAS} alt="" />
+                {transferenciasDeRuta(rutaActiva.id).length > 0 && (
+                  <BadgeVerificar>{transferenciasDeRuta(rutaActiva.id).length}</BadgeVerificar>
+                )}
+              </BtnVerificar>
             </>
           ) : bodegaActiva ? (
             <>
@@ -789,16 +793,17 @@ export function PizarraTransferencias() {
                 <span>{bodegaActiva.nombre}</span>
               </NombreSucursal>
               {esMatriz(bodegaActiva.tipo) && (
-                <VisorTransferenciasPanel
-                  titulo="Ruta transitorio · pendientes"
-                  transferencias={transferenciasDeMatriz}
-                  ruta={rutaTransitoriaActiva}
-                  sucursales={bodegas}
-                  sesion={sesion}
-                  puedeEditar={puedeEditarTransferencias}
-                  onEditar={(item) => handleAbrirEdicion(rutaTransitoriaActiva, item)}
-                  onEliminar={handleEliminarTransferencia}
-                />
+                <BtnVerificar
+                  type="button"
+                  title="Verificar transferencias pendientes"
+                  aria-label="Verificar transferencias pendientes"
+                  onClick={() => setMostrarVisor(true)}
+                >
+                  <img src={ICONO_VERIFICAR_TRANSFERENCIAS} alt="" />
+                  {transferenciasDeMatriz.length > 0 && (
+                    <BadgeVerificar>{transferenciasDeMatriz.length}</BadgeVerificar>
+                  )}
+                </BtnVerificar>
               )}
             </>
           ) : (
@@ -850,6 +855,27 @@ export function PizarraTransferencias() {
               setMatrizAsignar(null);
             }
           }}
+        />
+      )}
+
+      {mostrarVisor && (rutaActiva || (bodegaActiva && esMatriz(bodegaActiva.tipo))) && (
+        <VisorTransferenciasPanel
+          titulo={
+            rutaActiva ? "Verificar transferencias" : "Ruta transitorio · pendientes"
+          }
+          transferencias={
+            rutaActiva ? transferenciasDeRuta(rutaActiva.id) : transferenciasDeMatriz
+          }
+          ruta={rutaActiva ?? rutaTransitoriaActiva}
+          sucursales={bodegas}
+          sesion={sesion}
+          puedeEditar={puedeEditarTransferencias}
+          onEditar={(item) =>
+            handleAbrirEdicion(rutaActiva ?? rutaTransitoriaActiva, item)
+          }
+          onEliminar={handleEliminarTransferencia}
+          onDevolver={handleDevolverTransferencia}
+          onClose={() => setMostrarVisor(false)}
         />
       )}
 
@@ -1028,7 +1054,7 @@ const MenuItem = styled.button`
 
 const Cuerpo = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) 260px;
   gap: 16px;
   min-height: 680px;
 
@@ -1298,6 +1324,42 @@ const Atributo = styled.p`
     height: 16px;
     color: #6d4c41;
   }
+`;
+
+const BtnVerificar = styled.button`
+  position: relative;
+  align-self: center;
+  margin-top: 8px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+
+  img {
+    display: block;
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+  }
+
+  &:hover img {
+    transform: scale(1.04);
+  }
+`;
+
+const BadgeVerificar = styled.span`
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #1b5e20;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 20px;
 `;
 
 const PanelDato = styled.p`

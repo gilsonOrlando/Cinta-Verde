@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import {
-  RiArrowLeftSLine,
-  RiArrowRightSLine,
-  RiFileSearchFill,
-} from "react-icons/ri";
+import { RiArrowLeftSLine, RiArrowRightSLine, RiCloseLine } from "react-icons/ri";
 import { esRutaTransitoria } from "../../supabase/crudRuta";
 import {
   puedeGestionarItemTransferencia,
   urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
+
+export const ICONO_VERIFICAR_TRANSFERENCIAS = "/iconos/verificar-transferencias.png";
 
 function mismoId(a, b) {
   return String(a ?? "") === String(b ?? "");
@@ -25,9 +23,23 @@ export function VisorTransferenciasPanel({
   onEditar,
   onEliminar,
   onDevolver,
+  onClose,
 }) {
   const [indice, setIndice] = useState(0);
   const [documento, setDocumento] = useState("transferencia");
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
 
   useEffect(() => {
     setIndice(0);
@@ -40,164 +52,192 @@ export function VisorTransferenciasPanel({
     }
   }, [transferencias.length, indice]);
 
-  if (transferencias.length === 0) {
-    return (
-      <Caja>
-        <Cabecera>
-          <Icono aria-hidden="true">
-            <RiFileSearchFill />
-          </Icono>
-          <div>
-            <Kicker>{titulo}</Kicker>
-            <em>Sin transferencias para verificar</em>
-          </div>
-        </Cabecera>
-      </Caja>
-    );
-  }
-
-  const actual = transferencias[Math.min(indice, transferencias.length - 1)];
-  const origen =
-    sucursales.find((item) => mismoId(item.id, actual.origen_id))?.nombre ?? "—";
-  const destino =
-    sucursales.find((item) => mismoId(item.id, actual.sucursal_id))?.nombre ?? "—";
-  const url =
-    documento === "guia"
+  const actual =
+    transferencias.length > 0
+      ? transferencias[Math.min(indice, transferencias.length - 1)]
+      : null;
+  const origen = actual
+    ? sucursales.find((item) => mismoId(item.id, actual.origen_id))?.nombre ?? "—"
+    : "";
+  const destino = actual
+    ? sucursales.find((item) => mismoId(item.id, actual.sucursal_id))?.nombre ?? "—"
+    : "";
+  const url = actual
+    ? documento === "guia"
       ? urlArchivoTransferencia(actual.guia)
-      : urlArchivoTransferencia(actual.transferencia);
+      : urlArchivoTransferencia(actual.transferencia)
+    : "";
   const puedeGestionar = puedeGestionarItemTransferencia(sesion, actual, ruta);
   const mostrarDevolver = puedeGestionar && ruta && !esRutaTransitoria(ruta);
 
   return (
-    <Caja>
-      <Cabecera>
-        <Icono aria-hidden="true">
-          <RiFileSearchFill />
-        </Icono>
-        <div>
-          <Kicker>{titulo}</Kicker>
-          <strong>
-            {origen} → {destino}
-          </strong>
-        </div>
-      </Cabecera>
+    <Overlay onClick={onClose}>
+      <Dialog
+        role="dialog"
+        aria-labelledby="visor-transferencias-titulo"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <Cabecera>
+          <img src={ICONO_VERIFICAR_TRANSFERENCIAS} alt="" />
+          <div>
+            <h2 id="visor-transferencias-titulo">{titulo}</h2>
+            {actual ? (
+              <strong>
+                {origen} → {destino}
+              </strong>
+            ) : (
+              <em>Sin transferencias para verificar</em>
+            )}
+          </div>
+          <BtnCerrar type="button" aria-label="Cerrar" onClick={onClose}>
+            <RiCloseLine />
+          </BtnCerrar>
+        </Cabecera>
 
-      <Tabs>
-        <Tab
-          type="button"
-          $activo={documento === "transferencia"}
-          onClick={() => setDocumento("transferencia")}
-        >
-          Transferencia
-        </Tab>
-        <Tab type="button" $activo={documento === "guia"} onClick={() => setDocumento("guia")}>
-          Guía
-        </Tab>
-      </Tabs>
+        {actual && (
+          <>
+            <Tabs>
+              <Tab
+                type="button"
+                $activo={documento === "transferencia"}
+                onClick={() => setDocumento("transferencia")}
+              >
+                Transferencia
+              </Tab>
+              <Tab
+                type="button"
+                $activo={documento === "guia"}
+                onClick={() => setDocumento("guia")}
+              >
+                Guía
+              </Tab>
+            </Tabs>
 
-      <Marco>
-        <iframe title={`Vista de ${documento}`} src={`${url}#view=FitH`} />
-      </Marco>
+            <Marco>
+              <iframe title={`Vista de ${documento}`} src={`${url}#view=FitH`} />
+            </Marco>
 
-      <Navegacion>
-        <BtnNav
-          type="button"
-          disabled={indice <= 0}
-          onClick={() => {
-            setIndice((prev) => Math.max(0, prev - 1));
-            setDocumento("transferencia");
-          }}
-        >
-          <RiArrowLeftSLine />
-          Atrás
-        </BtnNav>
-        <Contador>
-          {indice + 1} / {transferencias.length}
-        </Contador>
-        <BtnNav
-          type="button"
-          disabled={indice >= transferencias.length - 1}
-          onClick={() => {
-            setIndice((prev) => Math.min(transferencias.length - 1, prev + 1));
-            setDocumento("transferencia");
-          }}
-        >
-          Siguiente
-          <RiArrowRightSLine />
-        </BtnNav>
-      </Navegacion>
+            <Navegacion>
+              <BtnNav
+                type="button"
+                disabled={indice <= 0}
+                onClick={() => {
+                  setIndice((prev) => Math.max(0, prev - 1));
+                  setDocumento("transferencia");
+                }}
+              >
+                <RiArrowLeftSLine />
+                Atrás
+              </BtnNav>
+              <Contador>
+                {indice + 1} / {transferencias.length}
+              </Contador>
+              <BtnNav
+                type="button"
+                disabled={indice >= transferencias.length - 1}
+                onClick={() => {
+                  setIndice((prev) => Math.min(transferencias.length - 1, prev + 1));
+                  setDocumento("transferencia");
+                }}
+              >
+                Siguiente
+                <RiArrowRightSLine />
+              </BtnNav>
+            </Navegacion>
 
-      {puedeEditar && puedeGestionar && (
-        <Acciones>
-          <BtnAccion type="button" onClick={() => onEditar?.(actual)}>
-            Editar
-          </BtnAccion>
-          {mostrarDevolver && (
-            <BtnAccion type="button" onClick={() => onDevolver?.(actual)}>
-              A transitorio
-            </BtnAccion>
-          )}
-          <BtnAccion type="button" $peligro onClick={() => onEliminar?.(actual)}>
-            Eliminar
-          </BtnAccion>
-        </Acciones>
-      )}
-    </Caja>
+            {puedeEditar && puedeGestionar && (
+              <Acciones>
+                <BtnAccion type="button" onClick={() => onEditar?.(actual)}>
+                  Editar
+                </BtnAccion>
+                {mostrarDevolver && (
+                  <BtnAccion type="button" onClick={() => onDevolver?.(actual)}>
+                    A transitorio
+                  </BtnAccion>
+                )}
+                <BtnAccion type="button" $peligro onClick={() => onEliminar?.(actual)}>
+                  Eliminar
+                </BtnAccion>
+              </Acciones>
+            )}
+          </>
+        )}
+      </Dialog>
+    </Overlay>
   );
 }
 
-const Caja = styled.div`
+const Overlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+`;
+
+const Dialog = styled.div`
+  width: 100%;
+  max-width: 720px;
+  max-height: min(92vh, 860px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 4px;
-  min-height: 0;
+  gap: 10px;
 `;
 
 const Cabecera = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+
+  img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+  }
+
+  h2 {
+    margin: 0 0 4px;
+    color: #1b5e20;
+    font-size: 1.1rem;
+  }
 
   strong {
     display: block;
     color: #3e2723;
-    font-size: 0.82rem;
-    line-height: 1.3;
+    font-size: 0.88rem;
   }
 
   em {
-    display: block;
     font-style: normal;
     color: #888;
-    font-size: 0.8rem;
+    font-size: 0.84rem;
+  }
+
+  div {
+    min-width: 0;
+    flex: 1;
   }
 `;
 
-const Icono = styled.span`
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  background: #e8f5e9;
-  color: #1b5e20;
+const BtnCerrar = styled.button`
+  border: none;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
 
   svg {
-    width: 38px;
-    height: 38px;
+    width: 26px;
+    height: 26px;
   }
-`;
-
-const Kicker = styled.span`
-  display: block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #8d6e63;
 `;
 
 const Tabs = styled.div`
@@ -207,22 +247,22 @@ const Tabs = styled.div`
 `;
 
 const Tab = styled.button`
-  border: 1px solid ${({ $activo }) => ($activo ? "#2e7d32" : "#ddd2c2")};
+  border: 1px solid ${({ $activo }) => ($activo ? "#2e7d32" : "#ddd")};
   background: ${({ $activo }) => ($activo ? "#e8f5e9" : "#fff")};
-  color: ${({ $activo }) => ($activo ? "#1b5e20" : "#5d4037")};
+  color: ${({ $activo }) => ($activo ? "#1b5e20" : "#444")};
   border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 0.76rem;
+  padding: 8px;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
 `;
 
 const Marco = styled.div`
-  height: 240px;
-  border: 1px solid #e0d6c6;
+  height: min(52vh, 480px);
+  border: 1px solid #e0e0e0;
   border-radius: 10px;
   overflow: hidden;
-  background: #fff;
+  background: #fafafa;
 
   iframe {
     width: 100%;
@@ -242,18 +282,18 @@ const BtnNav = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  border: 1px solid #ddd2c2;
+  border: 1px solid #ddd;
   background: #fff;
-  color: #3e2723;
+  color: #333;
   border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 0.76rem;
+  padding: 8px 12px;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
 
   svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
 
   &:disabled {
@@ -263,15 +303,15 @@ const BtnNav = styled.button`
 `;
 
 const Contador = styled.span`
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 700;
-  color: #6d4c41;
+  color: #555;
 `;
 
 const Acciones = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 12px;
+  gap: 10px 16px;
 `;
 
 const BtnAccion = styled.button`
@@ -280,6 +320,6 @@ const BtnAccion = styled.button`
   padding: 0;
   color: ${({ $peligro }) => ($peligro ? "#c62828" : "#1565c0")};
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.86rem;
   cursor: pointer;
 `;
