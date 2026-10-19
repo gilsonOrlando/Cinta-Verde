@@ -53,7 +53,12 @@ alter table public.usuariostransferencias enable row level security;
 
 drop policy if exists "usuariostransferencias_all_anon" on public.usuariostransferencias;
 
-create or replace function public.iniciar_sesion_transferencia(p_usuario text, p_clave text)
+create unique index if not exists usuariostransferencias_clave_key
+  on public.usuariostransferencias (clave);
+
+drop function if exists public.iniciar_sesion_transferencia(text, text);
+
+create or replace function public.iniciar_sesion_transferencia(p_clave text)
 returns json
 language plpgsql
 security definer
@@ -71,12 +76,11 @@ begin
   into fila
   from public.usuariostransferencias u
   join public.sucursal s on s.id = u.sucursal_id
-  where lower(u.usuario) = lower(btrim(p_usuario))
-    and u.clave = p_clave
+  where u.clave = btrim(p_clave)
   limit 1;
 
   if fila.id is null then
-    raise exception 'Usuario o clave incorrectos';
+    raise exception 'Credencial incorrecta';
   end if;
 
   return json_build_object(
@@ -89,5 +93,5 @@ begin
 end;
 $$;
 
-revoke all on function public.iniciar_sesion_transferencia(text, text) from public;
-grant execute on function public.iniciar_sesion_transferencia(text, text) to anon, authenticated;
+revoke all on function public.iniciar_sesion_transferencia(text) from public;
+grant execute on function public.iniciar_sesion_transferencia(text) to anon, authenticated;

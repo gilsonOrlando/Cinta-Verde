@@ -38,20 +38,17 @@ export function puedeCrudTransferencias(sesion) {
   return esUsuarioMatriz(sesion) || esUsuarioAgencia(sesion);
 }
 
-export async function iniciarSesionTransferencia({ usuario, clave }) {
-  const usuarioValor = String(usuario ?? "").trim();
-  const claveValor = String(clave ?? "");
+export async function iniciarSesionTransferencia({ clave }) {
+  const claveValor = String(clave ?? "").trim();
 
-  if (!usuarioValor) throw new Error("Ingresa el usuario.");
-  if (!claveValor) throw new Error("Ingresa la clave.");
+  if (!claveValor) throw new Error("Ingresa la credencial.");
 
   const { data, error } = await supabase.rpc("iniciar_sesion_transferencia", {
-    p_usuario: usuarioValor,
     p_clave: claveValor,
   });
 
   if (error) throw error;
-  if (!data?.id) throw new Error("Usuario o clave incorrectos.");
+  if (!data?.id) throw new Error("Credencial incorrecta.");
 
   guardarSesionTransferencia(data);
   return data;

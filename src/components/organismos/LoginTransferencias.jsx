@@ -5,7 +5,6 @@ import { iniciarSesionTransferencia } from "../../supabase/crudUsuariosTransfere
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 
 export function LoginTransferencias({ sesion, onSesion, onSalir, onClose }) {
-  const [usuario, setUsuario] = useState("");
   const [clave, setClave] = useState("");
   const [guardando, setGuardando] = useState(false);
 
@@ -27,7 +26,7 @@ export function LoginTransferencias({ sesion, onSesion, onSalir, onClose }) {
     if (guardando) return;
     setGuardando(true);
     try {
-      const siguiente = await iniciarSesionTransferencia({ usuario, clave });
+      const siguiente = await iniciarSesionTransferencia({ clave });
       onSesion(siguiente);
     } catch (error) {
       console.error(error);
@@ -64,23 +63,14 @@ export function LoginTransferencias({ sesion, onSesion, onSalir, onClose }) {
           <>
             <p>Bienvenido. Ingresa tu credencial para continuar.</p>
             <Form onSubmit={handleSubmit}>
-              <label htmlFor="usuario-transferencia">Usuario</label>
-              <input
-                id="usuario-transferencia"
-                value={usuario}
-                onChange={(event) => setUsuario(event.target.value)}
-                autoComplete="username"
-                placeholder="Usuario"
-                disabled={guardando}
-                required
-              />
-              <label htmlFor="clave-transferencia">Clave</label>
+              <label htmlFor="clave-transferencia">Credencial</label>
               <input
                 id="clave-transferencia"
                 type="password"
                 value={clave}
                 onChange={(event) => setClave(event.target.value)}
                 autoComplete="current-password"
+                placeholder="Credencial"
                 disabled={guardando}
                 required
               />
