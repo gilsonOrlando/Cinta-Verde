@@ -6,7 +6,14 @@ function fechaHoy() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function CrearRutaModal({ sucursales, rutaInicial, guardando, onConfirmar, onClose }) {
+export function CrearRutaModal({
+  sucursales,
+  sesion,
+  rutaInicial,
+  guardando,
+  onConfirmar,
+  onClose,
+}) {
   const matrices = useMemo(
     () => sucursales.filter((item) => esMatriz(item.tipo)),
     [sucursales]
@@ -16,17 +23,17 @@ export function CrearRutaModal({ sucursales, rutaInicial, guardando, onConfirmar
     [sucursales]
   );
   const editando = Boolean(rutaInicial?.id);
+  const origenId = sesion?.sucursal_id ?? rutaInicial?.origen_id ?? matrices[0]?.id ?? "";
+  const origenNombre =
+    sucursales.find((item) => item.id === origenId)?.nombre ??
+    sesion?.sucursal_nombre ??
+    "Matriz";
 
-  const [origenId, setOrigenId] = useState(rutaInicial?.origen_id ?? matrices[0]?.id ?? "");
   const [fecha, setFecha] = useState(
     String(rutaInicial?.fecha ?? "").slice(0, 10) || fechaHoy()
   );
   const [chofer, setChofer] = useState(rutaInicial?.chofer ?? "");
   const [destinoIds, setDestinoIds] = useState(rutaInicial?.destinoIds ?? []);
-
-  useEffect(() => {
-    if (!origenId && matrices[0]?.id) setOrigenId(matrices[0].id);
-  }, [matrices, origenId]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -61,24 +68,12 @@ export function CrearRutaModal({ sucursales, rutaInicial, guardando, onConfirmar
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="crear-ruta-titulo">{editando ? "Editar ruta" : "Crear ruta"}</h2>
-        <p>El origen es una matriz. Puedes marcar varias agencias como destino.</p>
+        <p>El origen es la matriz autenticada. Puedes marcar varias agencias como destino.</p>
 
         <Form onSubmit={handleSubmit}>
           <Campo>
             <label htmlFor="ruta-origen">Origen (matriz)</label>
-            <select
-              id="ruta-origen"
-              value={origenId}
-              onChange={(event) => setOrigenId(event.target.value)}
-              disabled={guardando}
-              required
-            >
-              {matrices.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.nombre}
-                </option>
-              ))}
-            </select>
+            <input id="ruta-origen" value={origenNombre} readOnly disabled />
           </Campo>
 
           <Grid>

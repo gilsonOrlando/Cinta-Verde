@@ -744,6 +744,7 @@ export function PizarraTransferencias() {
       {mostrarRutaModal && (
         <CrearRutaModal
           sucursales={bodegas}
+          sesion={sesion}
           rutaInicial={rutaEdicion}
           guardando={guardandoRuta}
           onConfirmar={handleGuardarRuta}
