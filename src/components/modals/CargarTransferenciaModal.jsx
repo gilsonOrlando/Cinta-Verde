@@ -90,6 +90,7 @@ export function CargarTransferenciaModal({
   transferencias = [],
   sucursales = [],
   sesion,
+  transferenciaEdicionId = null,
   puedeEditar = false,
   guardando,
   onConfirmar,
@@ -101,7 +102,7 @@ export function CargarTransferenciaModal({
   const [archivoGuia, setArchivoGuia] = useState(null);
   const [sucursalId, setSucursalId] = useState("");
   const [aviso, setAviso] = useState("");
-  const [editandoId, setEditandoId] = useState(null);
+  const [editandoId, setEditandoId] = useState(transferenciaEdicionId);
   const itemEditando = transferencias.find((item) => mismoId(item.id, editandoId));
   const origenId = itemEditando?.origen_id || sesion?.sucursal_id || "";
   const origenNombre =
@@ -111,6 +112,13 @@ export function CargarTransferenciaModal({
   const sucursalesCombo = sucursales.filter(
     (item) => !mismoId(item.id, sesion?.sucursal_id)
   );
+
+  useEffect(() => {
+    if (!transferenciaEdicionId) return;
+    const item = transferencias.find((actual) => mismoId(actual.id, transferenciaEdicionId));
+    setEditandoId(transferenciaEdicionId);
+    setSucursalId(item?.sucursal_id ?? "");
+  }, [transferenciaEdicionId]);
 
   useEffect(() => {
     function handleKeyDown(event) {
