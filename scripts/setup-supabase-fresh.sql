@@ -118,12 +118,11 @@ create table if not exists public.transferencia (
 alter table public.transferencia enable row level security;
 create policy "transferencia_all_anon" on public.transferencia for all to anon, authenticated using (true) with check (true);
 
-create extension if not exists pgcrypto;
 create table if not exists public.usuariostransferencias (
   id uuid primary key default gen_random_uuid(),
   sucursal_id uuid not null unique references public.sucursal (id) on delete cascade,
   usuario text not null unique,
-  clave_hash text not null,
+  clave text not null,
   tipo text not null check (tipo in ('agencia', 'matriz')),
   created_at timestamptz not null default now(),
   constraint usuariostransferencias_sucursal_tipo_fk

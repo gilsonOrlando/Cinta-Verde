@@ -60,16 +60,20 @@ try {
     const usuario = slugSucursal(sucursal.nombre);
     const clave = claveUsuarioTransferencia(sucursal.nombre);
     await client.query(
-      `insert into public.usuariostransferencias (sucursal_id, usuario, clave_hash, tipo)
-       values ($1, $2, crypt($3, gen_salt('bf')), $4)
+      `insert into public.usuariostransferencias (sucursal_id, usuario, clave, tipo)
+       values ($1, $2, $3, $4)
        on conflict (sucursal_id) do update
          set usuario = excluded.usuario,
-             clave_hash = excluded.clave_hash,
+             clave = excluded.clave,
              tipo = excluded.tipo`,
       [sucursal.id, usuario, clave, sucursal.tipo]
     );
     console.log(`  ${sucursal.tipo.padEnd(8)} ${sucursal.nombre.padEnd(16)}  ${usuario}  /  ${clave}`);
   }
+
+  await client.query(
+    `alter table public.usuariostransferencias alter column clave set not null`
+  );
 
   console.log(`Listo: ${sucursales.length} usuarios de transferencia.`);
 } catch (error) {

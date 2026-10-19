@@ -1,13 +1,11 @@
 -- Usuarios de transferencias: 1 credencial por sucursal (tipos matriz y agencia).
 -- Pegar en Supabase → SQL Editor → Run
 
-create extension if not exists pgcrypto;
-
 create table if not exists public.usuariostransferencias (
   id uuid primary key default gen_random_uuid(),
   sucursal_id uuid not null unique,
   usuario text not null unique,
-  clave_hash text not null,
+  clave text not null,
   tipo text not null check (tipo in ('agencia', 'matriz')),
   created_at timestamptz not null default now(),
   constraint usuariostransferencias_sucursal_fk
@@ -16,6 +14,29 @@ create table if not exists public.usuariostransferencias (
     foreign key (sucursal_id, tipo) references public.sucursal (id, tipo)
 );
 
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'usuariostransferencias'
+      and column_name = 'clave_hash'
+  ) then
+    if not exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'usuariostransferencias'
+        and column_name = 'clave'
+    ) then
+      alter table public.usuariostransferencias add column clave text;
+    end if;
+
+    alter table public.usuariostransferencias drop column clave_hash;
+  end if;
+end $$;
+
 create index if not exists usuariostransferencias_tipo_idx
   on public.usuariostransferencias (tipo);
 
@@ -23,6 +44,8 @@ comment on table public.usuariostransferencias is
   'Credencial de autenticación de transferencias. Cada sucursal tiene un usuario; el tipo es matriz o agencia.';
 comment on column public.usuariostransferencias.sucursal_id is
   'Sucursal a la que pertenece el usuario (1:1).';
+comment on column public.usuariostransferencias.clave is
+  'Clave de acceso en texto plano.';
 comment on column public.usuariostransferencias.tipo is
   'Tipo de usuario: matriz o agencia, igual al tipo de la sucursal.';
 
@@ -49,7 +72,7 @@ begin
   from public.usuariostransferencias u
   join public.sucursal s on s.id = u.sucursal_id
   where lower(u.usuario) = lower(btrim(p_usuario))
-    and u.clave_hash = crypt(p_clave, u.clave_hash)
+    and u.clave = p_clave
   limit 1;
 
   if fila.id is null then
