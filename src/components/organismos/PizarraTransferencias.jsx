@@ -27,6 +27,7 @@ import {
   actualizarTransferencia,
   crearTransferencia,
   eliminarTransferencia,
+  esOrigenDeTransferencia,
   listarTransferencias,
   moverTransferenciasARuta,
   urlArchivoTransferencia,
@@ -445,10 +446,14 @@ export function PizarraTransferencias() {
   };
 
   const handleEliminarTransferencia = async (item) => {
+    if (!esOrigenDeTransferencia(sesion, item)) {
+      toast.error("Solo la agencia origen puede eliminar esta transferencia.");
+      return;
+    }
     const ok = window.confirm("¿Eliminar esta transferencia y su guía?");
     if (!ok) return;
     try {
-      await eliminarTransferencia(item);
+      await eliminarTransferencia(item, { sucursalOrigenId: sesion.sucursal_id });
       setTransferencias((prev) => prev.filter((actual) => actual.id !== item.id));
       toast.success("Transferencia eliminada.");
     } catch (error) {

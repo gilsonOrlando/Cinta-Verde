@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import { urlArchivoTransferencia } from "../../supabase/crudTransferencia";
+import {
+  esOrigenDeTransferencia,
+  urlArchivoTransferencia,
+} from "../../supabase/crudTransferencia";
 
 function esPdf(file) {
   const nombre = String(file?.name ?? "").toLowerCase();
@@ -250,14 +253,16 @@ export function CargarTransferenciaModal({
                       >
                         {editandoId === item.id ? "Editando" : "Editar"}
                       </BtnTexto>
-                      <BtnTexto
-                        type="button"
-                        $peligro
-                        disabled={guardando}
-                        onClick={() => onEliminar?.(item)}
-                      >
-                        Eliminar
-                      </BtnTexto>
+                      {esOrigenDeTransferencia(sesion, item) && (
+                        <BtnTexto
+                          type="button"
+                          $peligro
+                          disabled={guardando}
+                          onClick={() => onEliminar?.(item)}
+                        >
+                          Eliminar
+                        </BtnTexto>
+                      )}
                     </>
                   )}
                 </Fila>
