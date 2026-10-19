@@ -19,7 +19,7 @@ function formatearFecha(fecha) {
 export function AsignarTransferenciasModal({
   matriz,
   pendientes = [],
-  rutasEntreMatrices = [],
+  rutasDestino = [],
   nombresSucursal,
   puedeMover,
   guardando,
@@ -28,7 +28,7 @@ export function AsignarTransferenciasModal({
   onClose,
 }) {
   const [seleccionadas, setSeleccionadas] = useState([]);
-  const [rutaId, setRutaId] = useState(rutasEntreMatrices[0]?.id ?? "");
+  const [rutaId, setRutaId] = useState(rutasDestino[0]?.id ?? "");
   const [sobreRuta, setSobreRuta] = useState(null);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export function AsignarTransferenciasModal({
         <h2 id="asignar-transferencias-titulo">Pasar pendientes a ruta</h2>
         <p>
           Transferencias de la ruta transitorio de <strong>{matriz?.nombre}</strong>. Elige
-          los PDF y una ruta entre matrices, o arrástralos sobre la ruta.
+          los PDF y una ruta (agencia o matriz), o arrástralos sobre la ruta.
         </p>
 
         <Form onSubmit={handleSubmit}>
@@ -166,13 +166,13 @@ export function AsignarTransferenciasModal({
 
             <Columna>
               <CabeceraCol>
-                <span>Rutas entre matrices</span>
+                <span>Rutas de la matriz</span>
               </CabeceraCol>
               <Lista>
-                {rutasEntreMatrices.length === 0 ? (
-                  <Vacio>Crea primero una ruta hacia la otra matriz.</Vacio>
+                {rutasDestino.length === 0 ? (
+                  <Vacio>Crea primero una ruta hacia una agencia o la otra matriz.</Vacio>
                 ) : (
-                  rutasEntreMatrices.map((ruta) => (
+                  rutasDestino.map((ruta) => (
                     <RutaCard
                       key={ruta.id}
                       type="button"

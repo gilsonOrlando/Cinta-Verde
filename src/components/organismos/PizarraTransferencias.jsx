@@ -391,7 +391,7 @@ export function PizarraTransferencias() {
       );
       setMostrarAsignar(false);
       setMatrizAsignar(null);
-      toast.success("Transferencias pasadas a la ruta entre matrices.");
+      toast.success("Transferencias pasadas a la ruta.");
     } catch (error) {
       console.error(error);
       toast.error(interpretarErrorSupabase(error));
@@ -531,15 +531,8 @@ export function PizarraTransferencias() {
     : [];
   const puedeGestionar = puedeGestionarRutas(sesion);
   const puedeEditarTransferencias = puedeCrudTransferencias(sesion);
-  const rutasEntreMatricesDe = (matrizId) =>
-    rutasVisibles.filter(
-      (ruta) =>
-        mismoId(ruta.origen_id, matrizId) &&
-        (ruta.destinoIds ?? []).some((id) => {
-          const destino = mapa[id] ?? bodegas.find((item) => mismoId(item.id, id));
-          return esMatriz(destino?.tipo);
-        })
-    );
+  const rutasDeMatriz = (matrizId) =>
+    rutasVisibles.filter((ruta) => mismoId(ruta.origen_id, matrizId));
   const transitoriaDe = (matrizId) =>
     rutas.find(
       (item) => esRutaTransitoria(item) && mismoId(item.origen_id, matrizId)
@@ -951,7 +944,7 @@ export function PizarraTransferencias() {
         <AsignarTransferenciasModal
           matriz={matrizAsignar}
           pendientes={transferenciasDeRuta(transitoriaDe(matrizAsignar.id)?.id)}
-          rutasEntreMatrices={rutasEntreMatricesDe(matrizAsignar.id)}
+          rutasDestino={rutasDeMatriz(matrizAsignar.id)}
           nombresSucursal={Object.fromEntries(
             bodegas.map((item) => [item.id, item.nombre])
           )}

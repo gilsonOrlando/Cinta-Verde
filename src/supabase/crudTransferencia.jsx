@@ -196,7 +196,7 @@ export async function actualizarTransferencia({
 export async function moverTransferenciasARuta({ ids, rutaId }) {
   const lista = [...new Set((ids ?? []).filter(Boolean))];
   if (lista.length === 0) throw new Error("Selecciona al menos una transferencia.");
-  if (!rutaId) throw new Error("Selecciona la ruta entre matrices.");
+  if (!rutaId) throw new Error("Selecciona la ruta destino.");
 
   const { error } = await supabase
     .from("transferencia")
