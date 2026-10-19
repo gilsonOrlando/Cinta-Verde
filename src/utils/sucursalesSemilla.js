@@ -6,8 +6,8 @@ export function slugSucursal(nombre) {
     .replace(/[^a-z0-9]/g, "");
 }
 
-export function claveUsuarioTransferencia(nombre) {
-  return `Sicob-${slugSucursal(nombre)}`;
+export function claveUsuarioTransferencia(nombre, anio = new Date().getFullYear()) {
+  return `${slugSucursal(nombre)}${anio}`;
 }
 
 export const SUCURSALES_SEMILLA = [

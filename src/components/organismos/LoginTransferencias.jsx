@@ -29,7 +29,8 @@ export function LoginTransferencias({ onSesion }) {
       <h2>Acceso a transferencias</h2>
       <p>
         Hay dos tipos de usuario: <strong>matriz</strong> y <strong>agencia</strong>. Cada
-        sucursal tiene su propia credencial.
+        sucursal tiene su propia credencial. La clave es el usuario más el año, por
+        ejemplo loja2026.
       </p>
       <Form onSubmit={handleSubmit}>
         <label htmlFor="usuario-transferencia">Usuario</label>
