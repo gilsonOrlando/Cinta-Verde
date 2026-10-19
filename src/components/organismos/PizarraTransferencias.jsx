@@ -498,15 +498,32 @@ export function PizarraTransferencias() {
                 if (!origen) return null;
                 const activo = seleccion === ruta.id || rutaFoco === ruta.id;
                 const color = colorDeRuta(ruta, bodegas, rutas);
+                const trazo = {
+                  fill: "none",
+                  stroke: color,
+                  strokeWidth: activo ? 0.38 : 0.24,
+                  strokeOpacity: activo ? 0.95 : 0.8,
+                };
+                const matricesDestino = (ruta.destinoIds ?? [])
+                  .map((id) => mapa[id])
+                  .filter(
+                    (item) => item && esMatriz(item.tipo) && String(item.id) !== String(origen.id)
+                  );
+
                 return (
-                  <path
-                    key={`${ruta.id}-origen`}
-                    d={`M ${origen.x} ${origen.y} L ${ruta.x} ${ruta.y}`}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={activo ? 0.38 : 0.24}
-                    strokeOpacity={activo ? 0.95 : 0.8}
-                  />
+                  <g key={ruta.id}>
+                    <path
+                      d={`M ${origen.x} ${origen.y} L ${ruta.x} ${ruta.y}`}
+                      {...trazo}
+                    />
+                    {matricesDestino.map((destino) => (
+                      <path
+                        key={`${ruta.id}-${destino.id}`}
+                        d={`M ${destino.x} ${destino.y} L ${ruta.x} ${ruta.y}`}
+                        {...trazo}
+                      />
+                    ))}
+                  </g>
                 );
               })}
             </svg>
