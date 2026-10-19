@@ -114,6 +114,19 @@ export async function actualizarTransferencia({
   return data;
 }
 
+export async function moverTransferenciasARuta({ ids, rutaId }) {
+  const lista = [...new Set((ids ?? []).filter(Boolean))];
+  if (lista.length === 0) throw new Error("Selecciona al menos una transferencia.");
+  if (!rutaId) throw new Error("Selecciona la ruta entre matrices.");
+
+  const { error } = await supabase
+    .from("transferencia")
+    .update({ ruta_id: rutaId })
+    .in("id", lista);
+
+  if (error) throw error;
+}
+
 export async function eliminarTransferencia(item) {
   if (!item?.id) throw new Error("No se encontró la transferencia a eliminar.");
 

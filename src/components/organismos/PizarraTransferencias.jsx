@@ -28,6 +28,7 @@ import {
   crearTransferencia,
   eliminarTransferencia,
   listarTransferencias,
+  moverTransferenciasARuta,
   urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
@@ -40,6 +41,7 @@ import {
 import { SUCURSALES_SEMILLA, ubicarSucursales } from "../../utils/sucursalesSemilla";
 import { CrearRutaModal } from "../modals/CrearRutaModal";
 import { CargarTransferenciaModal } from "../modals/CargarTransferenciaModal";
+import { AsignarTransferenciasModal } from "../modals/AsignarTransferenciasModal";
 import { LoginTransferencias } from "./LoginTransferencias";
 
 const COLORES_MATRIZ = [
@@ -123,6 +125,9 @@ export function PizarraTransferencias() {
   const [guardandoCarga, setGuardandoCarga] = useState(false);
   const [sesion, setSesion] = useState(() => leerSesionTransferencia());
   const [mostrarCredencial, setMostrarCredencial] = useState(false);
+  const [mostrarAsignar, setMostrarAsignar] = useState(false);
+  const [matrizAsignar, setMatrizAsignar] = useState(null);
+  const [guardandoAsignar, setGuardandoAsignar] = useState(false);
   const menuGestionRef = useRef(null);
 
   useEffect(() => {
@@ -352,6 +357,36 @@ export function PizarraTransferencias() {
     }
   };
 
+  const handleAbrirAsignar = (bodega, event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    setSeleccion(bodega.id);
+    setMatrizAsignar(bodega);
+    setMostrarAsignar(true);
+  };
+
+  const handleMoverPendientes = async ({ ids, rutaId }) => {
+    setGuardandoAsignar(true);
+    try {
+      await moverTransferenciasARuta({ ids, rutaId });
+      setTransferencias((prev) =>
+        prev.map((item) =>
+          ids.some((id) => String(id) === String(item.id))
+            ? { ...item, ruta_id: rutaId }
+            : item
+        )
+      );
+      setMostrarAsignar(false);
+      setMatrizAsignar(null);
+      toast.success("Transferencias pasadas a la ruta entre matrices.");
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
+    } finally {
+      setGuardandoAsignar(false);
+    }
+  };
+
   const handleAbrirCarga = (ruta, event) => {
     event.stopPropagation();
     event.preventDefault();
@@ -426,6 +461,19 @@ export function PizarraTransferencias() {
     : [];
   const puedeGestionar = puedeGestionarRutas(sesion);
   const puedeEditarTransferencias = puedeCrudTransferencias(sesion);
+  const rutasEntreMatricesDe = (matrizId) =>
+    rutasVisibles.filter(
+      (ruta) =>
+        mismoId(ruta.origen_id, matrizId) &&
+        (ruta.destinoIds ?? []).some((id) => {
+          const destino = mapa[id] ?? bodegas.find((item) => mismoId(item.id, id));
+          return esMatriz(destino?.tipo);
+        })
+    );
+  const transitoriaDe = (matrizId) =>
+    rutas.find(
+      (item) => esRutaTransitoria(item) && mismoId(item.origen_id, matrizId)
+    );
 
   return (
     <Layout>
@@ -591,6 +639,9 @@ export function PizarraTransferencias() {
 
             {bodegas.map((bodega) => {
               const matriz = esMatriz(bodega.tipo);
+              const pendientes = matriz
+                ? transferenciasDeRuta(transitoriaDe(bodega.id)?.id)
+                : [];
               return (
                 <Nodo
                   key={bodega.id}
@@ -603,6 +654,18 @@ export function PizarraTransferencias() {
                   $colorEnfoque={colorEnfoque}
                   onPointerDown={(event) => iniciarArrastre(event, bodega.id)}
                 >
+                  {matriz && (
+                    <BtnCamion
+                      type="button"
+                      aria-label="Pasar transferencias pendientes a una ruta"
+                      title="Pasar transferencias pendientes a una ruta"
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onClick={(event) => handleAbrirAsignar(bodega, event)}
+                    >
+                      <RiTruckFill />
+                      {pendientes.length > 0 && <BadgeCamion>{pendientes.length}</BadgeCamion>}
+                    </BtnCamion>
+                  )}
                   <Pin aria-hidden="true" />
                   <NodoTipo $compacto={!matriz}>{matriz ? "Matriz" : "Agencia"}</NodoTipo>
                   <NodoNombre $compacto={!matriz}>{bodega.nombre}</NodoNombre>
@@ -738,6 +801,26 @@ export function PizarraTransferencias() {
             toast.success("Sesión cerrada.");
           }}
           onClose={() => setMostrarCredencial(false)}
+        />
+      )}
+
+      {mostrarAsignar && matrizAsignar && (
+        <AsignarTransferenciasModal
+          matriz={matrizAsignar}
+          pendientes={transferenciasDeRuta(transitoriaDe(matrizAsignar.id)?.id)}
+          rutasEntreMatrices={rutasEntreMatricesDe(matrizAsignar.id)}
+          nombresSucursal={Object.fromEntries(
+            bodegas.map((item) => [item.id, item.nombre])
+          )}
+          puedeMover={puedeGestionar && mismoId(sesion?.sucursal_id, matrizAsignar.id)}
+          guardando={guardandoAsignar}
+          onConfirmar={handleMoverPendientes}
+          onClose={() => {
+            if (!guardandoAsignar) {
+              setMostrarAsignar(false);
+              setMatrizAsignar(null);
+            }
+          }}
         />
       )}
 
@@ -964,7 +1047,7 @@ const Tablero = styled.div`
   }
 `;
 
-const Nodo = styled.button`
+const Nodo = styled.div`
   position: absolute;
   left: ${({ $x }) => `${$x}%`};
   top: ${({ $y }) => `${$y}%`};
@@ -973,7 +1056,7 @@ const Nodo = styled.button`
   border: ${({ $enfoque, $colorEnfoque }) =>
     $enfoque ? `2px solid ${$colorEnfoque}` : "none"};
   border-radius: 8px;
-  padding: ${({ $matriz }) => ($matriz ? "14px 10px 12px" : "7px 4px 6px")};
+  padding: ${({ $matriz }) => ($matriz ? "26px 10px 12px" : "7px 4px 6px")};
   background: ${({ $colorNodo, $enfoque, $colorEnfoque }) =>
     $enfoque ? $colorEnfoque : $colorNodo};
   box-shadow: ${({ $activo, $enfoque, $colorEnfoque, $colorNodo }) =>
@@ -984,6 +1067,7 @@ const Nodo = styled.button`
         : "0 6px 14px rgba(0, 0, 0, 0.22)"};
   cursor: grab;
   text-align: center;
+  user-select: none;
   z-index: ${({ $matriz, $enfoque }) => ($enfoque ? 5 : $matriz ? 3 : 2)};
   color: #3e2723;
 
