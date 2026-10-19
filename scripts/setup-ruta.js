@@ -34,7 +34,9 @@ const projectRef = new URL(url).hostname.split(".")[0];
 const connectionString = `postgresql://postgres:${encodeURIComponent(password)}@db.${projectRef}.supabase.co:5432/postgres`;
 
 const sqlPath = resolve(process.cwd(), "scripts/setup-ruta.sql");
+const sqlTransitorioPath = resolve(process.cwd(), "scripts/setup-ruta-transitorio.sql");
 const sql = readFileSync(sqlPath, "utf8");
+const sqlTransitorio = readFileSync(sqlTransitorioPath, "utf8");
 
 const client = new pg.Client({
   connectionString,
@@ -44,7 +46,16 @@ const client = new pg.Client({
 try {
   await client.connect();
   await client.query(sql);
+  await client.query(sqlTransitorio);
+  const { rows } = await client.query(
+    `select s.nombre
+     from public.ruta r
+     join public.sucursal s on s.id = r.origen_id
+     where r.transitorio
+     order by s.nombre`
+  );
   console.log("Relación matriz 1:N ruta aplicada correctamente.");
+  console.log(`Rutas transitorias: ${rows.map((item) => item.nombre).join(", ") || "ninguna"}`);
 } catch (error) {
   console.error("Error al crear ruta:", error.message);
   process.exit(1);

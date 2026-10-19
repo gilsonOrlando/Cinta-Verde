@@ -81,12 +81,16 @@ create table if not exists public.ruta (
   origen_tipo text generated always as ('matriz') stored,
   fecha date not null,
   chofer text not null,
+  transitorio boolean not null default false,
   created_at timestamptz not null default now(),
   constraint ruta_pertenece_a_matriz_fk
     foreign key (origen_id, origen_tipo)
     references public.sucursal (id, tipo)
     on delete restrict
 );
+create unique index if not exists ruta_transitorio_por_matriz_idx
+  on public.ruta (origen_id)
+  where transitorio;
 
 create table if not exists public.ruta_destino (
   id uuid primary key default gen_random_uuid(),

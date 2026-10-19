@@ -15,7 +15,14 @@ import {
 } from "react-icons/ri";
 import { supabaseConfigurado } from "../../supabase/supabase.config";
 import { esMatriz, listarSucursales } from "../../supabase/crudSucursal";
-import { actualizarRuta, crearRuta, eliminarRuta, listarRutas } from "../../supabase/crudRuta";
+import {
+  actualizarRuta,
+  asegurarRutaTransitoria,
+  crearRuta,
+  eliminarRuta,
+  esRutaTransitoria,
+  listarRutas,
+} from "../../supabase/crudRuta";
 import {
   actualizarTransferencia,
   crearTransferencia,
@@ -66,7 +73,7 @@ function colorDeRuta(ruta, sucursales = [], rutas = []) {
   const origen = sucursales.find((item) => item.id === ruta?.origen_id);
   const familia = COLORES_MATRIZ[indiceMatriz(origen, sucursales) % COLORES_MATRIZ.length];
   const hermanas = rutas
-    .filter((item) => item.origen_id === ruta?.origen_id)
+    .filter((item) => item.origen_id === ruta?.origen_id && !item.transitorio)
     .slice()
     .sort((a, b) => String(a.id).localeCompare(String(b.id)));
   const index = Math.max(
@@ -137,12 +144,21 @@ export function PizarraTransferencias() {
         setSeleccion(ubicadas[0]?.id ?? null);
 
         try {
-          const rutasDb = await listarRutas();
+          let rutasDb = await listarRutas();
           if (!activo) return;
-          const rutasConPosicion = rutasDb.map((ruta, index) => ({
-            ...ruta,
-            ...posicionNodoRuta(index),
-          }));
+          const matrices = sucursales.filter((item) => esMatriz(item.tipo));
+          for (const matriz of matrices) {
+            await asegurarRutaTransitoria(matriz.id);
+          }
+          rutasDb = await listarRutas();
+          if (!activo) return;
+          let indiceVisible = 0;
+          const rutasConPosicion = rutasDb.map((ruta) => {
+            if (esRutaTransitoria(ruta)) return ruta;
+            const conPosicion = { ...ruta, ...posicionNodoRuta(indiceVisible) };
+            indiceVisible += 1;
+            return conPosicion;
+          });
           setRutas(rutasConPosicion);
           try {
             const cargadas = await listarTransferencias();
@@ -281,7 +297,13 @@ export function PizarraTransferencias() {
           destinoIds,
           sucursales: bodegas,
         });
-        setRutas((prev) => [...prev, { ...ruta, ...posicionNodoRuta(prev.length) }]);
+        setRutas((prev) => [
+          ...prev,
+          {
+            ...ruta,
+            ...posicionNodoRuta(prev.filter((item) => !esRutaTransitoria(item)).length),
+          },
+        ]);
         setSeleccion(ruta.id);
         toast.success("Ruta creada.");
       }
@@ -309,11 +331,21 @@ export function PizarraTransferencias() {
     if (!ok) return;
 
     try {
-      await eliminarRuta(ruta.id);
-      setRutas((prev) => prev.filter((item) => item.id !== ruta.id));
-      if (seleccion === ruta.id) setSeleccion(bodegas[0]?.id ?? null);
-      toast.success("Ruta eliminada.");
-      setTransferencias((prev) => prev.filter((item) => item.ruta_id !== ruta.id));
+      const transitoria = await eliminarRuta(ruta.id);
+      setRutas((prev) => {
+        const resto = prev.filter((item) => item.id !== ruta.id);
+        if (transitoria && !resto.some((item) => item.id === transitoria.id)) {
+          return [...resto, transitoria];
+        }
+        return resto;
+      });
+      setTransferencias((prev) =>
+        prev.map((item) =>
+          mismoId(item.ruta_id, ruta.id) ? { ...item, ruta_id: transitoria.id } : item
+        )
+      );
+      if (seleccion === ruta.id) setSeleccion(ruta.origen_id);
+      toast.success("Ruta eliminada. Las transferencias pasaron a la ruta transitoria.");
     } catch (error) {
       console.error(error);
       toast.error(interpretarErrorSupabase(error));
@@ -382,12 +414,15 @@ export function PizarraTransferencias() {
   const mismoId = (a, b) => String(a ?? "") === String(b ?? "");
   const transferenciasDeRuta = (rutaId) =>
     transferencias.filter((item) => mismoId(item.ruta_id, rutaId));
-  const transferenciasDeMatriz = bodegaActiva
-    ? transferencias.filter((item) =>
-        rutas.some(
-          (ruta) => mismoId(ruta.id, item.ruta_id) && mismoId(ruta.origen_id, bodegaActiva.id)
-        )
+  const rutasVisibles = rutas.filter((item) => !esRutaTransitoria(item));
+  const rutaTransitoriaActiva = bodegaActiva
+    ? rutas.find(
+        (item) =>
+          esRutaTransitoria(item) && mismoId(item.origen_id, bodegaActiva.id)
       )
+    : null;
+  const transferenciasDeMatriz = rutaTransitoriaActiva
+    ? transferenciasDeRuta(rutaTransitoriaActiva.id)
     : [];
   const puedeGestionar = puedeGestionarRutas(sesion);
   const puedeEditarTransferencias = puedeCrudTransferencias(sesion);
@@ -458,7 +493,7 @@ export function PizarraTransferencias() {
             onPointerLeave={terminarArrastre}
           >
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              {rutas.map((ruta) => {
+              {rutasVisibles.map((ruta) => {
                 const origen = mapa[ruta.origen_id];
                 if (!origen) return null;
                 const activo = seleccion === ruta.id || rutaFoco === ruta.id;
@@ -476,7 +511,7 @@ export function PizarraTransferencias() {
               })}
             </svg>
 
-            {rutas.map((ruta) => (
+            {rutasVisibles.map((ruta) => (
               <NodoRuta
                 key={ruta.id}
                 $x={ruta.x}
@@ -629,7 +664,7 @@ export function PizarraTransferencias() {
               </NombreSucursal>
               {esMatriz(bodegaActiva.tipo) && (
                 <ListaPanel>
-                  <span>Transferencias</span>
+                  <span>Ruta transitorio · pendientes</span>
                   <ListaScroll>
                     {transferenciasDeMatriz.length === 0 ? (
                       <em>Sin transferencias</em>

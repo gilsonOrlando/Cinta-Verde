@@ -2,10 +2,15 @@
 -- Relación 1:N: una matriz tiene varias rutas; cada ruta pertenece a una sola matriz.
 -- Pegar en Supabase → SQL Editor → Run
 
-alter table public.sucursal
-  drop constraint if exists sucursal_id_tipo_unique;
-alter table public.sucursal
-  add constraint sucursal_id_tipo_unique unique (id, tipo);
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'sucursal_id_tipo_unique'
+  ) then
+    alter table public.sucursal
+      add constraint sucursal_id_tipo_unique unique (id, tipo);
+  end if;
+end $$;
 
 create table if not exists public.ruta (
   id uuid primary key default gen_random_uuid(),
@@ -51,8 +56,40 @@ comment on column public.ruta.origen_id is
 comment on constraint ruta_pertenece_a_matriz_fk on public.ruta is
   'Una ruta pertenece a una sola matriz; una matriz puede tener varias rutas.';
 
+do $$
+begin
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'ruta'
+      and column_name = 'transitorio'
+  ) then
+    alter table public.ruta
+      add column transitorio boolean not null default false;
+  end if;
+end $$;
+
+comment on column public.ruta.transitorio is
+  'Ruta transitoria fija de cada matriz para transferencias pendientes.';
+
+create unique index if not exists ruta_transitorio_por_matriz_idx
+  on public.ruta (origen_id)
+  where transitorio;
+
 create index if not exists ruta_origen_id_idx on public.ruta (origen_id);
 create index if not exists ruta_fecha_idx on public.ruta (fecha desc);
+
+insert into public.ruta (origen_id, fecha, chofer, transitorio)
+select s.id, current_date, 'RUTA TRANSITORIO', true
+from public.sucursal s
+where s.tipo = 'matriz'
+  and not exists (
+    select 1
+    from public.ruta r
+    where r.origen_id = s.id
+      and r.transitorio
+  );
 
 create table if not exists public.ruta_destino (
   id uuid primary key default gen_random_uuid(),
