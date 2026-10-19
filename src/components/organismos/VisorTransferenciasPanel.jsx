@@ -26,7 +26,6 @@ export function VisorTransferenciasPanel({
   onClose,
 }) {
   const [indice, setIndice] = useState(0);
-  const [documento, setDocumento] = useState("transferencia");
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -43,7 +42,6 @@ export function VisorTransferenciasPanel({
 
   useEffect(() => {
     setIndice(0);
-    setDocumento("transferencia");
   }, [ruta?.id]);
 
   useEffect(() => {
@@ -62,11 +60,7 @@ export function VisorTransferenciasPanel({
   const destino = actual
     ? sucursales.find((item) => mismoId(item.id, actual.sucursal_id))?.nombre ?? "—"
     : "";
-  const url = actual
-    ? documento === "guia"
-      ? urlArchivoTransferencia(actual.guia)
-      : urlArchivoTransferencia(actual.transferencia)
-    : "";
+  const url = actual ? urlArchivoTransferencia(actual.transferencia) : "";
   const puedeGestionar = puedeGestionarItemTransferencia(sesion, actual, ruta);
   const mostrarDevolver = puedeGestionar && ruta && !esRutaTransitoria(ruta);
 
@@ -96,35 +90,15 @@ export function VisorTransferenciasPanel({
 
         {actual && (
           <>
-            <Tabs>
-              <Tab
-                type="button"
-                $activo={documento === "transferencia"}
-                onClick={() => setDocumento("transferencia")}
-              >
-                Transferencia
-              </Tab>
-              <Tab
-                type="button"
-                $activo={documento === "guia"}
-                onClick={() => setDocumento("guia")}
-              >
-                Guía
-              </Tab>
-            </Tabs>
-
             <Marco>
-              <iframe title={`Vista de ${documento}`} src={`${url}#view=FitH`} />
+              <iframe title="Vista de transferencia" src={`${url}#view=FitH`} />
             </Marco>
 
             <Navegacion>
               <BtnNav
                 type="button"
                 disabled={indice <= 0}
-                onClick={() => {
-                  setIndice((prev) => Math.max(0, prev - 1));
-                  setDocumento("transferencia");
-                }}
+                onClick={() => setIndice((prev) => Math.max(0, prev - 1))}
               >
                 <RiArrowLeftSLine />
                 Atrás
@@ -135,10 +109,9 @@ export function VisorTransferenciasPanel({
               <BtnNav
                 type="button"
                 disabled={indice >= transferencias.length - 1}
-                onClick={() => {
-                  setIndice((prev) => Math.min(transferencias.length - 1, prev + 1));
-                  setDocumento("transferencia");
-                }}
+                onClick={() =>
+                  setIndice((prev) => Math.min(transferencias.length - 1, prev + 1))
+                }
               >
                 Siguiente
                 <RiArrowRightSLine />
@@ -175,17 +148,16 @@ const Overlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 16px;
 `;
 
 const Dialog = styled.div`
-  width: 100%;
-  max-width: 720px;
-  max-height: min(92vh, 860px);
-  overflow: auto;
+  width: min(96vw, 1280px);
+  height: min(94vh, 920px);
+  overflow: hidden;
   background: #fff;
   border-radius: 14px;
-  padding: 18px 18px 16px;
+  padding: 18px 20px 16px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
   display: flex;
   flex-direction: column;
@@ -240,25 +212,9 @@ const BtnCerrar = styled.button`
   }
 `;
 
-const Tabs = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-`;
-
-const Tab = styled.button`
-  border: 1px solid ${({ $activo }) => ($activo ? "#2e7d32" : "#ddd")};
-  background: ${({ $activo }) => ($activo ? "#e8f5e9" : "#fff")};
-  color: ${({ $activo }) => ($activo ? "#1b5e20" : "#444")};
-  border-radius: 8px;
-  padding: 8px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-`;
-
 const Marco = styled.div`
-  height: min(52vh, 480px);
+  flex: 1;
+  min-height: 0;
   border: 1px solid #e0e0e0;
   border-radius: 10px;
   overflow: hidden;
