@@ -226,13 +226,12 @@ export function CargarTransferenciaModal({
           {transferencias.length > 0 && (
             <Lista>
               <span>Cargadas en esta ruta</span>
-              {transferencias.map((item, index) => (
+              {transferencias.map((item) => (
                 <Fila key={item.id}>
-                  <strong>#{index + 1}</strong>
-                  <em>
+                  <strong>
                     {nombreSucursal(sucursales, item.origen_id)} →{" "}
                     {nombreSucursal(sucursales, item.sucursal_id)}
-                  </em>
+                  </strong>
                   <a href={urlArchivoTransferencia(item.transferencia)} target="_blank" rel="noreferrer">
                     Transferencia
                   </a>

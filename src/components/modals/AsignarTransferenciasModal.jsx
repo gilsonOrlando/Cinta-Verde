@@ -90,7 +90,7 @@ export function AsignarTransferenciasModal({
                 {pendientes.length === 0 ? (
                   <Vacio>No hay transferencias en la ruta transitorio.</Vacio>
                 ) : (
-                  pendientes.map((item, index) => (
+                  pendientes.map((item) => (
                     <Item
                       key={item.id}
                       $activo={seleccionadas.includes(item.id)}
@@ -115,11 +115,10 @@ export function AsignarTransferenciasModal({
                       )}
                       <RiFilePdfFill />
                       <div>
-                        <strong>PDF #{index + 1}</strong>
-                        <small>
+                        <strong>
                           {nombreDe(nombresSucursal, item.origen_id)} →{" "}
                           {nombreDe(nombresSucursal, item.sucursal_id)}
-                        </small>
+                        </strong>
                         <a
                           href={urlArchivoTransferencia(item.transferencia)}
                           target="_blank"

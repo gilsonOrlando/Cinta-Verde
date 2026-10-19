@@ -720,18 +720,17 @@ export function PizarraTransferencias() {
                   {transferenciasDeRuta(rutaActiva.id).length === 0 ? (
                     <em>Sin transferencias en esta ruta</em>
                   ) : (
-                    transferenciasDeRuta(rutaActiva.id).map((item, index) => (
+                    transferenciasDeRuta(rutaActiva.id).map((item) => (
                       <FilaPanel key={item.id}>
                         <RiFilePdfFill />
                         <div>
-                          <strong>#{index + 1}</strong>
-                          <small>
+                          <strong>
                             {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
                               ?.nombre ?? "—"}{" "}
                             →{" "}
                             {bodegas.find((bodega) => mismoId(bodega.id, item.sucursal_id))
                               ?.nombre ?? "—"}
-                          </small>
+                          </strong>
                           <a
                             href={urlArchivoTransferencia(item.transferencia)}
                             target="_blank"
@@ -769,19 +768,18 @@ export function PizarraTransferencias() {
                     {transferenciasDeMatriz.length === 0 ? (
                       <em>Sin transferencias</em>
                     ) : (
-                      transferenciasDeMatriz.map((item, index) => (
+                      transferenciasDeMatriz.map((item) => (
                         <FilaPanel key={item.id}>
                           <RiFilePdfFill />
                           <div>
-                            <strong>PDF #{index + 1}</strong>
-                            <small>
+                            <strong>
                               {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
                                 ?.nombre ?? "—"}{" "}
                               →{" "}
                               {bodegas.find((bodega) =>
                                 mismoId(bodega.id, item.sucursal_id)
                               )?.nombre ?? "—"}
-                            </small>
+                            </strong>
                             <a
                               href={urlArchivoTransferencia(item.transferencia)}
                               target="_blank"
