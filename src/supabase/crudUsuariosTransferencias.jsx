@@ -39,7 +39,10 @@ export function puedeCrudTransferencias(sesion) {
 }
 
 export const TIPO_CHOFER = "chofer";
-export const CLAVE_CHOFER = "chofer2026";
+
+export function claveChoferDesdeNombre(nombre) {
+  return String(nombre ?? "").trim().replace(/\s+/g, "").toLowerCase();
+}
 
 export async function listarChoferes(sucursalId) {
   if (!sucursalId) return [];
@@ -57,18 +60,19 @@ export async function listarChoferes(sucursalId) {
 
 export async function crearChofer({ sucursalId, nombre }) {
   const usuario = String(nombre ?? "").trim().toUpperCase();
+  const clave = claveChoferDesdeNombre(nombre);
   if (!sucursalId) throw new Error("Inicia sesión como matriz para registrar un chofer.");
-  if (!usuario) throw new Error("Ingresa el nombre del chofer.");
+  if (!usuario || !clave) throw new Error("Ingresa el nombre del chofer.");
 
   const { data, error } = await supabase
     .from("usuariostransferencias")
     .insert({
       sucursal_id: sucursalId,
       usuario,
-      clave: CLAVE_CHOFER,
+      clave,
       tipo: TIPO_CHOFER,
     })
-    .select("id, sucursal_id, usuario, tipo, created_at")
+    .select("id, sucursal_id, usuario, clave, tipo, created_at")
     .single();
 
   if (error) {

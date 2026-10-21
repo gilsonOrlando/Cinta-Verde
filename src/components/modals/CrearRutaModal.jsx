@@ -113,7 +113,7 @@ export function CrearRutaModal({
       setChofer(creado.usuario);
       setNombreChofer("");
       setMostrarChoferModal(false);
-      toast.success("Chofer registrado.");
+      toast.success(`Chofer registrado. Clave: ${creado.clave}`);
     } catch (error) {
       console.error(error);
       toast.error(interpretarErrorSupabase(error));

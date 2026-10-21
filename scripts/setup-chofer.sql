@@ -1,4 +1,5 @@
--- Choferes en usuariostransferencias: varios por matriz, tipo chofer, clave chofer2026.
+-- Choferes en usuariostransferencias: varios por matriz, tipo chofer.
+-- La clave es el nombre del chofer en minúsculas y sin espacios.
 
 alter table public.usuariostransferencias
   drop constraint if exists usuariostransferencias_sucursal_tipo_fk;
