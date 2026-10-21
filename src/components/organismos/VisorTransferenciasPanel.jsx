@@ -22,6 +22,7 @@ const FRACCION_VISIBLE = 0.62;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.5;
 const ZOOM_PASO = 0.2;
+const ZOOM_PREDETERMINADO = 1.4;
 
 export const ICONO_VERIFICAR_TRANSFERENCIAS = "/iconos/verificar-transferencias.png";
 
@@ -35,7 +36,7 @@ function PdfHoja({ path }) {
   const bufferRef = useRef(null);
   const [estado, setEstado] = useState("cargando");
   const [tamano, setTamano] = useState({ ancho: 0, alto: 0 });
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(ZOOM_PREDETERMINADO);
 
   useEffect(() => {
     const contenedor = marcoRef.current;
@@ -57,7 +58,7 @@ function PdfHoja({ path }) {
   useEffect(() => {
     bufferRef.current = null;
     setEstado("cargando");
-    setZoom(1);
+    setZoom(ZOOM_PREDETERMINADO);
     if (!path) return undefined;
 
     let cancelado = false;
