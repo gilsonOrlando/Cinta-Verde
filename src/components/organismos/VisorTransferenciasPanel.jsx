@@ -1,16 +1,121 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
+import * as pdfjsLib from "pdfjs-dist";
 import { RiArrowLeftSLine, RiArrowRightSLine, RiCloseLine } from "react-icons/ri";
 import { esRutaTransitoria } from "../../supabase/crudRuta";
 import {
   puedeGestionarItemTransferencia,
   urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
+import { resolvePublicAsset } from "../../utils/resolvePublicAsset";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = resolvePublicAsset("pdf.worker.min.mjs");
+
+const FRACCION_VISIBLE = 0.62;
 
 export const ICONO_VERIFICAR_TRANSFERENCIAS = "/iconos/verificar-transferencias.png";
 
 function mismoId(a, b) {
   return String(a ?? "") === String(b ?? "");
+}
+
+function PdfHoja({ url }) {
+  const marcoRef = useRef(null);
+  const [paginas, setPaginas] = useState([]);
+  const [estado, setEstado] = useState("cargando");
+
+  useEffect(() => {
+    if (!url || !marcoRef.current) return undefined;
+
+    let cancelado = false;
+    const contenedor = marcoRef.current;
+
+    async function pintar() {
+      setEstado("cargando");
+      setPaginas([]);
+      try {
+        const respuesta = await fetch(url);
+        if (!respuesta.ok) throw new Error("No se pudo abrir el PDF.");
+        const data = await respuesta.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data }).promise;
+        if (cancelado) {
+          pdf.destroy();
+          return;
+        }
+
+        const ancho = Math.max(320, contenedor.clientWidth - 24);
+        const alto = Math.max(280, contenedor.clientHeight - 16);
+        const pixeles = window.devicePixelRatio || 1;
+        const lienzos = [];
+
+        for (let numero = 1; numero <= pdf.numPages; numero += 1) {
+          const pagina = await pdf.getPage(numero);
+          const base = pagina.getViewport({ scale: 1 });
+          const escala = Math.min(
+            ancho / base.width,
+            alto / (base.height * FRACCION_VISIBLE)
+          );
+          const viewport = pagina.getViewport({ scale: escala });
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.floor(viewport.width * pixeles);
+          canvas.height = Math.floor(viewport.height * pixeles);
+          canvas.style.width = `${Math.floor(viewport.width)}px`;
+          canvas.style.height = `${Math.floor(viewport.height)}px`;
+          const contexto = canvas.getContext("2d");
+          contexto.setTransform(pixeles, 0, 0, pixeles, 0, 0);
+          await pagina.render({ canvasContext: contexto, viewport }).promise;
+          lienzos.push(canvas);
+        }
+
+        if (!cancelado) {
+          setPaginas(lienzos);
+          setEstado("listo");
+        }
+        pdf.destroy();
+      } catch (error) {
+        console.error(error);
+        if (!cancelado) setEstado("error");
+      }
+    }
+
+    pintar();
+    let espera;
+    const observer = new ResizeObserver(() => {
+      clearTimeout(espera);
+      espera = setTimeout(pintar, 150);
+    });
+    observer.observe(contenedor);
+    return () => {
+      cancelado = true;
+      clearTimeout(espera);
+      observer.disconnect();
+    };
+  }, [url]);
+
+  return (
+    <Marco ref={marcoRef}>
+      {estado === "cargando" && <AvisoVista>Cargando transferencia…</AvisoVista>}
+      {estado === "error" && (
+        <AvisoVista>
+          No se pudo previsualizar el PDF.{" "}
+          <a href={url} target="_blank" rel="noreferrer">
+            Abrir en otra pestaña
+          </a>
+        </AvisoVista>
+      )}
+      {estado === "listo" &&
+        paginas.map((canvas, index) => (
+          <Hoja
+            key={`${url}-${index}`}
+            ref={(nodo) => {
+              if (nodo && canvas && nodo.firstChild !== canvas) {
+                nodo.replaceChildren(canvas);
+              }
+            }}
+          />
+        ))}
+    </Marco>
+  );
 }
 
 export function VisorTransferenciasPanel({
@@ -90,9 +195,7 @@ export function VisorTransferenciasPanel({
 
         {actual && (
           <>
-            <Marco>
-              <iframe title="Vista de transferencia" src={`${url}#view=FitH`} />
-            </Marco>
+            <PdfHoja url={url} />
 
             <Navegacion>
               <BtnNav
@@ -152,7 +255,7 @@ const Overlay = styled.div`
 `;
 
 const Dialog = styled.div`
-  width: min(96vw, 1280px);
+  width: min(96vw, 980px);
   height: min(94vh, 920px);
   overflow: hidden;
   background: #fff;
@@ -217,13 +320,30 @@ const Marco = styled.div`
   min-height: 0;
   border: 1px solid #e0e0e0;
   border-radius: 10px;
-  overflow: hidden;
-  background: #fafafa;
+  overflow: auto;
+  background: #5d564d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+`;
 
-  iframe {
-    width: 100%;
-    height: 100%;
-    border: 0;
+const Hoja = styled.div`
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  line-height: 0;
+`;
+
+const AvisoVista = styled.p`
+  margin: auto;
+  color: #fff;
+  font-size: 0.9rem;
+  text-align: center;
+
+  a {
+    color: #c8e6c9;
+    font-weight: 700;
   }
 `;
 
