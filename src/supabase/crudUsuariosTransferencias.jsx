@@ -38,6 +38,48 @@ export function puedeCrudTransferencias(sesion) {
   return esUsuarioMatriz(sesion) || esUsuarioAgencia(sesion);
 }
 
+export const TIPO_CHOFER = "chofer";
+export const CLAVE_CHOFER = "chofer2026";
+
+export async function listarChoferes(sucursalId) {
+  if (!sucursalId) return [];
+
+  const { data, error } = await supabase
+    .from("usuariostransferencias")
+    .select("id, sucursal_id, usuario, tipo, created_at")
+    .eq("tipo", TIPO_CHOFER)
+    .eq("sucursal_id", sucursalId)
+    .order("usuario", { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function crearChofer({ sucursalId, nombre }) {
+  const usuario = String(nombre ?? "").trim().toUpperCase();
+  if (!sucursalId) throw new Error("Inicia sesión como matriz para registrar un chofer.");
+  if (!usuario) throw new Error("Ingresa el nombre del chofer.");
+
+  const { data, error } = await supabase
+    .from("usuariostransferencias")
+    .insert({
+      sucursal_id: sucursalId,
+      usuario,
+      clave: CLAVE_CHOFER,
+      tipo: TIPO_CHOFER,
+    })
+    .select("id, sucursal_id, usuario, tipo, created_at")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error("Ese chofer ya está registrado en tu matriz.");
+    }
+    throw error;
+  }
+  return data;
+}
+
 export async function iniciarSesionTransferencia({ clave }) {
   const claveValor = String(clave ?? "").trim();
 

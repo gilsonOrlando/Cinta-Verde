@@ -19,7 +19,8 @@
     "setup:sucursal": "node scripts/setup-sucursal.js",
     "setup:ruta": "node scripts/setup-ruta.js",
     "setup:transferencia": "node scripts/setup-transferencia.js",
-    "setup:usuarios-transferencias": "node scripts/setup-usuariostransferencias.js"
+    "setup:usuarios-transferencias": "node scripts/setup-usuariostransferencias.js",
+    "setup:chofer": "node scripts/setup-chofer.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.4",

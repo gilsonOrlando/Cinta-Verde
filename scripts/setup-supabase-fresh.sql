@@ -126,12 +126,19 @@ create policy "transferencia_all_anon" on public.transferencia for all to anon, 
 
 create table if not exists public.usuariostransferencias (
   id uuid primary key default gen_random_uuid(),
-  sucursal_id uuid not null unique references public.sucursal (id) on delete cascade,
-  usuario text not null unique,
+  sucursal_id uuid not null references public.sucursal (id) on delete cascade,
+  usuario text not null,
   clave text not null,
-  tipo text not null check (tipo in ('agencia', 'matriz')),
-  created_at timestamptz not null default now(),
-  constraint usuariostransferencias_sucursal_tipo_fk
-    foreign key (sucursal_id, tipo) references public.sucursal (id, tipo)
+  tipo text not null check (tipo in ('agencia', 'matriz', 'chofer')),
+  created_at timestamptz not null default now()
 );
+create unique index if not exists usuariostransferencias_login_por_sucursal_idx
+  on public.usuariostransferencias (sucursal_id)
+  where tipo in ('agencia', 'matriz');
+create unique index if not exists usuariostransferencias_login_clave_idx
+  on public.usuariostransferencias (clave)
+  where tipo in ('agencia', 'matriz');
+create unique index if not exists usuariostransferencias_chofer_por_matriz_idx
+  on public.usuariostransferencias (sucursal_id, usuario)
+  where tipo = 'chofer';
 alter table public.usuariostransferencias enable row level security;

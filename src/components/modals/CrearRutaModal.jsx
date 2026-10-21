@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
+import toast from "react-hot-toast";
+import { RiAddLine } from "react-icons/ri";
 import { esMatriz } from "../../supabase/crudSucursal";
+import { crearChofer, listarChoferes } from "../../supabase/crudUsuariosTransferencias";
+import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 
 function fechaHoy() {
   return new Date().toISOString().slice(0, 10);
@@ -41,10 +45,33 @@ export function CrearRutaModal({
   );
   const [chofer, setChofer] = useState(rutaInicial?.chofer ?? "");
   const [destinoIds, setDestinoIds] = useState(rutaInicial?.destinoIds ?? []);
+  const [choferes, setChoferes] = useState([]);
+  const [mostrarChoferModal, setMostrarChoferModal] = useState(false);
+  const [nombreChofer, setNombreChofer] = useState("");
+  const [guardandoChofer, setGuardandoChofer] = useState(false);
+
+  useEffect(() => {
+    let activo = true;
+    async function cargarChoferes() {
+      if (!sesion?.sucursal_id) return;
+      try {
+        const lista = await listarChoferes(sesion.sucursal_id);
+        if (activo) setChoferes(lista);
+      } catch (error) {
+        console.error(error);
+        if (activo) toast.error(interpretarErrorSupabase(error));
+      }
+    }
+
+    cargarChoferes();
+    return () => {
+      activo = false;
+    };
+  }, [sesion?.sucursal_id]);
 
   useEffect(() => {
     function handleKeyDown(event) {
-      if (event.key === "Escape" && !guardando) onClose();
+      if (event.key === "Escape" && !guardando && !mostrarChoferModal) onClose();
     }
 
     document.addEventListener("keydown", handleKeyDown);
@@ -53,7 +80,7 @@ export function CrearRutaModal({
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [guardando, onClose]);
+  }, [guardando, mostrarChoferModal, onClose]);
 
   const toggleDestino = (id) => {
     setDestinoIds((prev) =>
@@ -64,8 +91,42 @@ export function CrearRutaModal({
   const handleSubmit = (event) => {
     event.preventDefault();
     if (guardando) return;
+    if (!chofer) {
+      toast.error("Selecciona un chofer.");
+      return;
+    }
     onConfirmar({ origenId, fecha, chofer, destinoIds });
   };
+
+  const handleRegistrarChofer = async (event) => {
+    event.preventDefault();
+    if (guardandoChofer) return;
+    setGuardandoChofer(true);
+    try {
+      const creado = await crearChofer({
+        sucursalId: sesion?.sucursal_id,
+        nombre: nombreChofer,
+      });
+      setChoferes((prev) =>
+        [...prev, creado].sort((a, b) => a.usuario.localeCompare(b.usuario, "es"))
+      );
+      setChofer(creado.usuario);
+      setNombreChofer("");
+      setMostrarChoferModal(false);
+      toast.success("Chofer registrado.");
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
+    } finally {
+      setGuardandoChofer(false);
+    }
+  };
+
+  const opcionesChofer = useMemo(() => {
+    const nombres = choferes.map((item) => item.usuario);
+    if (chofer && !nombres.includes(chofer)) return [chofer, ...nombres];
+    return nombres;
+  }, [choferes, chofer]);
 
   return (
     <Overlay onClick={guardando ? undefined : onClose}>
@@ -100,15 +161,31 @@ export function CrearRutaModal({
             </Campo>
             <Campo>
               <label htmlFor="ruta-chofer">Chofer</label>
-              <input
-                id="ruta-chofer"
-                type="text"
-                value={chofer}
-                onChange={(event) => setChofer(event.target.value)}
-                placeholder="Nombre del chofer"
-                disabled={guardando}
-                required
-              />
+              <FilaChofer>
+                <select
+                  id="ruta-chofer"
+                  value={chofer}
+                  onChange={(event) => setChofer(event.target.value)}
+                  disabled={guardando}
+                  required
+                >
+                  <option value="">Selecciona un chofer</option>
+                  {opcionesChofer.map((nombre) => (
+                    <option key={nombre} value={nombre}>
+                      {nombre}
+                    </option>
+                  ))}
+                </select>
+                <BtnMas
+                  type="button"
+                  title="Registrar chofer"
+                  aria-label="Registrar chofer"
+                  onClick={() => setMostrarChoferModal(true)}
+                  disabled={guardando}
+                >
+                  <RiAddLine />
+                </BtnMas>
+              </FilaChofer>
             </Campo>
           </Grid>
 
@@ -142,6 +219,48 @@ export function CrearRutaModal({
           </Footer>
         </Form>
       </Dialog>
+
+      {mostrarChoferModal && (
+        <Overlay
+          $alto
+          onClick={guardandoChofer ? undefined : () => setMostrarChoferModal(false)}
+        >
+          <DialogMini
+            role="dialog"
+            aria-labelledby="registrar-chofer-titulo"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="registrar-chofer-titulo">Registrar chofer</h2>
+            <p>Solo se pide el nombre. Queda ligado a tu matriz.</p>
+            <Form onSubmit={handleRegistrarChofer}>
+              <Campo>
+                <label htmlFor="chofer-nombre">Nombre del chofer</label>
+                <input
+                  id="chofer-nombre"
+                  value={nombreChofer}
+                  onChange={(event) => setNombreChofer(event.target.value)}
+                  placeholder="Nombre completo"
+                  disabled={guardandoChofer}
+                  autoFocus
+                  required
+                />
+              </Campo>
+              <Footer>
+                <BtnSecundario
+                  type="button"
+                  onClick={() => setMostrarChoferModal(false)}
+                  disabled={guardandoChofer}
+                >
+                  Cancelar
+                </BtnSecundario>
+                <BtnPrimario type="submit" disabled={guardandoChofer}>
+                  {guardandoChofer ? "Guardando..." : "Registrar"}
+                </BtnPrimario>
+              </Footer>
+            </Form>
+          </DialogMini>
+        </Overlay>
+      )}
     </Overlay>
   );
 }
@@ -149,7 +268,7 @@ export function CrearRutaModal({
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: ${({ $alto }) => ($alto ? 1120 : 1100)};
   background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
@@ -316,4 +435,40 @@ const BtnPrimario = styled.button`
     opacity: 0.7;
     cursor: wait;
   }
+`;
+
+const FilaChofer = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+
+  select {
+    flex: 1;
+    min-width: 0;
+  }
+`;
+
+const BtnMas = styled.button`
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #2e7d32;
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-radius: 8px;
+  cursor: pointer;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  &:hover {
+    background: #c8e6c9;
+  }
+`;
+
+const DialogMini = styled(Dialog)`
+  max-width: 420px;
 `;
