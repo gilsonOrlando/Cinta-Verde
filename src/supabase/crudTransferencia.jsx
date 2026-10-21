@@ -18,7 +18,9 @@ function faltaColumnaNombre(error) {
 }
 
 export function nombreDeTransferencia(item) {
-  return String(item?.nombre ?? "").trim() || "Transferencia";
+  const nombre = String(item?.nombre ?? "").trim();
+  if (!nombre || /^transferencia$/i.test(nombre)) return "Sin título";
+  return nombre;
 }
 
 function validarOrigenYSucursal(origenId, sucursalId) {

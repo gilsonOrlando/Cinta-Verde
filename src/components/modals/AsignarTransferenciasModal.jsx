@@ -128,6 +128,7 @@ export function AsignarTransferenciasModal({
                       )}
                       <RiFilePdfFill />
                       <div>
+                        <small>Nombre</small>
                         <strong>{nombreDeTransferencia(item)}</strong>
                         <em>
                           {nombreDe(nombresSucursal, item.origen_id)} →{" "}
@@ -355,6 +356,15 @@ const Item = styled.div`
     flex-wrap: wrap;
     gap: 4px 10px;
     font-size: 0.82rem;
+  }
+
+  small {
+    width: 100%;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #888;
   }
 
   strong {
