@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { RiArrowLeftSLine, RiArrowRightSLine, RiCloseLine } from "react-icons/ri";
+import {
+  RiAddLine,
+  RiArrowLeftSLine,
+  RiArrowRightSLine,
+  RiCloseLine,
+  RiSubtractLine,
+} from "react-icons/ri";
 import { esRutaTransitoria } from "../../supabase/crudRuta";
 import {
   obtenerBufferArchivoTransferencia,
@@ -12,6 +18,9 @@ import {
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const FRACCION_VISIBLE = 0.62;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2.5;
+const ZOOM_PASO = 0.2;
 
 export const ICONO_VERIFICAR_TRANSFERENCIAS = "/iconos/verificar-transferencias.png";
 
@@ -25,6 +34,7 @@ function PdfHoja({ path }) {
   const bufferRef = useRef(null);
   const [estado, setEstado] = useState("cargando");
   const [tamano, setTamano] = useState({ ancho: 0, alto: 0 });
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     const contenedor = marcoRef.current;
@@ -46,6 +56,7 @@ function PdfHoja({ path }) {
   useEffect(() => {
     bufferRef.current = null;
     setEstado("cargando");
+    setZoom(1);
     if (!path) return undefined;
 
     let cancelado = false;
@@ -86,10 +97,9 @@ function PdfHoja({ path }) {
         const base = pagina.getViewport({ scale: 1 });
         const ancho = Math.max(280, tamano.ancho - 24);
         const alto = Math.max(240, tamano.alto - 16);
-        const escala = Math.min(
-          ancho / base.width,
-          alto / (base.height * FRACCION_VISIBLE)
-        );
+        const escala =
+          Math.min(ancho / base.width, alto / (base.height * FRACCION_VISIBLE)) *
+          zoom;
         const pixeles = window.devicePixelRatio || 1;
         const viewport = pagina.getViewport({ scale: escala });
         canvas.width = Math.floor(viewport.width * pixeles);
@@ -111,10 +121,37 @@ function PdfHoja({ path }) {
     return () => {
       cancelado = true;
     };
-  }, [estado, path, tamano.ancho, tamano.alto]);
+  }, [estado, path, tamano.ancho, tamano.alto, zoom]);
 
   return (
     <Marco ref={marcoRef}>
+      {estado === "listo" && (
+        <BarraZoom>
+          <BtnZoom
+            type="button"
+            title="Alejar"
+            aria-label="Alejar"
+            disabled={zoom <= ZOOM_MIN}
+            onClick={() =>
+              setZoom((prev) => Math.max(ZOOM_MIN, +(prev - ZOOM_PASO).toFixed(1)))
+            }
+          >
+            <RiSubtractLine />
+          </BtnZoom>
+          <Porcentaje>{Math.round(zoom * 100)}%</Porcentaje>
+          <BtnZoom
+            type="button"
+            title="Acercar"
+            aria-label="Acercar"
+            disabled={zoom >= ZOOM_MAX}
+            onClick={() =>
+              setZoom((prev) => Math.min(ZOOM_MAX, +(prev + ZOOM_PASO).toFixed(1)))
+            }
+          >
+            <RiAddLine />
+          </BtnZoom>
+        </BarraZoom>
+      )}
       {estado === "cargando" && <AvisoVista>Cargando transferencia…</AvisoVista>}
       {estado === "error" && (
         <AvisoVista>No se pudo previsualizar el PDF.</AvisoVista>
@@ -323,6 +360,7 @@ const BtnCerrar = styled.button`
 `;
 
 const Marco = styled.div`
+  position: relative;
   flex: 1;
   min-height: 0;
   border: 1px solid #e0e0e0;
@@ -334,6 +372,51 @@ const Marco = styled.div`
   align-items: center;
   gap: 12px;
   padding: 12px;
+`;
+
+const BarraZoom = styled.div`
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-end;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 8px;
+  padding: 4px 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+`;
+
+const BtnZoom = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #cfd8dc;
+  background: #fff;
+  color: #333;
+  border-radius: 6px;
+  cursor: pointer;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+`;
+
+const Porcentaje = styled.span`
+  min-width: 44px;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #333;
 `;
 
 const Hoja = styled.div`
