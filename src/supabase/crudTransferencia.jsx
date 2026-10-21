@@ -63,6 +63,15 @@ export function urlArchivoTransferencia(path) {
   return data?.publicUrl ?? "";
 }
 
+export async function obtenerBufferArchivoTransferencia(path) {
+  if (!path) throw new Error("No hay archivo para previsualizar.");
+  const { data, error } = await supabase.storage
+    .from(BUCKET_TRANSFERENCIAS)
+    .download(path);
+  if (error) throw error;
+  return await data.arrayBuffer();
+}
+
 export async function listarTransferencias(rutaId) {
   let consulta = supabase
     .from("transferencia")

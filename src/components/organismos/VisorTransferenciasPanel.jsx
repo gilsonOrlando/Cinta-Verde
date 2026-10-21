@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { RiArrowLeftSLine, RiArrowRightSLine, RiCloseLine } from "react-icons/ri";
 import { esRutaTransitoria } from "../../supabase/crudRuta";
 import {
+  obtenerBufferArchivoTransferencia,
   puedeGestionarItemTransferencia,
-  urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
-import { resolvePublicAsset } from "../../utils/resolvePublicAsset";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = resolvePublicAsset("pdf.worker.min.mjs");
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const FRACCION_VISIBLE = 0.62;
 
@@ -19,101 +19,109 @@ function mismoId(a, b) {
   return String(a ?? "") === String(b ?? "");
 }
 
-function PdfHoja({ url }) {
+function PdfHoja({ path }) {
   const marcoRef = useRef(null);
-  const [paginas, setPaginas] = useState([]);
+  const lienzoRef = useRef(null);
+  const bufferRef = useRef(null);
   const [estado, setEstado] = useState("cargando");
+  const [tamano, setTamano] = useState({ ancho: 0, alto: 0 });
 
   useEffect(() => {
-    if (!url || !marcoRef.current) return undefined;
+    const contenedor = marcoRef.current;
+    if (!contenedor) return undefined;
+
+    const medir = () => {
+      setTamano({
+        ancho: contenedor.clientWidth,
+        alto: contenedor.clientHeight,
+      });
+    };
+
+    medir();
+    const observer = new ResizeObserver(() => medir());
+    observer.observe(contenedor);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    bufferRef.current = null;
+    setEstado("cargando");
+    if (!path) return undefined;
 
     let cancelado = false;
-    const contenedor = marcoRef.current;
-
-    async function pintar() {
-      setEstado("cargando");
-      setPaginas([]);
+    async function cargar() {
       try {
-        const respuesta = await fetch(url);
-        if (!respuesta.ok) throw new Error("No se pudo abrir el PDF.");
-        const data = await respuesta.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data }).promise;
-        if (cancelado) {
-          pdf.destroy();
-          return;
-        }
-
-        const ancho = Math.max(320, contenedor.clientWidth - 24);
-        const alto = Math.max(280, contenedor.clientHeight - 16);
-        const pixeles = window.devicePixelRatio || 1;
-        const lienzos = [];
-
-        for (let numero = 1; numero <= pdf.numPages; numero += 1) {
-          const pagina = await pdf.getPage(numero);
-          const base = pagina.getViewport({ scale: 1 });
-          const escala = Math.min(
-            ancho / base.width,
-            alto / (base.height * FRACCION_VISIBLE)
-          );
-          const viewport = pagina.getViewport({ scale: escala });
-          const canvas = document.createElement("canvas");
-          canvas.width = Math.floor(viewport.width * pixeles);
-          canvas.height = Math.floor(viewport.height * pixeles);
-          canvas.style.width = `${Math.floor(viewport.width)}px`;
-          canvas.style.height = `${Math.floor(viewport.height)}px`;
-          const contexto = canvas.getContext("2d");
-          contexto.setTransform(pixeles, 0, 0, pixeles, 0, 0);
-          await pagina.render({ canvasContext: contexto, viewport }).promise;
-          lienzos.push(canvas);
-        }
-
-        if (!cancelado) {
-          setPaginas(lienzos);
-          setEstado("listo");
-        }
-        pdf.destroy();
+        const buffer = await obtenerBufferArchivoTransferencia(path);
+        if (cancelado) return;
+        bufferRef.current = buffer;
+        setEstado("listo");
       } catch (error) {
         console.error(error);
         if (!cancelado) setEstado("error");
       }
     }
 
-    pintar();
-    let espera;
-    const observer = new ResizeObserver(() => {
-      clearTimeout(espera);
-      espera = setTimeout(pintar, 150);
-    });
-    observer.observe(contenedor);
+    cargar();
     return () => {
       cancelado = true;
-      clearTimeout(espera);
-      observer.disconnect();
     };
-  }, [url]);
+  }, [path]);
+
+  useEffect(() => {
+    const canvas = lienzoRef.current;
+    const buffer = bufferRef.current;
+    if (estado !== "listo" || !canvas || !buffer || tamano.alto < 80) return undefined;
+
+    let cancelado = false;
+    let pdf;
+
+    async function pintar() {
+      try {
+        pdf = await pdfjsLib.getDocument({ data: buffer.slice(0) }).promise;
+        if (cancelado) {
+          pdf.destroy();
+          return;
+        }
+        const pagina = await pdf.getPage(1);
+        const base = pagina.getViewport({ scale: 1 });
+        const ancho = Math.max(280, tamano.ancho - 24);
+        const alto = Math.max(240, tamano.alto - 16);
+        const escala = Math.min(
+          ancho / base.width,
+          alto / (base.height * FRACCION_VISIBLE)
+        );
+        const pixeles = window.devicePixelRatio || 1;
+        const viewport = pagina.getViewport({ scale: escala });
+        canvas.width = Math.floor(viewport.width * pixeles);
+        canvas.height = Math.floor(viewport.height * pixeles);
+        canvas.style.width = `${Math.floor(viewport.width)}px`;
+        canvas.style.height = `${Math.floor(viewport.height)}px`;
+        const contexto = canvas.getContext("2d");
+        contexto.setTransform(pixeles, 0, 0, pixeles, 0, 0);
+        await pagina.render({ canvasContext: contexto, viewport }).promise;
+      } catch (error) {
+        console.error(error);
+        if (!cancelado) setEstado("error");
+      } finally {
+        pdf?.destroy();
+      }
+    }
+
+    pintar();
+    return () => {
+      cancelado = true;
+    };
+  }, [estado, path, tamano.ancho, tamano.alto]);
 
   return (
     <Marco ref={marcoRef}>
       {estado === "cargando" && <AvisoVista>Cargando transferencia…</AvisoVista>}
       {estado === "error" && (
-        <AvisoVista>
-          No se pudo previsualizar el PDF.{" "}
-          <a href={url} target="_blank" rel="noreferrer">
-            Abrir en otra pestaña
-          </a>
-        </AvisoVista>
+        <AvisoVista>No se pudo previsualizar el PDF.</AvisoVista>
       )}
-      {estado === "listo" &&
-        paginas.map((canvas, index) => (
-          <Hoja
-            key={`${url}-${index}`}
-            ref={(nodo) => {
-              if (nodo && canvas && nodo.firstChild !== canvas) {
-                nodo.replaceChildren(canvas);
-              }
-            }}
-          />
-        ))}
+      <Hoja $oculto={estado !== "listo"}>
+        <canvas ref={lienzoRef} />
+      </Hoja>
     </Marco>
   );
 }
@@ -165,7 +173,6 @@ export function VisorTransferenciasPanel({
   const destino = actual
     ? sucursales.find((item) => mismoId(item.id, actual.sucursal_id))?.nombre ?? "—"
     : "";
-  const url = actual ? urlArchivoTransferencia(actual.transferencia) : "";
   const puedeGestionar = puedeGestionarItemTransferencia(sesion, actual, ruta);
   const mostrarDevolver = puedeGestionar && ruta && !esRutaTransitoria(ruta);
 
@@ -195,7 +202,7 @@ export function VisorTransferenciasPanel({
 
         {actual && (
           <>
-            <PdfHoja url={url} />
+            <PdfHoja path={actual.transferencia} />
 
             <Navegacion>
               <BtnNav
@@ -330,9 +337,11 @@ const Marco = styled.div`
 `;
 
 const Hoja = styled.div`
+  display: ${({ $oculto }) => ($oculto ? "none" : "block")};
   background: #fff;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
   line-height: 0;
+  margin: 0 auto;
 `;
 
 const AvisoVista = styled.p`
