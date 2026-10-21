@@ -17,22 +17,8 @@ function faltaColumnaNombre(error) {
   );
 }
 
-export function etiquetaTransferencia(item, sucursales = []) {
-  const origen =
-    sucursales.find((sucursal) => String(sucursal.id) === String(item?.origen_id ?? ""))
-      ?.nombre ?? "—";
-  const destino =
-    sucursales.find((sucursal) => String(sucursal.id) === String(item?.sucursal_id ?? ""))
-      ?.nombre ?? "—";
-  const nombre = String(item?.nombre ?? "").trim();
-  const trayecto = `${origen} → ${destino}`;
-  return {
-    nombre,
-    origen,
-    destino,
-    trayecto,
-    titulo: nombre || trayecto,
-  };
+export function nombreDeTransferencia(item) {
+  return String(item?.nombre ?? "").trim() || "Transferencia";
 }
 
 function validarOrigenYSucursal(origenId, sucursalId) {
@@ -333,7 +319,10 @@ export async function devolverTransferenciaATransitorio(item, { sucursalSesionId
       .select(CAMPOS_SIN_NOMBRE)
       .single();
     if (segundo.error) throw segundo.error;
-    return { transferencia: { ...segundo.data, nombre: actual.nombre ?? "" }, transitoria };
+    return {
+      transferencia: { ...segundo.data, nombre: actual.nombre ?? "" },
+      transitoria,
+    };
   }
 
   if (error) throw error;

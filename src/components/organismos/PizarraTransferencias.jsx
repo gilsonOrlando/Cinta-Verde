@@ -30,11 +30,11 @@ import {
   crearTransferencia,
   descargarGuiasDeMatriz,
   devolverTransferenciaATransitorio,
-  etiquetaTransferencia,
   eliminarTransferencia,
   guiasSubidasPorMatriz,
   listarTransferencias,
   moverTransferenciasARuta,
+  nombreDeTransferencia,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
   urlArchivoTransferencia,
@@ -688,7 +688,7 @@ export function PizarraTransferencias() {
     const destino = bodegas.find((s) => mismoId(s.id, item.sucursal_id))?.nombre ?? "destino";
     const resultado = await Swal.fire({
       title: "¿Eliminar esta transferencia?",
-      html: `Se borrarán el PDF de <strong>${origen} → ${destino}</strong> y su guía.<br/><br/>Esta acción no se puede deshacer.`,
+      html: `Se borrarán el PDF de <strong>${nombreDeTransferencia(item)}</strong> (${origen} → ${destino}) y su guía.<br/><br/>Esta acción no se puede deshacer.`,
       icon: "warning",
       showCancelButton: true,
       focusCancel: true,
@@ -717,7 +717,7 @@ export function PizarraTransferencias() {
     const destino = bodegas.find((s) => mismoId(s.id, item.sucursal_id))?.nombre ?? "destino";
     const resultado = await Swal.fire({
       title: "¿Enviar a transitorio?",
-      html: `La transferencia <strong>${origen} → ${destino}</strong> saldrá de esta ruta y quedará pendiente en la ruta transitorio de la matriz.`,
+      html: `La transferencia <strong>${nombreDeTransferencia(item)}</strong> (${origen} → ${destino}) saldrá de esta ruta y quedará pendiente en la ruta transitorio de la matriz.`,
       icon: "question",
       showCancelButton: true,
       focusCancel: true,
@@ -1034,10 +1034,14 @@ export function PizarraTransferencias() {
                       <FilaPanel key={item.id}>
                         <RiFilePdfFill />
                         <div>
-                          <strong>{etiquetaTransferencia(item, bodegas).titulo}</strong>
-                          {etiquetaTransferencia(item, bodegas).nombre ? (
-                            <em>{etiquetaTransferencia(item, bodegas).trayecto}</em>
-                          ) : null}
+                          <strong>{nombreDeTransferencia(item)}</strong>
+                          <em>
+                            {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
+                              ?.nombre ?? "—"}{" "}
+                            →{" "}
+                            {bodegas.find((bodega) => mismoId(bodega.id, item.sucursal_id))
+                              ?.nombre ?? "—"}
+                          </em>
                           <a
                             href={urlArchivoTransferencia(item.transferencia)}
                             target="_blank"
@@ -1110,10 +1114,15 @@ export function PizarraTransferencias() {
                         <FilaPanel key={item.id}>
                           <RiFilePdfFill />
                           <div>
-                            <strong>{etiquetaTransferencia(item, bodegas).titulo}</strong>
-                            {etiquetaTransferencia(item, bodegas).nombre ? (
-                              <em>{etiquetaTransferencia(item, bodegas).trayecto}</em>
-                            ) : null}
+                            <strong>{nombreDeTransferencia(item)}</strong>
+                            <em>
+                              {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
+                                ?.nombre ?? "—"}{" "}
+                              →{" "}
+                              {bodegas.find((bodega) =>
+                                mismoId(bodega.id, item.sucursal_id)
+                              )?.nombre ?? "—"}
+                            </em>
                             <a
                               href={urlArchivoTransferencia(item.transferencia)}
                               target="_blank"
@@ -1781,7 +1790,7 @@ const FilaPanel = styled.div`
   em {
     width: 100%;
     font-style: normal;
-    color: #8d6e63;
+    color: #6d5c50;
     font-size: 0.72rem;
   }
 

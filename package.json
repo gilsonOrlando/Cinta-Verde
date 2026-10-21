@@ -18,6 +18,7 @@
     "setup:sucursal": "node scripts/setup-sucursal.js",
     "setup:ruta": "node scripts/setup-ruta.js",
     "setup:transferencia": "node scripts/setup-transferencia.js",
+    "setup:transferencia-nombre": "node scripts/setup-transferencia-nombre.js",
     "setup:usuarios-transferencias": "node scripts/setup-usuariostransferencias.js",
     "setup:chofer": "node scripts/setup-chofer.js"
   },

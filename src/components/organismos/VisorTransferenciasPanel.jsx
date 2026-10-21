@@ -11,8 +11,8 @@ import {
 } from "react-icons/ri";
 import { esRutaTransitoria } from "../../supabase/crudRuta";
 import {
-  etiquetaTransferencia,
   obtenerBufferArchivoTransferencia,
+  nombreDeTransferencia,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
 } from "../../supabase/crudTransferencia";
@@ -26,6 +26,10 @@ const ZOOM_PASO = 0.2;
 const ZOOM_PREDETERMINADO = 1.4;
 
 export const ICONO_VERIFICAR_TRANSFERENCIAS = "/iconos/verificar-transferencias.png";
+
+function mismoId(a, b) {
+  return String(a ?? "") === String(b ?? "");
+}
 
 function PdfHoja({ path }) {
   const marcoRef = useRef(null);
@@ -203,7 +207,12 @@ export function VisorTransferenciasPanel({
     transferencias.length > 0
       ? transferencias[Math.min(indice, transferencias.length - 1)]
       : null;
-  const etiqueta = actual ? etiquetaTransferencia(actual, sucursales) : null;
+  const origen = actual
+    ? sucursales.find((item) => mismoId(item.id, actual.origen_id))?.nombre ?? "—"
+    : "";
+  const destino = actual
+    ? sucursales.find((item) => mismoId(item.id, actual.sucursal_id))?.nombre ?? "—"
+    : "";
   const puedeGestionar = puedeGestionarItemTransferencia(sesion, actual, ruta);
   const puedeEliminar = puedeEliminarItemTransferencia(sesion, actual, ruta);
   const mostrarDevolver = puedeGestionar && ruta && !esRutaTransitoria(ruta);
@@ -220,10 +229,12 @@ export function VisorTransferenciasPanel({
           <div>
             <h2 id="visor-transferencias-titulo">{titulo}</h2>
             {actual ? (
-              <>
-                <strong>{etiqueta.titulo}</strong>
-                {etiqueta.nombre ? <span>{etiqueta.trayecto}</span> : null}
-              </>
+              <strong>
+                {nombreDeTransferencia(actual)}
+                <span>
+                  {origen} → {destino}
+                </span>
+              </strong>
             ) : (
               <em>Sin transferencias para verificar</em>
             )}
@@ -263,19 +274,16 @@ export function VisorTransferenciasPanel({
 
             {transferencias.length > 1 && (
               <ListaVisor>
-                {transferencias.map((item, posicion) => {
-                  const fila = etiquetaTransferencia(item, sucursales);
-                  return (
-                    <BtnListaVisor
-                      key={item.id}
-                      type="button"
-                      $activo={posicion === indice}
-                      onClick={() => setIndice(posicion)}
-                    >
-                      {fila.titulo}
-                    </BtnListaVisor>
-                  );
-                })}
+                {transferencias.map((item, posicion) => (
+                  <BtnListaVisor
+                    key={item.id}
+                    type="button"
+                    $activo={posicion === indice}
+                    onClick={() => setIndice(posicion)}
+                  >
+                    {nombreDeTransferencia(item)}
+                  </BtnListaVisor>
+                ))}
               </ListaVisor>
             )}
 
@@ -350,12 +358,14 @@ const Cabecera = styled.div`
     display: block;
     color: #3e2723;
     font-size: 0.88rem;
-  }
 
-  span {
-    display: block;
-    color: #6d4c41;
-    font-size: 0.78rem;
+    span {
+      display: block;
+      margin-top: 2px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #6d5c50;
+    }
   }
 
   em {

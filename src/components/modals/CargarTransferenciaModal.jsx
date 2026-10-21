@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import {
-  etiquetaTransferencia,
+  nombreDeTransferencia,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
   urlArchivoTransferencia,
@@ -247,10 +247,11 @@ export function CargarTransferenciaModal({
               <span>Cargadas en esta ruta</span>
               {transferencias.map((item) => (
                 <Fila key={item.id}>
-                  <strong>{etiquetaTransferencia(item, sucursales).titulo}</strong>
-                  {etiquetaTransferencia(item, sucursales).nombre ? (
-                    <small>{etiquetaTransferencia(item, sucursales).trayecto}</small>
-                  ) : null}
+                  <strong>{nombreDeTransferencia(item)}</strong>
+                  <em>
+                    {nombreSucursal(sucursales, item.origen_id)} →{" "}
+                    {nombreSucursal(sucursales, item.sucursal_id)}
+                  </em>
                   <a href={urlArchivoTransferencia(item.transferencia)} target="_blank" rel="noreferrer">
                     Transferencia
                   </a>
@@ -475,13 +476,8 @@ const Fila = styled.div`
   flex-wrap: wrap;
 
   strong {
-    color: #1b5e20;
-  }
-
-  small {
     width: 100%;
-    color: #666;
-    font-size: 0.76rem;
+    color: #1b5e20;
   }
 
   em {

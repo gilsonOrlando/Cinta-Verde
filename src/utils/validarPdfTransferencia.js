@@ -23,46 +23,48 @@ export async function validarPdfTransferencia(file, etiqueta) {
   let pdf;
   try {
     pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  } catch {
+    throw new Error(`${etiqueta} no es un PDF válido.`);
+  }
+
+  try {
     if (pdf.numPages > PAGINAS_MAX_PDF) {
       throw new Error(`${etiqueta} no puede tener más de 3 páginas.`);
     }
-    return await extraerTituloPdf(pdf, file);
-  } catch (error) {
-    if (error?.message?.includes("no puede tener más de")) throw error;
-    if (error?.message?.startsWith(`${etiqueta}`)) throw error;
-    throw new Error(`${etiqueta} no es un PDF válido.`);
+    return await leerTituloPdf(pdf, file, etiqueta);
   } finally {
-    pdf?.destroy();
+    pdf.destroy?.();
   }
 }
 
-function recortarTitulo(texto) {
-  return String(texto ?? "").replace(/\s+/g, " ").trim().slice(0, 120);
-}
-
-async function extraerTituloPdf(pdf, file) {
+async function leerTituloPdf(pdf, file, etiqueta) {
+  let titulo = "";
   try {
     const meta = await pdf.getMetadata();
-    const tituloMeta = recortarTitulo(meta?.info?.Title);
-    if (tituloMeta && !/^untitled$/i.test(tituloMeta)) return tituloMeta;
+    titulo = String(meta?.info?.Title ?? "").trim();
   } catch {
-    /* sin metadatos */
+    titulo = "";
   }
 
-  try {
-    const pagina = await pdf.getPage(1);
-    const contenido = await pagina.getTextContent();
-    const texto = recortarTitulo(
-      contenido.items.map((item) => ("str" in item ? item.str : "")).join(" ")
-    );
-    const numero = texto.match(
-      /n[uú]mero\s*[:.]?\s*([a-z]{1,6}[-/\s]?\d{3,})/i
-    );
-    if (numero?.[1]) return recortarTitulo(numero[1].toUpperCase());
-  } catch {
-    /* sin texto */
+  if (!titulo) {
+    try {
+      const pagina = await pdf.getPage(1);
+      const contenido = await pagina.getTextContent();
+      const texto = contenido.items
+        .map((item) => ("str" in item ? item.str : ""))
+        .join(" ");
+      const numero = texto.match(
+        /\b(?:N[uú]mero|No\.?)[:\s]*([A-Z]{2,6}-?\d{3,})\b/i
+      );
+      if (numero) titulo = numero[1].toUpperCase();
+    } catch {
+      titulo = "";
+    }
   }
 
-  const archivo = recortarTitulo(String(file?.name ?? "").replace(/\.pdf$/i, ""));
-  return archivo || "Transferencia";
+  if (!titulo) {
+    titulo = String(file?.name ?? "").replace(/\.pdf$/i, "").trim();
+  }
+
+  return (titulo || etiqueta).slice(0, 180);
 }

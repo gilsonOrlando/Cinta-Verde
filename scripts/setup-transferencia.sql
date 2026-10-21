@@ -64,12 +64,12 @@ comment on column public.transferencia.origen_id is
   'Sucursal de la sesión que carga la transferencia (agencia origen).';
 comment on column public.transferencia.sucursal_id is
   'Sucursal seleccionada como destino. Distinta de la sucursal logueada.';
+comment on column public.transferencia.nombre is
+  'Título del PDF de transferencia, para listarlo en la pizarra.';
 comment on column public.transferencia.transferencia is
   'Ruta del PDF de transferencia en Storage.';
 comment on column public.transferencia.guia is
   'Ruta del PDF de guía en Storage. Pertenece a la misma transferencia.';
-comment on column public.transferencia.nombre is
-  'Título del PDF de transferencia, para identificarla en listas y visor.';
 
 alter table public.transferencia enable row level security;
 

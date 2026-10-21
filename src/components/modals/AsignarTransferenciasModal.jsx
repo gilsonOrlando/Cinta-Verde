@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { RiFilePdfFill, RiTruckFill } from "react-icons/ri";
-import { urlArchivoTransferencia } from "../../supabase/crudTransferencia";
+import {
+  nombreDeTransferencia,
+  urlArchivoTransferencia,
+} from "../../supabase/crudTransferencia";
 
 function nombreDe(nombres, id) {
   if (nombres[id]) return nombres[id];
@@ -125,19 +128,11 @@ export function AsignarTransferenciasModal({
                       )}
                       <RiFilePdfFill />
                       <div>
-                        <strong>
-                          {String(item.nombre ?? "").trim() ||
-                            `${nombreDe(nombresSucursal, item.origen_id)} → ${nombreDe(
-                              nombresSucursal,
-                              item.sucursal_id
-                            )}`}
-                        </strong>
-                        {String(item.nombre ?? "").trim() ? (
-                          <small>
-                            {nombreDe(nombresSucursal, item.origen_id)} →{" "}
-                            {nombreDe(nombresSucursal, item.sucursal_id)}
-                          </small>
-                        ) : null}
+                        <strong>{nombreDeTransferencia(item)}</strong>
+                        <em>
+                          {nombreDe(nombresSucursal, item.origen_id)} →{" "}
+                          {nombreDe(nombresSucursal, item.sucursal_id)}
+                        </em>
                         <a
                           href={urlArchivoTransferencia(item.transferencia)}
                           target="_blank"
@@ -367,8 +362,9 @@ const Item = styled.div`
     color: #1b5e20;
   }
 
-  small {
+  em {
     width: 100%;
+    font-style: normal;
     color: #666;
     font-size: 0.74rem;
   }
