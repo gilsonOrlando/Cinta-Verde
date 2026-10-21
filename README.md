@@ -44,7 +44,6 @@ npm run dev
 | `npm run dev` | Servidor de desarrollo |
 | `npm run build` | Build de producción |
 | `npm run setup:supabase` | Crear/actualizar tablas en Supabase |
-| `npm run test:supabase` | Verificar conexión con Supabase |
 
 ## Desarrollador
 
