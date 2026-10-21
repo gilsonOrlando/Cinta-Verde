@@ -569,8 +569,21 @@ export function PizarraTransferencias() {
   };
 
   const handleEliminarTransferencia = async (item) => {
-    const ok = window.confirm("¿Eliminar esta transferencia y su guía?");
-    if (!ok) return;
+    const origen = sucursales.find((s) => mismoId(s.id, item.origen_id))?.nombre ?? "origen";
+    const destino = sucursales.find((s) => mismoId(s.id, item.sucursal_id))?.nombre ?? "destino";
+    const resultado = await Swal.fire({
+      title: "¿Eliminar esta transferencia?",
+      html: `Se borrarán el PDF de <strong>${origen} → ${destino}</strong> y su guía.<br/><br/>Esta acción no se puede deshacer.`,
+      icon: "warning",
+      showCancelButton: true,
+      focusCancel: true,
+      reverseButtons: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#c62828",
+      cancelButtonColor: "#757575",
+    });
+    if (!resultado.isConfirmed) return;
     try {
       await eliminarTransferencia(item, {
         sucursalId: sesion?.sucursal_id,
@@ -585,10 +598,21 @@ export function PizarraTransferencias() {
   };
 
   const handleDevolverTransferencia = async (item) => {
-    const ok = window.confirm(
-      "¿Regresar esta transferencia a la ruta transitorio de la matriz?"
-    );
-    if (!ok) return;
+    const origen = sucursales.find((s) => mismoId(s.id, item.origen_id))?.nombre ?? "origen";
+    const destino = sucursales.find((s) => mismoId(s.id, item.sucursal_id))?.nombre ?? "destino";
+    const resultado = await Swal.fire({
+      title: "¿Enviar a transitorio?",
+      html: `La transferencia <strong>${origen} → ${destino}</strong> saldrá de esta ruta y quedará pendiente en la ruta transitorio de la matriz.`,
+      icon: "question",
+      showCancelButton: true,
+      focusCancel: true,
+      reverseButtons: true,
+      confirmButtonText: "Enviar a transitorio",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#2e7d32",
+      cancelButtonColor: "#757575",
+    });
+    if (!resultado.isConfirmed) return;
     try {
       const resultado = await devolverTransferenciaATransitorio(item, {
         sucursalSesionId: sesion?.sucursal_id,

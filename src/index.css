@@ -16,3 +16,7 @@ body::-webkit-scrollbar-thumb {
   background: rgba(84, 84, 84, 0.5);
   border-radius: 10px;
 }
+
+.swal2-container {
+  z-index: 20000 !important;
+}
