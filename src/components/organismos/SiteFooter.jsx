@@ -1,33 +1,64 @@
+import { useLocation } from "react-router-dom";
 import styled from "styled-components";
-import { RiDownloadLine, RiQrScan2Line } from "react-icons/ri";
+import { RiDownloadLine, RiQrScan2Line, RiTruckFill } from "react-icons/ri";
 import cintaVerdeApk from "../../app/appCintaVerde.apk?url";
+import revisorApk from "../../app/Revisor de transferencias.apk?url";
 
 export function SiteFooter() {
+  const { pathname } = useLocation();
+  const esTransferencias = pathname.startsWith("/transferencias-bodegas");
+
   return (
     <Footer>
       <Inner>
-        <CintaVerdeCard>
-          <CintaVerdeHeader>
-            <IconWrap aria-hidden="true">
-              <RiQrScan2Line />
-            </IconWrap>
-            <div>
-              <CintaVerdeTitulo>CintaVerde</CintaVerdeTitulo>
-              <CintaVerdeSubtitulo>App móvil para escaneo de toma física</CintaVerdeSubtitulo>
-            </div>
-          </CintaVerdeHeader>
+        {esTransferencias ? (
+          <CintaVerdeCard>
+            <CintaVerdeHeader>
+              <IconWrap aria-hidden="true">
+                <RiTruckFill />
+              </IconWrap>
+              <div>
+                <CintaVerdeTitulo>Revisor de transferencias</CintaVerdeTitulo>
+                <CintaVerdeSubtitulo>
+                  App móvil para verificar transferencias entre bodegas
+                </CintaVerdeSubtitulo>
+              </div>
+            </CintaVerdeHeader>
 
-          <CintaVerdeTexto>
-            Descarga e instala <strong>CintaVerde</strong> en tu celular para conectarte a un
-            proyecto con su código de acceso, escanear códigos de producto y registrar la
-            cantidad física comparándola con la cantidad del sistema.
-          </CintaVerdeTexto>
+            <CintaVerdeTexto>
+              Descarga e instala <strong>Revisor de transferencias</strong> en tu celular para
+              consultar y verificar las transferencias de la pizarra.
+            </CintaVerdeTexto>
 
-          <BtnDescarga href={cintaVerdeApk} download="appCintaVerde.apk">
-            <RiDownloadLine />
-            Descargar CintaVerde (APK)
-          </BtnDescarga>
-        </CintaVerdeCard>
+            <BtnDescarga href={revisorApk} download="Revisor de transferencias.apk">
+              <RiDownloadLine />
+              Descargar Revisor de transferencias (APK)
+            </BtnDescarga>
+          </CintaVerdeCard>
+        ) : (
+          <CintaVerdeCard>
+            <CintaVerdeHeader>
+              <IconWrap aria-hidden="true">
+                <RiQrScan2Line />
+              </IconWrap>
+              <div>
+                <CintaVerdeTitulo>CintaVerde</CintaVerdeTitulo>
+                <CintaVerdeSubtitulo>App móvil para escaneo de toma física</CintaVerdeSubtitulo>
+              </div>
+            </CintaVerdeHeader>
+
+            <CintaVerdeTexto>
+              Descarga e instala <strong>CintaVerde</strong> en tu celular para conectarte a un
+              proyecto con su código de acceso, escanear códigos de producto y registrar la
+              cantidad física comparándola con la cantidad del sistema.
+            </CintaVerdeTexto>
+
+            <BtnDescarga href={cintaVerdeApk} download="appCintaVerde.apk">
+              <RiDownloadLine />
+              Descargar CintaVerde (APK)
+            </BtnDescarga>
+          </CintaVerdeCard>
+        )}
 
         <Creditos>
           <p>
