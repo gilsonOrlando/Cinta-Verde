@@ -244,55 +244,92 @@ export function CargarTransferenciaModal({
 
           {transferencias.length > 0 && (
             <Lista>
-              <span>Cargadas en esta ruta</span>
-              {transferencias.map((item) => (
-                <Fila key={item.id}>
-                  <strong>{nombreDeTransferencia(item)}</strong>
-                  <em>
-                    {nombreSucursal(sucursales, item.origen_id)} →{" "}
-                    {nombreSucursal(sucursales, item.sucursal_id)}
-                  </em>
-                  <a href={urlArchivoTransferencia(item.transferencia)} target="_blank" rel="noreferrer">
-                    Transferencia
-                  </a>
-                  <a href={urlArchivoTransferencia(item.guia)} target="_blank" rel="noreferrer">
-                    Guía
-                  </a>
-                  {puedeEditar && puedeGestionarItemTransferencia(sesion, item, ruta) && (
-                    <>
-                      <BtnTexto
-                        type="button"
-                        disabled={guardando}
-                        onClick={() => {
-                          setEditandoId(item.id);
-                          setSucursalId(item.sucursal_id ?? "");
-                        }}
-                      >
-                        {editandoId === item.id ? "Editando" : "Editar"}
-                      </BtnTexto>
-                      {!esRutaTransitoria(ruta) && (
-                        <BtnTexto
-                          type="button"
-                          disabled={guardando}
-                          onClick={() => onDevolver?.(item)}
-                        >
-                          A transitorio
-                        </BtnTexto>
+              <span>Cargadas en esta ruta · {transferencias.length}</span>
+              <ListaScroll>
+                {transferencias.map((item) => {
+                  const puedeGestionar = puedeGestionarItemTransferencia(sesion, item, ruta);
+                  const puedeEliminar = puedeEliminarItemTransferencia(sesion, item, ruta);
+                  return (
+                    <Fila key={item.id} $activa={mismoId(editandoId, item.id)}>
+                      <DatosFila>
+                        <strong>{nombreDeTransferencia(item)}</strong>
+                        <em>
+                          {nombreSucursal(sucursales, item.origen_id)} →{" "}
+                          {nombreSucursal(sucursales, item.sucursal_id)}
+                        </em>
+                        <Enlaces>
+                          <a
+                            href={urlArchivoTransferencia(item.transferencia)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Transferencia
+                          </a>
+                          <a href={urlArchivoTransferencia(item.guia)} target="_blank" rel="noreferrer">
+                            Guía
+                          </a>
+                        </Enlaces>
+                      </DatosFila>
+                      {puedeEditar && (
+                        <AccionesFila>
+                          <BtnTexto
+                            type="button"
+                            disabled={guardando}
+                            onClick={() => {
+                              if (!puedeGestionar) {
+                                setAviso(
+                                  "Solo la agencia origen o la matriz de la ruta pueden editar esta transferencia."
+                                );
+                                return;
+                              }
+                              setAviso("");
+                              setEditandoId(item.id);
+                              setSucursalId(item.sucursal_id ?? "");
+                            }}
+                          >
+                            {mismoId(editandoId, item.id) ? "Editando" : "Editar"}
+                          </BtnTexto>
+                          {!esRutaTransitoria(ruta) && (
+                            <BtnTexto
+                              type="button"
+                              disabled={guardando}
+                              onClick={() => {
+                                if (!puedeGestionar) {
+                                  setAviso(
+                                    "Solo la agencia origen o la matriz de la ruta pueden enviar esta transferencia a transitorio."
+                                  );
+                                  return;
+                                }
+                                setAviso("");
+                                onDevolver?.(item);
+                              }}
+                            >
+                              A transitorio
+                            </BtnTexto>
+                          )}
+                          <BtnTexto
+                            type="button"
+                            $peligro
+                            disabled={guardando}
+                            onClick={() => {
+                              if (!puedeEliminar) {
+                                setAviso(
+                                  "Solo la agencia origen o la matriz dueña de esta ruta pueden eliminar la transferencia."
+                                );
+                                return;
+                              }
+                              setAviso("");
+                              onEliminar?.(item);
+                            }}
+                          >
+                            Eliminar
+                          </BtnTexto>
+                        </AccionesFila>
                       )}
-                      {puedeEliminarItemTransferencia(sesion, item, ruta) && (
-                        <BtnTexto
-                          type="button"
-                          $peligro
-                          disabled={guardando}
-                          onClick={() => onEliminar?.(item)}
-                        >
-                          Eliminar
-                        </BtnTexto>
-                      )}
-                    </>
-                  )}
-                </Fila>
-              ))}
+                    </Fila>
+                  );
+                })}
+              </ListaScroll>
             </Lista>
           )}
           {!puedeEditar && transferencias.length === 0 && (
@@ -458,8 +495,9 @@ const Lista = styled.div`
   gap: 8px;
   border-top: 1px solid #eee;
   padding-top: 10px;
+  min-height: 0;
 
-  span {
+  > span {
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -468,16 +506,50 @@ const Lista = styled.div`
   }
 `;
 
-const Fila = styled.div`
+const ListaScroll = styled.div`
+  max-height: 220px;
+  overflow-y: auto;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c5d0c5;
+    border-radius: 999px;
+  }
+`;
+
+const Fila = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 16px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid ${({ $activa }) => ($activa ? "#81c784" : "#eee")};
+  border-radius: 10px;
+  background: ${({ $activa }) => ($activa ? "#f1f8e9" : "#fafafa")};
   font-size: 0.86rem;
-  flex-wrap: wrap;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const DatosFila = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 
   strong {
-    width: 100%;
     color: #1b5e20;
+    font-size: 0.88rem;
+    word-break: break-word;
   }
 
   em {
@@ -485,11 +557,24 @@ const Fila = styled.div`
     color: #666;
     font-size: 0.8rem;
   }
+`;
+
+const Enlaces = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
 
   a {
     color: #2e7d32;
     font-weight: 600;
   }
+`;
+
+const AccionesFila = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 12px;
 `;
 
 const BtnTexto = styled.button`
