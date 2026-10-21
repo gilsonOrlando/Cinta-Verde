@@ -10,7 +10,7 @@ export function PublicHeader() {
           <LogoMark>SICOB</LogoMark>
           <BrandText>
             <strong>SICOB</strong>
-            <span>Sistema de Control de Bodegas</span>
+            <span>Sistema de Control de Bodega</span>
           </BrandText>
         </Logo>
 
