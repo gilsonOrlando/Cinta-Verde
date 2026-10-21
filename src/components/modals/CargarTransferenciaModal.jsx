@@ -7,6 +7,7 @@ import {
   urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
 import { esRutaTransitoria } from "../../supabase/crudRuta";
+import { validarPdfTransferencia } from "../../utils/validarPdfTransferencia";
 
 function esPdf(file) {
   const nombre = String(file?.name ?? "").toLowerCase();
@@ -105,7 +106,9 @@ export function CargarTransferenciaModal({
   const [sucursalId, setSucursalId] = useState("");
   const [aviso, setAviso] = useState("");
   const [editandoId, setEditandoId] = useState(transferenciaEdicionId);
+  const [nombrePdf, setNombrePdf] = useState("");
   const itemEditando = transferencias.find((item) => mismoId(item.id, editandoId));
+  const nombreVisible = nombrePdf || (itemEditando ? nombreDeTransferencia(itemEditando) : "");
   const origenId = itemEditando?.origen_id || sesion?.sucursal_id || "";
   const origenNombre =
     nombreSucursal(sucursales, origenId) !== "—"
@@ -120,7 +123,25 @@ export function CargarTransferenciaModal({
     const item = transferencias.find((actual) => mismoId(actual.id, transferenciaEdicionId));
     setEditandoId(transferenciaEdicionId);
     setSucursalId(item?.sucursal_id ?? "");
+    setNombrePdf(item ? nombreDeTransferencia(item) : "");
   }, [transferenciaEdicionId]);
+
+  useEffect(() => {
+    if (!archivoTransferencia) return undefined;
+    let cancelado = false;
+    validarPdfTransferencia(archivoTransferencia, "Transferencia")
+      .then((titulo) => {
+        if (!cancelado) setNombrePdf(titulo);
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setNombrePdf(String(archivoTransferencia.name ?? "").replace(/\.pdf$/i, ""));
+        }
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [archivoTransferencia]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -178,7 +199,11 @@ export function CargarTransferenciaModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="cargar-transferencia-titulo">
-          {puedeEditar ? "Gestionar transferencia" : "Transferencias de la ruta"}
+          {puedeEditar
+            ? nombreVisible
+              ? `Gestionar ${nombreVisible}`
+              : "Gestionar transferencia"
+            : "Transferencias de la ruta"}
         </h2>
         <p>
           {puedeEditar
@@ -187,6 +212,17 @@ export function CargarTransferenciaModal({
         </p>
 
         <Form onSubmit={handleSubmit}>
+          {puedeEditar && (
+            <Campo>
+              <label htmlFor="transferencia-nombre">Nombre de la transferencia</label>
+              <input
+                id="transferencia-nombre"
+                value={nombreVisible || "Se tomará del título del PDF"}
+                readOnly
+                disabled
+              />
+            </Campo>
+          )}
           {puedeEditar && (
             <Grid>
               <Campo>
@@ -285,6 +321,7 @@ export function CargarTransferenciaModal({
                               setAviso("");
                               setEditandoId(item.id);
                               setSucursalId(item.sucursal_id ?? "");
+                              setNombrePdf(nombreDeTransferencia(item));
                             }}
                           >
                             {mismoId(editandoId, item.id) ? "Editando" : "Editar"}
