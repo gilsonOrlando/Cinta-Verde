@@ -5,7 +5,35 @@ import { asegurarRutaTransitoria } from "./crudRuta";
 export const BUCKET_TRANSFERENCIAS = "transferencias";
 
 const CAMPOS_TRANSFERENCIA =
+  "id, ruta_id, origen_id, sucursal_id, nombre, transferencia, guia, created_at";
+const CAMPOS_SIN_NOMBRE =
   "id, ruta_id, origen_id, sucursal_id, transferencia, guia, created_at";
+
+function faltaColumnaNombre(error) {
+  const texto = `${error?.code ?? ""} ${error?.message ?? ""}`.toLowerCase();
+  return (
+    texto.includes("nombre") &&
+    (texto.includes("42703") || texto.includes("pgrst204") || texto.includes("column"))
+  );
+}
+
+export function etiquetaTransferencia(item, sucursales = []) {
+  const origen =
+    sucursales.find((sucursal) => String(sucursal.id) === String(item?.origen_id ?? ""))
+      ?.nombre ?? "—";
+  const destino =
+    sucursales.find((sucursal) => String(sucursal.id) === String(item?.sucursal_id ?? ""))
+      ?.nombre ?? "—";
+  const nombre = String(item?.nombre ?? "").trim();
+  const trayecto = `${origen} → ${destino}`;
+  return {
+    nombre,
+    origen,
+    destino,
+    trayecto,
+    titulo: nombre || trayecto,
+  };
+}
 
 function validarOrigenYSucursal(origenId, sucursalId) {
   if (!origenId) throw new Error("Inicia sesión para registrar la agencia origen.");
@@ -88,8 +116,17 @@ export async function listarTransferencias(rutaId) {
   if (rutaId) consulta = consulta.eq("ruta_id", rutaId);
 
   const { data, error } = await consulta;
-  if (error) throw error;
-  return data ?? [];
+  if (!error) return data ?? [];
+  if (!faltaColumnaNombre(error)) throw error;
+
+  let respaldo = supabase
+    .from("transferencia")
+    .select(CAMPOS_SIN_NOMBRE)
+    .order("created_at", { ascending: true });
+  if (rutaId) respaldo = respaldo.eq("ruta_id", rutaId);
+  const segundo = await respaldo;
+  if (segundo.error) throw segundo.error;
+  return (segundo.data ?? []).map((item) => ({ ...item, nombre: "" }));
 }
 
 async function subirPdf(path, file) {
@@ -116,7 +153,7 @@ export async function crearTransferencia({
   if (!rutaId) throw new Error("Selecciona una ruta para cargar la transferencia.");
   validarOrigenYSucursal(origenId, sucursalId);
 
-  await validarPdfTransferencia(archivoTransferencia, "Transferencia");
+  const nombre = await validarPdfTransferencia(archivoTransferencia, "Transferencia");
   await validarPdfTransferencia(archivoGuia, "Guía");
 
   const id = crypto.randomUUID();
@@ -127,18 +164,31 @@ export async function crearTransferencia({
     await subirPdf(pathTransferencia, archivoTransferencia);
     await subirPdf(pathGuia, archivoGuia);
 
-    const { data, error } = await supabase
+    const fila = {
+      id,
+      ruta_id: rutaId,
+      origen_id: origenId,
+      sucursal_id: sucursalId,
+      nombre,
+      transferencia: pathTransferencia,
+      guia: pathGuia,
+    };
+    let { data, error } = await supabase
       .from("transferencia")
-      .insert({
-        id,
-        ruta_id: rutaId,
-        origen_id: origenId,
-        sucursal_id: sucursalId,
-        transferencia: pathTransferencia,
-        guia: pathGuia,
-      })
+      .insert(fila)
       .select(CAMPOS_TRANSFERENCIA)
       .single();
+
+    if (error && faltaColumnaNombre(error)) {
+      const { nombre: _omitido, ...sinNombre } = fila;
+      const segundo = await supabase
+        .from("transferencia")
+        .insert(sinNombre)
+        .select(CAMPOS_SIN_NOMBRE)
+        .single();
+      if (segundo.error) throw segundo.error;
+      return { ...segundo.data, nombre };
+    }
 
     if (error) throw error;
     return data;
@@ -172,7 +222,7 @@ export async function actualizarTransferencia({
   await exigirPermisoGestion({ sucursalSesionId, tipoSesion, item: actual });
   validarOrigenYSucursal(actual.origen_id, sucursalId);
 
-  await validarPdfTransferencia(archivoTransferencia, "Transferencia");
+  const nombre = await validarPdfTransferencia(archivoTransferencia, "Transferencia");
   await validarPdfTransferencia(archivoGuia, "Guía");
 
   const pathTransferencia = `${rutaId}/${id}/transferencia.pdf`;
@@ -194,16 +244,30 @@ export async function actualizarTransferencia({
     });
   if (errorG) throw errorG;
 
-  const { data, error } = await supabase
+  const cambios = {
+    sucursal_id: sucursalId,
+    nombre,
+    transferencia: pathTransferencia,
+    guia: pathGuia,
+  };
+  let { data, error } = await supabase
     .from("transferencia")
-    .update({
-      sucursal_id: sucursalId,
-      transferencia: pathTransferencia,
-      guia: pathGuia,
-    })
+    .update(cambios)
     .eq("id", id)
     .select(CAMPOS_TRANSFERENCIA)
     .single();
+
+  if (error && faltaColumnaNombre(error)) {
+    const { nombre: _omitido, ...sinNombre } = cambios;
+    const segundo = await supabase
+      .from("transferencia")
+      .update(sinNombre)
+      .eq("id", id)
+      .select(CAMPOS_SIN_NOMBRE)
+      .single();
+    if (segundo.error) throw segundo.error;
+    return { ...segundo.data, nombre };
+  }
 
   if (error) throw error;
   return data;
@@ -225,11 +289,21 @@ export async function moverTransferenciasARuta({ ids, rutaId }) {
 export async function devolverTransferenciaATransitorio(item, { sucursalSesionId, tipoSesion } = {}) {
   if (!item?.id) throw new Error("No se encontró la transferencia a devolver.");
 
-  const { data: actual, error: errorLectura } = await supabase
+  let { data: actual, error: errorLectura } = await supabase
     .from("transferencia")
     .select(CAMPOS_TRANSFERENCIA)
     .eq("id", item.id)
     .maybeSingle();
+
+  if (errorLectura && faltaColumnaNombre(errorLectura)) {
+    const segundo = await supabase
+      .from("transferencia")
+      .select(CAMPOS_SIN_NOMBRE)
+      .eq("id", item.id)
+      .maybeSingle();
+    actual = segundo.data ? { ...segundo.data, nombre: "" } : segundo.data;
+    errorLectura = segundo.error;
+  }
 
   if (errorLectura) throw errorLectura;
   if (!actual?.id) throw new Error("No se encontró la transferencia a devolver.");
@@ -244,12 +318,23 @@ export async function devolverTransferenciaATransitorio(item, { sucursalSesionId
     throw new Error("Esta transferencia ya está en la ruta transitorio.");
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("transferencia")
     .update({ ruta_id: transitoria.id })
     .eq("id", actual.id)
     .select(CAMPOS_TRANSFERENCIA)
     .single();
+
+  if (error && faltaColumnaNombre(error)) {
+    const segundo = await supabase
+      .from("transferencia")
+      .update({ ruta_id: transitoria.id })
+      .eq("id", actual.id)
+      .select(CAMPOS_SIN_NOMBRE)
+      .single();
+    if (segundo.error) throw segundo.error;
+    return { transferencia: { ...segundo.data, nombre: actual.nombre ?? "" }, transitoria };
+  }
 
   if (error) throw error;
   return { transferencia: data, transitoria };

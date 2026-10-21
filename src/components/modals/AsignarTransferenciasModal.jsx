@@ -126,9 +126,18 @@ export function AsignarTransferenciasModal({
                       <RiFilePdfFill />
                       <div>
                         <strong>
-                          {nombreDe(nombresSucursal, item.origen_id)} →{" "}
-                          {nombreDe(nombresSucursal, item.sucursal_id)}
+                          {String(item.nombre ?? "").trim() ||
+                            `${nombreDe(nombresSucursal, item.origen_id)} → ${nombreDe(
+                              nombresSucursal,
+                              item.sucursal_id
+                            )}`}
                         </strong>
+                        {String(item.nombre ?? "").trim() ? (
+                          <small>
+                            {nombreDe(nombresSucursal, item.origen_id)} →{" "}
+                            {nombreDe(nombresSucursal, item.sucursal_id)}
+                          </small>
+                        ) : null}
                         <a
                           href={urlArchivoTransferencia(item.transferencia)}
                           target="_blank"

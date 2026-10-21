@@ -11,6 +11,7 @@ import {
 } from "react-icons/ri";
 import { esRutaTransitoria } from "../../supabase/crudRuta";
 import {
+  etiquetaTransferencia,
   obtenerBufferArchivoTransferencia,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
@@ -25,10 +26,6 @@ const ZOOM_PASO = 0.2;
 const ZOOM_PREDETERMINADO = 1.4;
 
 export const ICONO_VERIFICAR_TRANSFERENCIAS = "/iconos/verificar-transferencias.png";
-
-function mismoId(a, b) {
-  return String(a ?? "") === String(b ?? "");
-}
 
 function PdfHoja({ path }) {
   const marcoRef = useRef(null);
@@ -206,12 +203,7 @@ export function VisorTransferenciasPanel({
     transferencias.length > 0
       ? transferencias[Math.min(indice, transferencias.length - 1)]
       : null;
-  const origen = actual
-    ? sucursales.find((item) => mismoId(item.id, actual.origen_id))?.nombre ?? "—"
-    : "";
-  const destino = actual
-    ? sucursales.find((item) => mismoId(item.id, actual.sucursal_id))?.nombre ?? "—"
-    : "";
+  const etiqueta = actual ? etiquetaTransferencia(actual, sucursales) : null;
   const puedeGestionar = puedeGestionarItemTransferencia(sesion, actual, ruta);
   const puedeEliminar = puedeEliminarItemTransferencia(sesion, actual, ruta);
   const mostrarDevolver = puedeGestionar && ruta && !esRutaTransitoria(ruta);
@@ -228,9 +220,10 @@ export function VisorTransferenciasPanel({
           <div>
             <h2 id="visor-transferencias-titulo">{titulo}</h2>
             {actual ? (
-              <strong>
-                {origen} → {destino}
-              </strong>
+              <>
+                <strong>{etiqueta.titulo}</strong>
+                {etiqueta.nombre ? <span>{etiqueta.trayecto}</span> : null}
+              </>
             ) : (
               <em>Sin transferencias para verificar</em>
             )}
@@ -267,6 +260,24 @@ export function VisorTransferenciasPanel({
                 <RiArrowRightSLine />
               </BtnNav>
             </Navegacion>
+
+            {transferencias.length > 1 && (
+              <ListaVisor>
+                {transferencias.map((item, posicion) => {
+                  const fila = etiquetaTransferencia(item, sucursales);
+                  return (
+                    <BtnListaVisor
+                      key={item.id}
+                      type="button"
+                      $activo={posicion === indice}
+                      onClick={() => setIndice(posicion)}
+                    >
+                      {fila.titulo}
+                    </BtnListaVisor>
+                  );
+                })}
+              </ListaVisor>
+            )}
 
             {puedeEditar && (puedeGestionar || puedeEliminar) && (
               <Acciones>
@@ -339,6 +350,12 @@ const Cabecera = styled.div`
     display: block;
     color: #3e2723;
     font-size: 0.88rem;
+  }
+
+  span {
+    display: block;
+    color: #6d4c41;
+    font-size: 0.78rem;
   }
 
   em {
@@ -481,6 +498,34 @@ const Contador = styled.span`
   font-size: 0.84rem;
   font-weight: 700;
   color: #555;
+`;
+
+const ListaVisor = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 110px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 6px;
+`;
+
+const BtnListaVisor = styled.button`
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 6px;
+  background: ${({ $activo }) => ($activo ? "#e8f5e9" : "transparent")};
+  color: ${({ $activo }) => ($activo ? "#1b5e20" : "#444")};
+  font-size: 0.78rem;
+  font-weight: ${({ $activo }) => ($activo ? 700 : 600)};
+  padding: 8px 10px;
+  cursor: pointer;
+
+  &:hover {
+    background: #f3f8f3;
+  }
 `;
 
 const Acciones = styled.div`

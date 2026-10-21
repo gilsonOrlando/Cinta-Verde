@@ -30,6 +30,7 @@ import {
   crearTransferencia,
   descargarGuiasDeMatriz,
   devolverTransferenciaATransitorio,
+  etiquetaTransferencia,
   eliminarTransferencia,
   guiasSubidasPorMatriz,
   listarTransferencias,
@@ -1033,13 +1034,10 @@ export function PizarraTransferencias() {
                       <FilaPanel key={item.id}>
                         <RiFilePdfFill />
                         <div>
-                          <strong>
-                            {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
-                              ?.nombre ?? "—"}{" "}
-                            →{" "}
-                            {bodegas.find((bodega) => mismoId(bodega.id, item.sucursal_id))
-                              ?.nombre ?? "—"}
-                          </strong>
+                          <strong>{etiquetaTransferencia(item, bodegas).titulo}</strong>
+                          {etiquetaTransferencia(item, bodegas).nombre ? (
+                            <em>{etiquetaTransferencia(item, bodegas).trayecto}</em>
+                          ) : null}
                           <a
                             href={urlArchivoTransferencia(item.transferencia)}
                             target="_blank"
@@ -1112,14 +1110,10 @@ export function PizarraTransferencias() {
                         <FilaPanel key={item.id}>
                           <RiFilePdfFill />
                           <div>
-                            <strong>
-                              {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
-                                ?.nombre ?? "—"}{" "}
-                              →{" "}
-                              {bodegas.find((bodega) =>
-                                mismoId(bodega.id, item.sucursal_id)
-                              )?.nombre ?? "—"}
-                            </strong>
+                            <strong>{etiquetaTransferencia(item, bodegas).titulo}</strong>
+                            {etiquetaTransferencia(item, bodegas).nombre ? (
+                              <em>{etiquetaTransferencia(item, bodegas).trayecto}</em>
+                            ) : null}
                             <a
                               href={urlArchivoTransferencia(item.transferencia)}
                               target="_blank"
@@ -1782,6 +1776,13 @@ const FilaPanel = styled.div`
     width: 100%;
     color: #3e2723;
     font-size: 0.78rem;
+  }
+
+  em {
+    width: 100%;
+    font-style: normal;
+    color: #8d6e63;
+    font-size: 0.72rem;
   }
 
   a {

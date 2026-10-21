@@ -39,6 +39,17 @@ begin
     alter table public.transferencia
       add column sucursal_id uuid references public.sucursal(id);
   end if;
+
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'transferencia'
+      and column_name = 'nombre'
+  ) then
+    alter table public.transferencia
+      add column nombre text;
+  end if;
 end $$;
 
 create index if not exists transferencia_ruta_id_idx on public.transferencia (ruta_id);
@@ -57,6 +68,8 @@ comment on column public.transferencia.transferencia is
   'Ruta del PDF de transferencia en Storage.';
 comment on column public.transferencia.guia is
   'Ruta del PDF de guía en Storage. Pertenece a la misma transferencia.';
+comment on column public.transferencia.nombre is
+  'Título del PDF de transferencia, para identificarla en listas y visor.';
 
 alter table public.transferencia enable row level security;
 

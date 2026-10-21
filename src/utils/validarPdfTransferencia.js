@@ -23,11 +23,46 @@ export async function validarPdfTransferencia(file, etiqueta) {
   let pdf;
   try {
     pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-  } catch {
+    if (pdf.numPages > PAGINAS_MAX_PDF) {
+      throw new Error(`${etiqueta} no puede tener más de 3 páginas.`);
+    }
+    return await extraerTituloPdf(pdf, file);
+  } catch (error) {
+    if (error?.message?.includes("no puede tener más de")) throw error;
+    if (error?.message?.startsWith(`${etiqueta}`)) throw error;
     throw new Error(`${etiqueta} no es un PDF válido.`);
+  } finally {
+    pdf?.destroy();
+  }
+}
+
+function recortarTitulo(texto) {
+  return String(texto ?? "").replace(/\s+/g, " ").trim().slice(0, 120);
+}
+
+async function extraerTituloPdf(pdf, file) {
+  try {
+    const meta = await pdf.getMetadata();
+    const tituloMeta = recortarTitulo(meta?.info?.Title);
+    if (tituloMeta && !/^untitled$/i.test(tituloMeta)) return tituloMeta;
+  } catch {
+    /* sin metadatos */
   }
 
-  if (pdf.numPages > PAGINAS_MAX_PDF) {
-    throw new Error(`${etiqueta} no puede tener más de 3 páginas.`);
+  try {
+    const pagina = await pdf.getPage(1);
+    const contenido = await pagina.getTextContent();
+    const texto = recortarTitulo(
+      contenido.items.map((item) => ("str" in item ? item.str : "")).join(" ")
+    );
+    const numero = texto.match(
+      /n[uú]mero\s*[:.]?\s*([a-z]{1,6}[-/\s]?\d{3,})/i
+    );
+    if (numero?.[1]) return recortarTitulo(numero[1].toUpperCase());
+  } catch {
+    /* sin texto */
   }
+
+  const archivo = recortarTitulo(String(file?.name ?? "").replace(/\.pdf$/i, ""));
+  return archivo || "Transferencia";
 }

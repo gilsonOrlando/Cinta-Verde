@@ -112,6 +112,7 @@ create table if not exists public.transferencia (
   ruta_id uuid not null references public.ruta(id) on delete cascade,
   origen_id uuid references public.sucursal(id),
   sucursal_id uuid references public.sucursal(id),
+  nombre text,
   transferencia text not null,
   guia text not null,
   created_at timestamptz not null default now(),
