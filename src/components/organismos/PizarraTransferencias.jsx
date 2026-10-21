@@ -146,8 +146,68 @@ function conPosicion(sucursales) {
   );
 }
 
-function posicionNodoRuta(index) {
-  return { x: 78, y: 42 + index * 16 };
+const TAMANO_NODO = {
+  ruta: { w: 21, h: 16 },
+  matriz: { w: 16, h: 13 },
+  agencia: { w: 11, h: 8 },
+};
+
+function cajaDeNodo(item, clase) {
+  const tamano =
+    clase === "ruta"
+      ? TAMANO_NODO.ruta
+      : esMatriz(item?.tipo)
+        ? TAMANO_NODO.matriz
+        : TAMANO_NODO.agencia;
+  return { x: Number(item.x), y: Number(item.y), ...tamano };
+}
+
+function nodosSeSolapan(a, b, holgura = 2.4) {
+  return (
+    Math.abs(a.x - b.x) < (a.w + b.w) / 2 + holgura &&
+    Math.abs(a.y - b.y) < (a.h + b.h) / 2 + holgura
+  );
+}
+
+function posicionLibreRuta({ sucursales = [], rutas = [], origenId } = {}) {
+  const ocupados = [
+    ...sucursales
+      .filter((item) => Number.isFinite(item.x) && Number.isFinite(item.y))
+      .map((item) => cajaDeNodo(item, "sucursal")),
+    ...rutas
+      .filter(
+        (item) =>
+          !esRutaTransitoria(item) &&
+          Number.isFinite(item.x) &&
+          Number.isFinite(item.y)
+      )
+      .map((item) => cajaDeNodo(item, "ruta")),
+  ];
+
+  const origen = sucursales.find((item) => String(item.id) === String(origenId));
+  const preferida = {
+    x: Math.min(78, Math.max(38, (origen?.x ?? 56) - 16)),
+    y: Math.min(80, Math.max(28, (origen?.y ?? 18) + 24)),
+  };
+
+  let mejor = preferida;
+  let mejorPuntaje = Number.POSITIVE_INFINITY;
+
+  for (let y = 24; y <= 88; y += 4) {
+    for (let x = 34; x <= 88; x += 4) {
+      const caja = { x, y, ...TAMANO_NODO.ruta };
+      const choca = ocupados.some((otro) => nodosSeSolapan(caja, otro));
+      const dx = x - preferida.x;
+      const dy = y - preferida.y;
+      const puntaje = dx * dx + dy * dy + (choca ? 12000 : 0);
+      if (puntaje < mejorPuntaje) {
+        mejorPuntaje = puntaje;
+        mejor = { x, y };
+      }
+    }
+  }
+
+  return mejor;
 }
 
 function formatearFecha(fecha) {
@@ -213,13 +273,21 @@ export function PizarraTransferencias() {
           }
           rutasDb = await listarRutas();
           if (!activo) return;
-          let indiceVisible = 0;
-          const rutasConPosicion = rutasDb.map((ruta) => {
-            if (esRutaTransitoria(ruta)) return ruta;
-            const conPosicion = { ...ruta, ...posicionNodoRuta(indiceVisible) };
-            indiceVisible += 1;
-            return conPosicion;
-          });
+          const rutasConPosicion = [];
+          for (const ruta of rutasDb) {
+            if (esRutaTransitoria(ruta)) {
+              rutasConPosicion.push(ruta);
+              continue;
+            }
+            rutasConPosicion.push({
+              ...ruta,
+              ...posicionLibreRuta({
+                sucursales: ubicadas,
+                rutas: rutasConPosicion,
+                origenId: ruta.origen_id,
+              }),
+            });
+          }
           setRutas(rutasConPosicion);
           try {
             const cargadas = await listarTransferencias();
@@ -362,7 +430,11 @@ export function PizarraTransferencias() {
           ...prev,
           {
             ...ruta,
-            ...posicionNodoRuta(prev.filter((item) => !esRutaTransitoria(item)).length),
+            ...posicionLibreRuta({
+              sucursales: bodegas,
+              rutas: prev,
+              origenId: ruta.origen_id,
+            }),
           },
         ]);
         setSeleccion(ruta.id);
