@@ -76,6 +76,46 @@ function indiceMatriz(item, sucursales = []) {
   return index < 0 ? 0 : index;
 }
 
+function trazoCamino(desde, hasta) {
+  const mx = (desde.x + hasta.x) / 2;
+  const my = (desde.y + hasta.y) / 2;
+  const dx = hasta.x - desde.x;
+  const dy = hasta.y - desde.y;
+  return `M ${desde.x} ${desde.y} Q ${mx - dy * 0.12} ${my + dx * 0.12} ${hasta.x} ${hasta.y}`;
+}
+
+function CaminoRuta({ d, color, activo }) {
+  return (
+    <g>
+      <path
+        d={d}
+        fill="none"
+        stroke="#fffaf2"
+        strokeWidth={activo ? 1.18 : 0.96}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d={d}
+        fill="none"
+        stroke="rgba(78, 52, 46, 0.2)"
+        strokeWidth={activo ? 0.7 : 0.56}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d={d}
+        fill="none"
+        stroke={color}
+        strokeWidth={activo ? 0.34 : 0.24}
+        strokeLinecap="round"
+        strokeDasharray={activo ? "1.7 0.5" : "1.25 0.7"}
+        strokeOpacity={activo ? 1 : 0.88}
+      />
+    </g>
+  );
+}
+
 function colorDeMatriz(item, sucursales = []) {
   if (!esMatriz(item?.tipo)) return "#fffde7";
   const familia = COLORES_MATRIZ[indiceMatriz(item, sucursales) % COLORES_MATRIZ.length];
@@ -665,12 +705,12 @@ export function PizarraTransferencias() {
     <Layout>
       <Cabecera>
         <div>
-          <Kicker>Actores de transferencia</Kicker>
+          <Kicker>Mapa de rutas</Kicker>
           <Titulo>Transferencias entre bodegas</Titulo>
           <Subtitulo>
             {cargando
               ? "Cargando sucursales…"
-              : "Arrastra las sucursales en la pizarra. Cada matriz tiene un color propio y las agencias usan crema."}
+              : "Las líneas son el recorrido del camión. Cada matriz tiene un color propio y las agencias usan crema."}
           </Subtitulo>
         </div>
         <Acciones>
@@ -745,12 +785,6 @@ export function PizarraTransferencias() {
                 if (!origen) return null;
                 const activo = seleccion === ruta.id || rutaFoco === ruta.id;
                 const color = colorDeRuta(ruta, bodegas, rutas);
-                const trazo = {
-                  fill: "none",
-                  stroke: color,
-                  strokeWidth: activo ? 0.38 : 0.24,
-                  strokeOpacity: activo ? 0.95 : 0.8,
-                };
                 const matricesDestino = (ruta.destinoIds ?? [])
                   .map((id) => mapa[id])
                   .filter(
@@ -759,15 +793,17 @@ export function PizarraTransferencias() {
 
                 return (
                   <g key={ruta.id}>
-                    <path
-                      d={`M ${origen.x} ${origen.y} L ${ruta.x} ${ruta.y}`}
-                      {...trazo}
+                    <CaminoRuta
+                      d={trazoCamino(origen, ruta)}
+                      color={color}
+                      activo={activo}
                     />
                     {matricesDestino.map((destino) => (
-                      <path
+                      <CaminoRuta
                         key={`${ruta.id}-${destino.id}`}
-                        d={`M ${destino.x} ${destino.y} L ${ruta.x} ${ruta.y}`}
-                        {...trazo}
+                        d={trazoCamino(destino, ruta)}
+                        color={color}
+                        activo={activo}
                       />
                     ))}
                   </g>
@@ -1322,11 +1358,11 @@ const Cuerpo = styled.div`
 `;
 
 const Marco = styled.div`
-  border: 12px solid #6d4c41;
-  border-radius: 10px;
+  border: 10px solid #c9b08a;
+  border-radius: 16px;
   box-shadow:
-    inset 0 0 0 5px #4e342e,
-    0 18px 40px rgba(0, 0, 0, 0.18);
+    inset 0 0 0 4px #efe3c8,
+    0 16px 36px rgba(62, 39, 35, 0.12);
   overflow: hidden;
   min-height: 640px;
 `;
@@ -1337,21 +1373,21 @@ const Tablero = styled.div`
   height: 100%;
   min-height: 640px;
   background:
-    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.05), transparent 32%),
-    radial-gradient(circle at 80% 70%, rgba(0, 0, 0, 0.18), transparent 36%),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 27px,
-      rgba(255, 255, 255, 0.03) 28px
-    ),
+    radial-gradient(ellipse at 18% 14%, rgba(232, 245, 233, 0.85), transparent 42%),
+    radial-gradient(ellipse at 82% 78%, rgba(255, 236, 204, 0.55), transparent 40%),
     repeating-linear-gradient(
       90deg,
       transparent,
-      transparent 27px,
-      rgba(255, 255, 255, 0.03) 28px
+      transparent 46px,
+      rgba(121, 85, 72, 0.05) 47px
     ),
-    #1b4332;
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 46px,
+      rgba(121, 85, 72, 0.045) 47px
+    ),
+    #e7eadc;
   touch-action: none;
   user-select: none;
 
@@ -1372,17 +1408,19 @@ const Nodo = styled.div`
   transform: translate(-50%, -50%);
   width: ${({ $matriz }) => ($matriz ? "150px" : "96px")};
   border: ${({ $enfoque, $colorEnfoque }) =>
-    $enfoque ? `2px solid ${$colorEnfoque}` : "none"};
-  border-radius: 8px;
+    $enfoque ? `2px solid ${$colorEnfoque}` : "1px solid rgba(255, 255, 255, 0.55)"};
+  border-radius: ${({ $matriz }) => ($matriz ? "18px" : "14px")};
   padding: ${({ $matriz }) => ($matriz ? "26px 10px 12px" : "7px 4px 6px")};
   background: ${({ $colorNodo, $enfoque, $colorEnfoque }) =>
-    $enfoque ? $colorEnfoque : $colorNodo};
+    $enfoque
+      ? $colorEnfoque
+      : `color-mix(in srgb, ${$colorNodo} 82%, #fffaf3)`};
   box-shadow: ${({ $activo, $enfoque, $colorEnfoque, $colorNodo }) =>
     $enfoque
-      ? `0 0 0 4px ${$colorEnfoque}88, 0 8px 18px rgba(0, 0, 0, 0.28)`
+      ? `0 0 0 4px ${$colorEnfoque}66, 0 10px 20px rgba(62, 39, 35, 0.16)`
       : $activo
-        ? `0 0 0 3px ${$colorNodo}, 0 8px 18px rgba(0, 0, 0, 0.28)`
-        : "0 6px 14px rgba(0, 0, 0, 0.22)"};
+        ? `0 0 0 3px ${$colorNodo}, 0 10px 20px rgba(62, 39, 35, 0.16)`
+        : "0 8px 16px rgba(62, 39, 35, 0.12)"};
   cursor: grab;
   text-align: center;
   user-select: none;
@@ -1400,14 +1438,14 @@ const NodoRuta = styled.div`
   top: ${({ $y }) => `${$y}%`};
   transform: translate(-50%, -50%);
   width: 176px;
-  border: none;
-  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
   padding: 26px 12px 10px;
-  background: ${({ $color }) => $color};
+  background: ${({ $color }) => `color-mix(in srgb, ${$color} 74%, #fffaf3)`};
   box-shadow: ${({ $activo, $color }) =>
     $activo
-      ? `0 0 0 3px ${$color}, 0 8px 18px rgba(0, 0, 0, 0.22)`
-      : "0 6px 14px rgba(0, 0, 0, 0.18)"};
+      ? `0 0 0 3px ${$color}, 0 10px 20px rgba(62, 39, 35, 0.14)`
+      : "0 8px 16px rgba(62, 39, 35, 0.1)"};
   color: #3e2723;
   cursor: grab;
   text-align: center;
