@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import {
+  puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
   urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
@@ -276,14 +277,16 @@ export function CargarTransferenciaModal({
                           A transitorio
                         </BtnTexto>
                       )}
-                      <BtnTexto
-                        type="button"
-                        $peligro
-                        disabled={guardando}
-                        onClick={() => onEliminar?.(item)}
-                      >
-                        Eliminar
-                      </BtnTexto>
+                      {puedeEliminarItemTransferencia(sesion, item, ruta) && (
+                        <BtnTexto
+                          type="button"
+                          $peligro
+                          disabled={guardando}
+                          onClick={() => onEliminar?.(item)}
+                        >
+                          Eliminar
+                        </BtnTexto>
+                      )}
                     </>
                   )}
                 </Fila>

@@ -34,12 +34,14 @@ import {
   guiasSubidasPorMatriz,
   listarTransferencias,
   moverTransferenciasARuta,
+  puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
   urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
 import {
   borrarSesionTransferencia,
+  esUsuarioMatriz,
   leerSesionTransferencia,
   puedeCrudTransferencias,
   puedeGestionarRutas,
@@ -681,8 +683,8 @@ export function PizarraTransferencias() {
   };
 
   const handleEliminarTransferencia = async (item) => {
-    const origen = sucursales.find((s) => mismoId(s.id, item.origen_id))?.nombre ?? "origen";
-    const destino = sucursales.find((s) => mismoId(s.id, item.sucursal_id))?.nombre ?? "destino";
+    const origen = bodegas.find((s) => mismoId(s.id, item.origen_id))?.nombre ?? "origen";
+    const destino = bodegas.find((s) => mismoId(s.id, item.sucursal_id))?.nombre ?? "destino";
     const resultado = await Swal.fire({
       title: "¿Eliminar esta transferencia?",
       html: `Se borrarán el PDF de <strong>${origen} → ${destino}</strong> y su guía.<br/><br/>Esta acción no se puede deshacer.`,
@@ -710,8 +712,8 @@ export function PizarraTransferencias() {
   };
 
   const handleDevolverTransferencia = async (item) => {
-    const origen = sucursales.find((s) => mismoId(s.id, item.origen_id))?.nombre ?? "origen";
-    const destino = sucursales.find((s) => mismoId(s.id, item.sucursal_id))?.nombre ?? "destino";
+    const origen = bodegas.find((s) => mismoId(s.id, item.origen_id))?.nombre ?? "origen";
+    const destino = bodegas.find((s) => mismoId(s.id, item.sucursal_id))?.nombre ?? "destino";
     const resultado = await Swal.fire({
       title: "¿Enviar a transitorio?",
       html: `La transferencia <strong>${origen} → ${destino}</strong> saldrá de esta ruta y quedará pendiente en la ruta transitorio de la matriz.`,
@@ -1061,7 +1063,7 @@ export function PizarraTransferencias() {
                                 A transitorio
                               </BtnLista>
                             )}
-                          {puedeGestionarItemTransferencia(sesion, item, rutaActiva) && (
+                          {puedeEliminarItemTransferencia(sesion, item, rutaActiva) && (
                             <BtnLista
                               type="button"
                               $peligro
@@ -1132,11 +1134,13 @@ export function PizarraTransferencias() {
                             >
                               Guía
                             </a>
-                            {puedeGestionarItemTransferencia(
+                            {(esUsuarioMatriz(sesion) &&
+                              mismoId(sesion?.sucursal_id, bodegaActiva.id)) ||
+                            puedeEliminarItemTransferencia(
                               sesion,
                               item,
                               rutaTransitoriaActiva
-                            ) && (
+                            ) ? (
                               <BtnLista
                                 type="button"
                                 $peligro
@@ -1144,7 +1148,7 @@ export function PizarraTransferencias() {
                               >
                                 Eliminar
                               </BtnLista>
-                            )}
+                            ) : null}
                           </div>
                         </FilaPanel>
                       ))

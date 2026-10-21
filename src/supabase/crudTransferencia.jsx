@@ -28,6 +28,13 @@ export function puedeGestionarItemTransferencia(sesion, item, ruta) {
   );
 }
 
+export function puedeEliminarItemTransferencia(sesion, item, ruta) {
+  if (!sesion?.sucursal_id || !item) return false;
+  if (esOrigenDeTransferencia(sesion, item)) return true;
+  if (String(sesion.tipo ?? "").toLowerCase() !== "matriz") return false;
+  return String(sesion.sucursal_id) === String(ruta?.origen_id ?? "");
+}
+
 async function cargarRutaDeTransferencia(rutaId) {
   const { data, error } = await supabase
     .from("ruta")
@@ -260,7 +267,14 @@ export async function eliminarTransferencia(item, { sucursalId, tipoSesion } = {
   if (errorLectura) throw errorLectura;
   if (!actual?.id) throw new Error("No se encontró la transferencia a eliminar.");
 
-  await exigirPermisoGestion({ sucursalSesionId: sucursalId, tipoSesion, item: actual });
+  const ruta = await cargarRutaDeTransferencia(actual.ruta_id);
+  if (!ruta?.id) throw new Error("No se encontró la ruta de la transferencia.");
+  const sesion = { sucursal_id: sucursalId, tipo: tipoSesion };
+  if (!puedeEliminarItemTransferencia(sesion, actual, ruta)) {
+    throw new Error(
+      "Solo la agencia origen o la matriz dueña de esta ruta pueden eliminar la transferencia."
+    );
+  }
 
   const { error } = await supabase.from("transferencia").delete().eq("id", actual.id);
   if (error) throw error;

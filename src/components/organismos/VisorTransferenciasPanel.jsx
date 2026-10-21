@@ -12,6 +12,7 @@ import {
 import { esRutaTransitoria } from "../../supabase/crudRuta";
 import {
   obtenerBufferArchivoTransferencia,
+  puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
 } from "../../supabase/crudTransferencia";
 
@@ -211,6 +212,7 @@ export function VisorTransferenciasPanel({
     ? sucursales.find((item) => mismoId(item.id, actual.sucursal_id))?.nombre ?? "—"
     : "";
   const puedeGestionar = puedeGestionarItemTransferencia(sesion, actual, ruta);
+  const puedeEliminar = puedeEliminarItemTransferencia(sesion, actual, ruta);
   const mostrarDevolver = puedeGestionar && ruta && !esRutaTransitoria(ruta);
 
   return (
@@ -265,19 +267,23 @@ export function VisorTransferenciasPanel({
               </BtnNav>
             </Navegacion>
 
-            {puedeEditar && puedeGestionar && (
+            {puedeEditar && (puedeGestionar || puedeEliminar) && (
               <Acciones>
-                <BtnAccion type="button" onClick={() => onEditar?.(actual)}>
-                  Editar
-                </BtnAccion>
+                {puedeGestionar && (
+                  <BtnAccion type="button" onClick={() => onEditar?.(actual)}>
+                    Editar
+                  </BtnAccion>
+                )}
                 {mostrarDevolver && (
                   <BtnAccion type="button" onClick={() => onDevolver?.(actual)}>
                     A transitorio
                   </BtnAccion>
                 )}
-                <BtnAccion type="button" $peligro onClick={() => onEliminar?.(actual)}>
-                  Eliminar
-                </BtnAccion>
+                {puedeEliminar && (
+                  <BtnAccion type="button" $peligro onClick={() => onEliminar?.(actual)}>
+                    Eliminar
+                  </BtnAccion>
+                )}
               </Acciones>
             )}
           </>
