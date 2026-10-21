@@ -778,7 +778,7 @@ export function PizarraTransferencias() {
       <Cabecera>
         <div>
           <Kicker>Mapa de rutas</Kicker>
-          <Titulo>Transferencias entre bodegas</Titulo>
+          <Titulo>Transferencias entre bodega</Titulo>
           <Subtitulo>
             {cargando
               ? "Cargando sucursales…"
