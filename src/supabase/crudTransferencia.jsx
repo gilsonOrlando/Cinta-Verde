@@ -1,5 +1,9 @@
 import { supabase } from "./supabase.config";
-import { validarPdfTransferencia } from "../utils/validarPdfTransferencia";
+import {
+  extraerNombreDesdeBuffer,
+  extraerTrb,
+  validarPdfTransferencia,
+} from "../utils/validarPdfTransferencia";
 import { asegurarRutaTransitoria } from "./crudRuta";
 
 export const BUCKET_TRANSFERENCIAS = "transferencias";
@@ -18,9 +22,41 @@ function faltaColumnaNombre(error) {
 }
 
 export function nombreDeTransferencia(item) {
-  const nombre = String(item?.nombre ?? "").trim();
-  if (!nombre || /^transferencia$/i.test(nombre)) return "Sin título";
-  return nombre;
+  const crudo = String(item?.nombre ?? "").trim();
+  const trb = extraerTrb(crudo);
+  if (trb) return trb;
+  if (!crudo || /^(transferencia|sin t[ií]tulo)$/i.test(crudo)) return "Sin título";
+  return crudo;
+}
+
+export async function completarNombresTransferencias(items = []) {
+  const resultado = items.map((item) => ({ ...item }));
+  const pendientes = resultado.filter(
+    (item) => item?.transferencia && !extraerTrb(item.nombre)
+  );
+
+  for (let i = 0; i < pendientes.length; i += 3) {
+    const lote = pendientes.slice(i, i + 3);
+    await Promise.all(
+      lote.map(async (item) => {
+        try {
+          const buffer = await obtenerBufferArchivoTransferencia(item.transferencia);
+          const nombre = extraerTrb(await extraerNombreDesdeBuffer(buffer)) || "";
+          if (!nombre) return;
+          item.nombre = nombre;
+          const { error } = await supabase
+            .from("transferencia")
+            .update({ nombre })
+            .eq("id", item.id);
+          if (error && !faltaColumnaNombre(error)) console.error(error);
+        } catch (error) {
+          console.error(error);
+        }
+      })
+    );
+  }
+
+  return resultado;
 }
 
 function validarOrigenYSucursal(origenId, sucursalId) {

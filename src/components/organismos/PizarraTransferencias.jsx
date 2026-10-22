@@ -32,6 +32,7 @@ import {
   devolverTransferenciaATransitorio,
   eliminarTransferencia,
   guiasSubidasPorMatriz,
+  completarNombresTransferencias,
   listarTransferencias,
   moverTransferenciasARuta,
   nombreDeTransferencia,
@@ -295,6 +296,8 @@ export function PizarraTransferencias() {
           try {
             const cargadas = await listarTransferencias();
             if (activo) setTransferencias(cargadas);
+            const conNombres = await completarNombresTransferencias(cargadas);
+            if (activo) setTransferencias(conNombres);
           } catch (errorTransferencias) {
             console.error(errorTransferencias);
           }

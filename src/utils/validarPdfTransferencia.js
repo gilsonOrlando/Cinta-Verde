@@ -46,7 +46,7 @@ function tituloUtil(valor) {
   return titulo.slice(0, 180);
 }
 
-function extraerTrb(texto) {
+export function extraerTrb(texto) {
   const compacto = String(texto ?? "")
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, "");
@@ -104,4 +104,13 @@ async function leerTituloPdf(pdf, file) {
 
   const archivo = String(file?.name ?? "").replace(/\.pdf$/i, "");
   return extraerTrb(archivo) || tituloUtil(archivo) || "Sin título";
+}
+
+export async function extraerNombreDesdeBuffer(buffer, fileName = "") {
+  const pdf = await pdfjsLib.getDocument({ data: buffer.slice(0) }).promise;
+  try {
+    return await leerTituloPdf(pdf, { name: fileName });
+  } finally {
+    pdf.destroy?.();
+  }
 }
