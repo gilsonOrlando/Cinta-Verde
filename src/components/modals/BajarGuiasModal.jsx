@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import styled from "styled-components";
 import { RiDownload2Fill, RiTruckFill } from "react-icons/ri";
+import { nombreDeTransferencia } from "../../supabase/crudTransferencia";
 
 function formatearFecha(fecha) {
   const texto = String(fecha ?? "").slice(0, 10);
@@ -69,6 +70,13 @@ export function BajarGuiasModal({
                         ? "Sin guías de tu matriz"
                         : `${cantidad} guía${cantidad === 1 ? "" : "s"} de tu matriz`}
                     </em>
+                    {cantidad > 0 && (
+                      <NombresGuias>
+                        {ruta.guias.map((item) => (
+                          <li key={item.id}>{nombreDeTransferencia(item)}</li>
+                        ))}
+                      </NombresGuias>
+                    )}
                   </div>
                   <BtnRuta
                     type="button"
@@ -186,6 +194,18 @@ const RutaCard = styled.div`
     font-size: 0.78rem;
     line-height: 1.3;
     font-style: normal;
+  }
+`;
+
+const NombresGuias = styled.ul`
+  margin: 8px 0 0;
+  padding-left: 16px;
+  color: #3e2723;
+  font-size: 0.76rem;
+  line-height: 1.35;
+
+  li + li {
+    margin-top: 2px;
   }
 `;
 

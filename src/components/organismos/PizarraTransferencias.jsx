@@ -564,7 +564,7 @@ export function PizarraTransferencias() {
       matrizId: sesion?.sucursal_id,
     }).map((item) => ({
       ...item,
-      etiqueta: `${
+      etiqueta: `${nombreDeTransferencia(item)}-${
         bodegas.find((bodega) => String(bodega.id) === String(item.origen_id))?.nombre ??
         "origen"
       }-${
@@ -1034,7 +1034,6 @@ export function PizarraTransferencias() {
                       <FilaPanel key={item.id}>
                         <RiFilePdfFill />
                         <div>
-                          <small>Nombre</small>
                           <strong>{nombreDeTransferencia(item)}</strong>
                           <em>
                             {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
@@ -1115,7 +1114,6 @@ export function PizarraTransferencias() {
                         <FilaPanel key={item.id}>
                           <RiFilePdfFill />
                           <div>
-                            <small>Nombre</small>
                             <strong>{nombreDeTransferencia(item)}</strong>
                             <em>
                               {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
@@ -1783,19 +1781,10 @@ const FilaPanel = styled.div`
     font-size: 0.8rem;
   }
 
-  small {
-    width: 100%;
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #8d7b6e;
-  }
-
   strong {
     width: 100%;
-    color: #1b5e20;
-    font-size: 0.82rem;
+    color: #3e2723;
+    font-size: 0.78rem;
   }
 
   em {
