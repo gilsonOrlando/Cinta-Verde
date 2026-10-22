@@ -1,7 +1,7 @@
 import * as pdfjsLib from "pdfjs-dist";
-import { resolvePublicAsset } from "./resolvePublicAsset";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = resolvePublicAsset("pdf.worker.min.mjs");
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export const TAMANO_MAX_PDF = 5 * 1024 * 1024;
 export const PAGINAS_MAX_PDF = 3;
@@ -46,27 +46,12 @@ function tituloUtil(valor) {
   return titulo.slice(0, 180);
 }
 
-function numeroDesdeTexto(texto) {
-  const limpio = String(texto ?? "")
-    .replace(/\s+/g, " ")
-    .replace(/([A-Z]{2,6})\s*-\s*(\d)/gi, "$1-$2")
-    .toUpperCase();
-
-  const conEtiqueta = limpio.match(
-    /N[UÚ]MERO\s*[:.\-]?\s*(TRB-\d{4,})/
-  );
-  if (conEtiqueta) return conEtiqueta[1];
-
-  const trb = limpio.match(/\b(TRB-\d{4,})\b/);
-  if (trb) return trb[1];
-
-  const trbEspacio = limpio.match(/\bTRB\s+(\d{4,})\b/);
-  if (trbEspacio) return `TRB-${trbEspacio[1]}`;
-
-  const otro = limpio.match(/N[UÚ]MERO\s*[:.\-]?\s*([A-Z]{2,6}-\d{3,})/);
-  if (otro) return otro[1];
-
-  return "";
+function extraerTrb(texto) {
+  const compacto = String(texto ?? "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+  const coincidencia = compacto.match(/TRB(\d{5,})/);
+  return coincidencia ? `TRB-${coincidencia[1]}` : "";
 }
 
 async function textoDelPdf(pdf) {
@@ -75,29 +60,48 @@ async function textoDelPdf(pdf) {
   for (let i = 1; i <= paginas; i += 1) {
     const pagina = await pdf.getPage(i);
     const contenido = await pagina.getTextContent();
-    const fragmentos = contenido.items.map((item) => ("str" in item ? item.str : ""));
-    partes.push(fragmentos.join(" "), fragmentos.join(""));
+    const items = contenido.items.filter((item) => "str" in item && item.str);
+    const ordenados = [...items].sort((a, b) => {
+      const yA = a.transform?.[5] ?? 0;
+      const yB = b.transform?.[5] ?? 0;
+      if (Math.abs(yA - yB) > 8) return yB - yA;
+      return (a.transform?.[4] ?? 0) - (b.transform?.[4] ?? 0);
+    });
+    const lineas = [];
+    let linea = [];
+    let lastY = null;
+    for (const item of ordenados) {
+      const y = Math.round(item.transform?.[5] ?? 0);
+      if (lastY !== null && Math.abs(y - lastY) > 8) {
+        if (linea.length) lineas.push(linea.join(" "));
+        linea = [];
+      }
+      linea.push(item.str);
+      lastY = y;
+    }
+    if (linea.length) lineas.push(linea.join(" "));
+    partes.push(lineas.join("\n"), items.map((item) => item.str).join(" "), items.map((item) => item.str).join(""));
   }
-  return partes.join(" ");
+  return partes.join("\n");
 }
 
 async function leerTituloPdf(pdf, file) {
   try {
     const texto = await textoDelPdf(pdf);
-    const numero = numeroDesdeTexto(texto);
+    const numero = extraerTrb(texto);
     if (numero) return numero;
-  } catch {
-    /* sigue con metadatos o archivo */
+  } catch (error) {
+    console.error("No se pudo leer el número del PDF de transferencia.", error);
   }
 
   try {
     const meta = await pdf.getMetadata();
-    const deMeta = numeroDesdeTexto(meta?.info?.Title) || tituloUtil(meta?.info?.Title);
+    const deMeta = extraerTrb(meta?.info?.Title) || tituloUtil(meta?.info?.Title);
     if (deMeta) return deMeta;
   } catch {
     /* sigue con el nombre de archivo */
   }
 
   const archivo = String(file?.name ?? "").replace(/\.pdf$/i, "");
-  return numeroDesdeTexto(archivo) || tituloUtil(archivo) || "Sin título";
+  return extraerTrb(archivo) || tituloUtil(archivo) || "Sin título";
 }
