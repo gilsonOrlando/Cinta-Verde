@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import styled from "styled-components";
 import { RiDownload2Fill, RiTruckFill } from "react-icons/ri";
-import { nombreDeTransferencia } from "../../supabase/crudTransferencia";
+import { nombreDeGuia, nombreDeTransferencia } from "../../supabase/crudTransferencia";
 
 function formatearFecha(fecha) {
   const texto = String(fecha ?? "").slice(0, 10);
@@ -73,7 +73,11 @@ export function BajarGuiasModal({
                     {cantidad > 0 && (
                       <NombresGuias>
                         {ruta.guias.map((item) => (
-                          <li key={item.id}>{nombreDeTransferencia(item)}</li>
+                          <li key={item.id}>
+                            {nombreDeGuia(item)
+                              ? `${nombreDeGuia(item)} · ${nombreDeTransferencia(item)}`
+                              : nombreDeTransferencia(item)}
+                          </li>
                         ))}
                       </NombresGuias>
                     )}

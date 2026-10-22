@@ -12,6 +12,7 @@ import {
 import { esRutaTransitoria } from "../../supabase/crudRuta";
 import {
   obtenerBufferArchivoTransferencia,
+  nombreDeGuia,
   nombreDeTransferencia,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
@@ -232,7 +233,9 @@ export function VisorTransferenciasPanel({
               <strong>
                 {nombreDeTransferencia(actual)}
                 <span>
-                  {origen} → {destino}
+                  {nombreDeGuia(actual)
+                    ? `${nombreDeGuia(actual)} · ${origen} → ${destino}`
+                    : `${origen} → ${destino}`}
                 </span>
               </strong>
             ) : (

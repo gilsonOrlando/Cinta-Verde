@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import {
+  nombreDeGuia,
   nombreDeTransferencia,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
   urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
+import {
+  inspeccionarPdf,
+  ordenarParTransferenciaGuia,
+} from "../../utils/validarPdfTransferencia";
 import { esRutaTransitoria } from "../../supabase/crudRuta";
 
 function esPdf(file) {
@@ -158,15 +163,49 @@ export function CargarTransferenciaModal({
       return;
     }
 
-    setAviso("");
-    if (pdfs.length >= 2) {
-      setArchivoTransferencia(pdfs[0]);
-      setArchivoGuia(pdfs[1]);
-      return;
-    }
+    void (async () => {
+      try {
+        if (pdfs.length >= 2) {
+          const par = await ordenarParTransferenciaGuia(pdfs[0], pdfs[1]);
+          setArchivoTransferencia(par.archivoTransferencia);
+          setArchivoGuia(par.archivoGuia);
+          setAviso(
+            par.cruzados
+              ? "Se separaron los PDF: transferencia y guía no son el mismo documento."
+              : ""
+          );
+          return;
+        }
 
-    if (destino === "guia") setArchivoGuia(pdfs[0]);
-    else setArchivoTransferencia(pdfs[0]);
+        const info = await inspeccionarPdf(
+          pdfs[0],
+          destino === "guia" ? "Guía" : "Transferencia"
+        );
+        if (info.tipo === "guia") {
+          setArchivoGuia(pdfs[0]);
+          setAviso(
+            destino === "guia"
+              ? ""
+              : "Ese PDF es una guía; se colocó en Guía."
+          );
+          return;
+        }
+        if (info.tipo === "transferencia") {
+          setArchivoTransferencia(pdfs[0]);
+          setAviso(
+            destino === "transferencia"
+              ? ""
+              : "Ese PDF es una transferencia; se colocó en Transferencia."
+          );
+          return;
+        }
+        setAviso("");
+        if (destino === "guia") setArchivoGuia(pdfs[0]);
+        else setArchivoTransferencia(pdfs[0]);
+      } catch (error) {
+        setAviso(error?.message || "No se pudo leer el PDF.");
+      }
+    })();
   };
 
   const handleSubmit = (event) => {
@@ -309,6 +348,7 @@ export function CargarTransferenciaModal({
                     onClick={() => setSeleccionadaId(item.id)}
                   >
                     <strong>{nombreDeTransferencia(item)}</strong>
+                    {nombreDeGuia(item) && <small>{nombreDeGuia(item)}</small>}
                     <em>
                       {nombreSucursal(sucursales, item.origen_id)} →{" "}
                       {nombreSucursal(sucursales, item.sucursal_id)}
@@ -560,6 +600,12 @@ const Tarjeta = styled.button`
     font-size: 0.82rem;
     line-height: 1.25;
     word-break: break-word;
+  }
+
+  small {
+    color: #1565c0;
+    font-size: 0.72rem;
+    font-weight: 700;
   }
 
   em {

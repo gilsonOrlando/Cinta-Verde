@@ -1,8 +1,9 @@
 import { supabase } from "./supabase.config";
 import {
-  extraerNombreDesdeBuffer,
+  extraerNumeroGuia,
   extraerTrb,
-  validarPdfTransferencia,
+  inspeccionarBuffer,
+  ordenarParTransferenciaGuia,
 } from "../utils/validarPdfTransferencia";
 import { asegurarRutaTransitoria } from "./crudRuta";
 
@@ -25,30 +26,78 @@ export function nombreDeTransferencia(item) {
   const crudo = String(item?.nombre ?? "").trim();
   const trb = extraerTrb(crudo);
   if (trb) return trb;
-  if (!crudo || /^(transferencia|sin t[ií]tulo)$/i.test(crudo)) return "Sin título";
+  if (!crudo || /^(transferencia|sin t[ií]tulo|guia|guía)$/i.test(crudo)) return "Sin título";
   return crudo;
+}
+
+export function nombreDeGuia(item) {
+  const crudo = String(item?.nombre_guia ?? "").trim();
+  if (!crudo) return "";
+  if (/^gu[ií]a$/i.test(crudo)) return "";
+  return /^gu[ií]a\s/i.test(crudo) ? crudo : `Guía ${crudo}`;
 }
 
 export async function completarNombresTransferencias(items = []) {
   const resultado = items.map((item) => ({ ...item }));
-  const pendientes = resultado.filter(
-    (item) => item?.transferencia && !extraerTrb(item.nombre)
-  );
 
-  for (let i = 0; i < pendientes.length; i += 3) {
-    const lote = pendientes.slice(i, i + 3);
+  for (let i = 0; i < resultado.length; i += 2) {
+    const lote = resultado.slice(i, i + 2);
     await Promise.all(
       lote.map(async (item) => {
+        if (!item?.transferencia && !item?.guia) return;
         try {
-          const buffer = await obtenerBufferArchivoTransferencia(item.transferencia);
-          const nombre = extraerTrb(await extraerNombreDesdeBuffer(buffer)) || "";
-          if (!nombre) return;
-          item.nombre = nombre;
+          const [infoT, infoG] = await Promise.all([
+            item.transferencia
+              ? inspeccionarBuffer(
+                  await obtenerBufferArchivoTransferencia(item.transferencia),
+                  item.transferencia
+                )
+              : null,
+            item.guia
+              ? inspeccionarBuffer(
+                  await obtenerBufferArchivoTransferencia(item.guia),
+                  item.guia
+                )
+              : null,
+          ]);
+
+          const deltaT = (infoT?.puntaje.guia ?? 0) - (infoT?.puntaje.transferencia ?? 0);
+          const deltaG = (infoG?.puntaje.guia ?? 0) - (infoG?.puntaje.transferencia ?? 0);
+          const cruzados = Boolean(infoT && infoG && deltaT > 0 && deltaG < 0);
+          const nombreAntes = item.nombre;
+
+          if (cruzados) {
+            const pathT = item.transferencia;
+            item.transferencia = item.guia;
+            item.guia = pathT;
+            item.nombre = infoG.trb || item.nombre;
+            item.nombre_guia = infoT.guia || extraerNumeroGuia(infoT.texto);
+          } else {
+            if (infoT?.trb) item.nombre = infoT.trb;
+            item.nombre_guia = infoG?.guia || extraerNumeroGuia(infoG?.texto);
+          }
+
+          if (!cruzados && item.nombre === nombreAntes) return;
+
+          const cambios = {
+            transferencia: item.transferencia,
+            guia: item.guia,
+            nombre: item.nombre,
+          };
           const { error } = await supabase
             .from("transferencia")
-            .update({ nombre })
+            .update(cambios)
             .eq("id", item.id);
-          if (error && !faltaColumnaNombre(error)) console.error(error);
+          if (error && faltaColumnaNombre(error)) {
+            const { nombre: _omitido, ...sinNombre } = cambios;
+            const segundo = await supabase
+              .from("transferencia")
+              .update(sinNombre)
+              .eq("id", item.id);
+            if (segundo.error) console.error(segundo.error);
+          } else if (error) {
+            console.error(error);
+          }
         } catch (error) {
           console.error(error);
         }
@@ -119,7 +168,10 @@ async function exigirPermisoGestion({ sucursalSesionId, tipoSesion, item }) {
 export function urlArchivoTransferencia(path) {
   if (!path) return "";
   const { data } = supabase.storage.from(BUCKET_TRANSFERENCIAS).getPublicUrl(path);
-  return data?.publicUrl ?? "";
+  const url = data?.publicUrl ?? "";
+  if (!url) return "";
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}v=${encodeURIComponent(path.split("/").pop() ?? "pdf")}`;
 }
 
 export async function obtenerBufferArchivoTransferencia(path) {
@@ -177,23 +229,21 @@ export async function crearTransferencia({
   if (!rutaId) throw new Error("Selecciona una ruta para cargar la transferencia.");
   validarOrigenYSucursal(origenId, sucursalId);
 
-  const nombre = await validarPdfTransferencia(archivoTransferencia, "Transferencia");
-  await validarPdfTransferencia(archivoGuia, "Guía");
-
+  const par = await ordenarParTransferenciaGuia(archivoTransferencia, archivoGuia);
   const id = crypto.randomUUID();
-  const pathTransferencia = `${rutaId}/${id}/transferencia.pdf`;
-  const pathGuia = `${rutaId}/${id}/guia.pdf`;
+  const pathTransferencia = `${rutaId}/${id}/transferencia-${id}.pdf`;
+  const pathGuia = `${rutaId}/${id}/guia-${id}.pdf`;
 
   try {
-    await subirPdf(pathTransferencia, archivoTransferencia);
-    await subirPdf(pathGuia, archivoGuia);
+    await subirPdf(pathTransferencia, par.archivoTransferencia);
+    await subirPdf(pathGuia, par.archivoGuia);
 
     const fila = {
       id,
       ruta_id: rutaId,
       origen_id: origenId,
       sucursal_id: sucursalId,
-      nombre,
+      nombre: par.nombre,
       transferencia: pathTransferencia,
       guia: pathGuia,
     };
@@ -211,11 +261,11 @@ export async function crearTransferencia({
         .select(CAMPOS_SIN_NOMBRE)
         .single();
       if (segundo.error) throw segundo.error;
-      return { ...segundo.data, nombre };
+      return { ...segundo.data, nombre: par.nombre, nombre_guia: par.nombreGuia };
     }
 
     if (error) throw error;
-    return data;
+    return { ...data, nombre_guia: par.nombreGuia };
   } catch (error) {
     await borrarArchivos([pathTransferencia, pathGuia]);
     throw error;
@@ -236,7 +286,7 @@ export async function actualizarTransferencia({
 
   const { data: actual, error: errorLectura } = await supabase
     .from("transferencia")
-    .select("id, origen_id, ruta_id")
+    .select("id, origen_id, ruta_id, transferencia, guia")
     .eq("id", id)
     .maybeSingle();
 
@@ -246,31 +296,34 @@ export async function actualizarTransferencia({
   await exigirPermisoGestion({ sucursalSesionId, tipoSesion, item: actual });
   validarOrigenYSucursal(actual.origen_id, sucursalId);
 
-  const nombre = await validarPdfTransferencia(archivoTransferencia, "Transferencia");
-  await validarPdfTransferencia(archivoGuia, "Guía");
-
-  const pathTransferencia = `${rutaId}/${id}/transferencia.pdf`;
-  const pathGuia = `${rutaId}/${id}/guia.pdf`;
+  const par = await ordenarParTransferenciaGuia(archivoTransferencia, archivoGuia);
+  const marca = crypto.randomUUID();
+  const pathTransferencia = `${rutaId}/${id}/transferencia-${marca}.pdf`;
+  const pathGuia = `${rutaId}/${id}/guia-${marca}.pdf`;
+  const anteriores = [actual.transferencia, actual.guia];
 
   const { error: errorT } = await supabase.storage
     .from(BUCKET_TRANSFERENCIAS)
-    .upload(pathTransferencia, archivoTransferencia, {
+    .upload(pathTransferencia, par.archivoTransferencia, {
       contentType: "application/pdf",
-      upsert: true,
+      upsert: false,
     });
   if (errorT) throw errorT;
 
   const { error: errorG } = await supabase.storage
     .from(BUCKET_TRANSFERENCIAS)
-    .upload(pathGuia, archivoGuia, {
+    .upload(pathGuia, par.archivoGuia, {
       contentType: "application/pdf",
-      upsert: true,
+      upsert: false,
     });
-  if (errorG) throw errorG;
+  if (errorG) {
+    await borrarArchivos([pathTransferencia]);
+    throw errorG;
+  }
 
   const cambios = {
     sucursal_id: sucursalId,
-    nombre,
+    nombre: par.nombre,
     transferencia: pathTransferencia,
     guia: pathGuia,
   };
@@ -290,11 +343,13 @@ export async function actualizarTransferencia({
       .select(CAMPOS_SIN_NOMBRE)
       .single();
     if (segundo.error) throw segundo.error;
-    return { ...segundo.data, nombre };
+    await borrarArchivos(anteriores);
+    return { ...segundo.data, nombre: par.nombre, nombre_guia: par.nombreGuia };
   }
 
   if (error) throw error;
-  return data;
+  await borrarArchivos(anteriores);
+  return { ...data, nombre_guia: par.nombreGuia };
 }
 
 export async function moverTransferenciasARuta({ ids, rutaId }) {

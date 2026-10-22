@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { RiFilePdfFill, RiTruckFill } from "react-icons/ri";
 import {
+  nombreDeGuia,
   nombreDeTransferencia,
   urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
@@ -129,6 +130,7 @@ export function AsignarTransferenciasModal({
                       <RiFilePdfFill />
                       <div>
                         <strong>{nombreDeTransferencia(item)}</strong>
+                        {nombreDeGuia(item) && <small>{nombreDeGuia(item)}</small>}
                         <em>
                           {nombreDe(nombresSucursal, item.origen_id)} →{" "}
                           {nombreDe(nombresSucursal, item.sucursal_id)}
@@ -360,6 +362,13 @@ const Item = styled.div`
   strong {
     width: 100%;
     color: #1b5e20;
+  }
+
+  small {
+    width: 100%;
+    color: #1565c0;
+    font-size: 0.72rem;
+    font-weight: 700;
   }
 
   em {

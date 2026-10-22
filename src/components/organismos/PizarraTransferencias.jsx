@@ -35,6 +35,7 @@ import {
   completarNombresTransferencias,
   listarTransferencias,
   moverTransferenciasARuta,
+  nombreDeGuia,
   nombreDeTransferencia,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
@@ -567,7 +568,7 @@ export function PizarraTransferencias() {
       matrizId: sesion?.sucursal_id,
     }).map((item) => ({
       ...item,
-      etiqueta: `${nombreDeTransferencia(item)}-${
+      etiqueta: `${nombreDeGuia(item) || "guia"}-${nombreDeTransferencia(item)}-${
         bodegas.find((bodega) => String(bodega.id) === String(item.origen_id))?.nombre ??
         "origen"
       }-${
@@ -1038,6 +1039,7 @@ export function PizarraTransferencias() {
                         <RiFilePdfFill />
                         <div>
                           <strong>{nombreDeTransferencia(item)}</strong>
+                          {nombreDeGuia(item) && <small>{nombreDeGuia(item)}</small>}
                           <em>
                             {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
                               ?.nombre ?? "—"}{" "}
@@ -1118,6 +1120,7 @@ export function PizarraTransferencias() {
                           <RiFilePdfFill />
                           <div>
                             <strong>{nombreDeTransferencia(item)}</strong>
+                            {nombreDeGuia(item) && <small>{nombreDeGuia(item)}</small>}
                             <em>
                               {bodegas.find((bodega) => mismoId(bodega.id, item.origen_id))
                                 ?.nombre ?? "—"}{" "}
@@ -1788,6 +1791,13 @@ const FilaPanel = styled.div`
     width: 100%;
     color: #3e2723;
     font-size: 0.78rem;
+  }
+
+  small {
+    width: 100%;
+    color: #1565c0;
+    font-size: 0.72rem;
+    font-weight: 700;
   }
 
   em {
