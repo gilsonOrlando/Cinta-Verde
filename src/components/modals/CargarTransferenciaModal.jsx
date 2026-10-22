@@ -105,7 +105,13 @@ export function CargarTransferenciaModal({
   const [sucursalId, setSucursalId] = useState("");
   const [aviso, setAviso] = useState("");
   const [editandoId, setEditandoId] = useState(transferenciaEdicionId);
+  const [seleccionadaId, setSeleccionadaId] = useState(
+    transferenciaEdicionId || transferencias[0]?.id || ""
+  );
   const itemEditando = transferencias.find((item) => mismoId(item.id, editandoId));
+  const itemSeleccionado = transferencias.find((item) =>
+    mismoId(item.id, seleccionadaId)
+  );
   const origenId = itemEditando?.origen_id || sesion?.sucursal_id || "";
   const origenNombre =
     nombreSucursal(sucursales, origenId) !== "—"
@@ -119,8 +125,19 @@ export function CargarTransferenciaModal({
     if (!transferenciaEdicionId) return;
     const item = transferencias.find((actual) => mismoId(actual.id, transferenciaEdicionId));
     setEditandoId(transferenciaEdicionId);
+    setSeleccionadaId(transferenciaEdicionId);
     setSucursalId(item?.sucursal_id ?? "");
   }, [transferenciaEdicionId]);
+
+  useEffect(() => {
+    if (transferencias.length === 0) {
+      setSeleccionadaId("");
+      return;
+    }
+    if (!transferencias.some((item) => mismoId(item.id, seleccionadaId))) {
+      setSeleccionadaId(transferenciaEdicionId || transferencias[0].id);
+    }
+  }, [transferencias, transferenciaEdicionId, seleccionadaId]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -244,93 +261,79 @@ export function CargarTransferenciaModal({
 
           {transferencias.length > 0 && (
             <Lista>
-              <span>Cargadas en esta ruta · {transferencias.length}</span>
-              <ListaScroll>
-                {transferencias.map((item) => {
-                  const puedeGestionar = puedeGestionarItemTransferencia(sesion, item, ruta);
-                  const puedeEliminar = puedeEliminarItemTransferencia(sesion, item, ruta);
-                  return (
-                    <Fila key={item.id} $activa={mismoId(editandoId, item.id)}>
-                      <DatosFila>
-                        <small>Nombre</small>
-                        <strong>{nombreDeTransferencia(item)}</strong>
-                        <em>
-                          {nombreSucursal(sucursales, item.origen_id)} →{" "}
-                          {nombreSucursal(sucursales, item.sucursal_id)}
-                        </em>
-                        <Enlaces>
-                          <a
-                            href={urlArchivoTransferencia(item.transferencia)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Transferencia
-                          </a>
-                          <a href={urlArchivoTransferencia(item.guia)} target="_blank" rel="noreferrer">
-                            Guía
-                          </a>
-                        </Enlaces>
-                      </DatosFila>
-                      {puedeEditar && (
-                        <AccionesFila>
-                          <BtnTexto
-                            type="button"
-                            disabled={guardando}
-                            onClick={() => {
-                              if (!puedeGestionar) {
-                                setAviso(
-                                  "Solo la agencia origen o la matriz de la ruta pueden editar esta transferencia."
-                                );
-                                return;
-                              }
-                              setAviso("");
-                              setEditandoId(item.id);
-                              setSucursalId(item.sucursal_id ?? "");
-                            }}
-                          >
-                            {mismoId(editandoId, item.id) ? "Editando" : "Editar"}
-                          </BtnTexto>
-                          {!esRutaTransitoria(ruta) && (
-                            <BtnTexto
-                              type="button"
-                              disabled={guardando}
-                              onClick={() => {
-                                if (!puedeGestionar) {
-                                  setAviso(
-                                    "Solo la agencia origen o la matriz de la ruta pueden enviar esta transferencia a transitorio."
-                                  );
-                                  return;
-                                }
-                                setAviso("");
-                                onDevolver?.(item);
-                              }}
-                            >
-                              A transitorio
-                            </BtnTexto>
-                          )}
-                          <BtnTexto
-                            type="button"
-                            $peligro
-                            disabled={guardando}
-                            onClick={() => {
-                              if (!puedeEliminar) {
-                                setAviso(
-                                  "Solo la agencia origen o la matriz dueña de esta ruta pueden eliminar la transferencia."
-                                );
-                                return;
-                              }
-                              setAviso("");
-                              onEliminar?.(item);
-                            }}
-                          >
-                            Eliminar
-                          </BtnTexto>
-                        </AccionesFila>
+              <CabeceraLista>
+                <span>Cargadas en esta ruta</span>
+                {puedeEditar && itemSeleccionado && (
+                  <AccionesLista>
+                    {puedeGestionarItemTransferencia(sesion, itemSeleccionado, ruta) && (
+                      <BtnTexto
+                        type="button"
+                        disabled={guardando}
+                        onClick={() => {
+                          setEditandoId(itemSeleccionado.id);
+                          setSucursalId(itemSeleccionado.sucursal_id ?? "");
+                        }}
+                      >
+                        {mismoId(editandoId, itemSeleccionado.id) ? "Editando" : "Editar"}
+                      </BtnTexto>
+                    )}
+                    {puedeGestionarItemTransferencia(sesion, itemSeleccionado, ruta) &&
+                      !esRutaTransitoria(ruta) && (
+                        <BtnTexto
+                          type="button"
+                          disabled={guardando}
+                          onClick={() => onDevolver?.(itemSeleccionado)}
+                        >
+                          A transitorio
+                        </BtnTexto>
                       )}
-                    </Fila>
-                  );
-                })}
-              </ListaScroll>
+                    {puedeEliminarItemTransferencia(sesion, itemSeleccionado, ruta) && (
+                      <BtnTexto
+                        type="button"
+                        $peligro
+                        disabled={guardando}
+                        onClick={() => onEliminar?.(itemSeleccionado)}
+                      >
+                        Eliminar
+                      </BtnTexto>
+                    )}
+                  </AccionesLista>
+                )}
+              </CabeceraLista>
+              <Carrusel>
+                {transferencias.map((item) => (
+                  <Tarjeta
+                    key={item.id}
+                    type="button"
+                    $activo={mismoId(seleccionadaId, item.id)}
+                    onClick={() => setSeleccionadaId(item.id)}
+                  >
+                    <strong>{nombreDeTransferencia(item)}</strong>
+                    <em>
+                      {nombreSucursal(sucursales, item.origen_id)} →{" "}
+                      {nombreSucursal(sucursales, item.sucursal_id)}
+                    </em>
+                    <Enlaces>
+                      <a
+                        href={urlArchivoTransferencia(item.transferencia)}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        Transferencia
+                      </a>
+                      <a
+                        href={urlArchivoTransferencia(item.guia)}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        Guía
+                      </a>
+                    </Enlaces>
+                  </Tarjeta>
+                ))}
+              </Carrusel>
             </Lista>
           )}
           {!puedeEditar && transferencias.length === 0 && (
@@ -373,7 +376,7 @@ const Overlay = styled.div`
 
 const Dialog = styled.div`
   width: 100%;
-  max-width: 720px;
+  max-width: 760px;
   max-height: min(90vh, 760px);
   overflow: auto;
   background: #fff;
@@ -496,9 +499,16 @@ const Lista = styled.div`
   gap: 8px;
   border-top: 1px solid #eee;
   padding-top: 10px;
-  min-height: 0;
+`;
 
-  > span {
+const CabeceraLista = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  span {
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -507,83 +517,68 @@ const Lista = styled.div`
   }
 `;
 
-const ListaScroll = styled.div`
-  max-height: 220px;
-  overflow-y: auto;
+const AccionesLista = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-right: 4px;
+  align-items: center;
+  gap: 12px;
+`;
+
+const Carrusel = styled.div`
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 10px;
+  scroll-snap-type: x proximity;
 
   &::-webkit-scrollbar {
-    width: 8px;
+    height: 8px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #c5d0c5;
+    background: #bdbdbd;
     border-radius: 999px;
   }
 `;
 
-const Fila = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px 16px;
-  align-items: start;
-  padding: 10px 12px;
-  border: 1px solid ${({ $activa }) => ($activa ? "#81c784" : "#eee")};
-  border-radius: 10px;
-  background: ${({ $activa }) => ($activa ? "#f1f8e9" : "#fafafa")};
-  font-size: 0.86rem;
-
-  @media (max-width: 560px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const DatosFila = styled.div`
+const Tarjeta = styled.button`
+  flex: 0 0 210px;
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
-  min-width: 0;
-
-  small {
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #888;
-  }
+  text-align: left;
+  border: 1px solid ${({ $activo }) => ($activo ? "#2e7d32" : "#e0e0e0")};
+  background: ${({ $activo }) => ($activo ? "#e8f5e9" : "#fafafa")};
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
 
   strong {
     color: #1b5e20;
-    font-size: 0.95rem;
+    font-size: 0.82rem;
+    line-height: 1.25;
     word-break: break-word;
   }
 
   em {
     font-style: normal;
     color: #666;
-    font-size: 0.8rem;
+    font-size: 0.74rem;
   }
 `;
 
 const Enlaces = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
+  gap: 10px;
+  margin-top: 4px;
 
   a {
     color: #2e7d32;
     font-weight: 600;
+    font-size: 0.76rem;
   }
-`;
-
-const AccionesFila = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px 12px;
 `;
 
 const BtnTexto = styled.button`
