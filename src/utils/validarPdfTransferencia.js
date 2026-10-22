@@ -46,34 +46,58 @@ function tituloUtil(valor) {
   return titulo.slice(0, 180);
 }
 
+function numeroDesdeTexto(texto) {
+  const limpio = String(texto ?? "")
+    .replace(/\s+/g, " ")
+    .replace(/([A-Z]{2,6})\s*-\s*(\d)/gi, "$1-$2")
+    .toUpperCase();
+
+  const conEtiqueta = limpio.match(
+    /N[UÚ]MERO\s*[:.\-]?\s*(TRB-\d{4,})/
+  );
+  if (conEtiqueta) return conEtiqueta[1];
+
+  const trb = limpio.match(/\b(TRB-\d{4,})\b/);
+  if (trb) return trb[1];
+
+  const trbEspacio = limpio.match(/\bTRB\s+(\d{4,})\b/);
+  if (trbEspacio) return `TRB-${trbEspacio[1]}`;
+
+  const otro = limpio.match(/N[UÚ]MERO\s*[:.\-]?\s*([A-Z]{2,6}-\d{3,})/);
+  if (otro) return otro[1];
+
+  return "";
+}
+
+async function textoDelPdf(pdf) {
+  const partes = [];
+  const paginas = Math.min(pdf.numPages || 1, PAGINAS_MAX_PDF);
+  for (let i = 1; i <= paginas; i += 1) {
+    const pagina = await pdf.getPage(i);
+    const contenido = await pagina.getTextContent();
+    const fragmentos = contenido.items.map((item) => ("str" in item ? item.str : ""));
+    partes.push(fragmentos.join(" "), fragmentos.join(""));
+  }
+  return partes.join(" ");
+}
+
 async function leerTituloPdf(pdf, file) {
-  let titulo = "";
+  try {
+    const texto = await textoDelPdf(pdf);
+    const numero = numeroDesdeTexto(texto);
+    if (numero) return numero;
+  } catch {
+    /* sigue con metadatos o archivo */
+  }
+
   try {
     const meta = await pdf.getMetadata();
-    titulo = tituloUtil(meta?.info?.Title);
+    const deMeta = numeroDesdeTexto(meta?.info?.Title) || tituloUtil(meta?.info?.Title);
+    if (deMeta) return deMeta;
   } catch {
-    titulo = "";
+    /* sigue con el nombre de archivo */
   }
 
-  if (!titulo) {
-    titulo = tituloUtil(String(file?.name ?? "").replace(/\.pdf$/i, ""));
-  }
-
-  if (!titulo) {
-    try {
-      const pagina = await pdf.getPage(1);
-      const contenido = await pagina.getTextContent();
-      const texto = contenido.items
-        .map((item) => ("str" in item ? item.str : ""))
-        .join(" ");
-      const numero = texto.match(
-        /\b(?:N[uú]mero|No\.?)[:\s]*([A-Z]{2,6}-?\d{3,})\b|\b(TR[A-Z]?-\d{3,})\b/i
-      );
-      if (numero) titulo = tituloUtil((numero[1] || numero[2] || "").toUpperCase());
-    } catch {
-      titulo = "";
-    }
-  }
-
-  return titulo || "Sin título";
+  const archivo = String(file?.name ?? "").replace(/\.pdf$/i, "");
+  return numeroDesdeTexto(archivo) || tituloUtil(archivo) || "Sin título";
 }
