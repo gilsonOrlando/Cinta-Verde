@@ -478,19 +478,32 @@ function dispararDescarga(blob, nombre) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
+export function guiasDeMovimiento(
+  transferencias,
+  { sucursalId, rutaId, sentido = "egresos" } = {}
+) {
+  const id = String(sucursalId ?? "");
+  if (!id) return [];
+  return (transferencias ?? []).filter((item) => {
+    if (!item.guia) return false;
+    if (rutaId && String(item.ruta_id) !== String(rutaId)) return false;
+    if (sentido === "ingresos") return String(item.sucursal_id) === id;
+    return String(item.origen_id) === id;
+  });
+}
+
 export function guiasSubidasPorMatriz(transferencias, { rutaId, matrizId }) {
-  return (transferencias ?? []).filter(
-    (item) =>
-      String(item.ruta_id) === String(rutaId) &&
-      String(item.origen_id) === String(matrizId) &&
-      item.guia
-  );
+  return guiasDeMovimiento(transferencias, {
+    sucursalId: matrizId,
+    rutaId,
+    sentido: "egresos",
+  });
 }
 
 export async function descargarGuiasDeMatriz({ grupos, nombreZip }) {
   const lista = (grupos ?? []).filter((grupo) => grupo.items?.length);
   if (lista.length === 0) {
-    throw new Error("No hay guías subidas por tu matriz para descargar.");
+    throw new Error("No hay guías para descargar.");
   }
 
   const JSZip = (await import("jszip")).default;

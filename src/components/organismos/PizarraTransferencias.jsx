@@ -31,6 +31,7 @@ import {
   descargarGuiasDeMatriz,
   devolverTransferenciaATransitorio,
   eliminarTransferencia,
+  guiasDeMovimiento,
   guiasSubidasPorMatriz,
   completarNombresTransferencias,
   listarTransferencias,
@@ -248,6 +249,7 @@ export function PizarraTransferencias() {
   const [mostrarVisor, setMostrarVisor] = useState(false);
   const [visorTransferenciaId, setVisorTransferenciaId] = useState(null);
   const [mostrarBajarGuias, setMostrarBajarGuias] = useState(false);
+  const [sentidoGuias, setSentidoGuias] = useState("egresos");
   const [rutaBajarId, setRutaBajarId] = useState(null);
   const [descargandoGuias, setDescargandoGuias] = useState(false);
   const menuGestionRef = useRef(null);
@@ -499,6 +501,7 @@ export function PizarraTransferencias() {
 
     if (resultado.isDenied) {
       setRutaBajarId(ruta.id);
+      setSentidoGuias("egresos");
       setMostrarBajarGuias(true);
       return;
     }
@@ -563,10 +566,11 @@ export function PizarraTransferencias() {
     }
   };
 
-  const grupoGuiasDeRuta = (ruta) => {
-    const items = guiasSubidasPorMatriz(transferencias, {
+  const grupoGuiasDeRuta = (ruta, sentido = sentidoGuias) => {
+    const items = guiasDeMovimiento(transferencias, {
+      sucursalId: sesion?.sucursal_id,
       rutaId: ruta.id,
-      matrizId: sesion?.sucursal_id,
+      sentido,
     }).map((item) => ({
       ...item,
       etiqueta: `${nombreDeGuia(item) || "guia"}-${nombreDeTransferencia(item)}-${
@@ -592,7 +596,7 @@ export function PizarraTransferencias() {
       const grupo = grupoGuiasDeRuta(ruta);
       await descargarGuiasDeMatriz({
         grupos: [grupo],
-        nombreZip: `guias-${grupo.nombre}`,
+        nombreZip: `guias-${sentidoGuias}-${grupo.nombre}`,
       });
       toast.success("Guías descargadas.");
     } catch (error) {
@@ -608,7 +612,7 @@ export function PizarraTransferencias() {
     try {
       await descargarGuiasDeMatriz({
         grupos: rutasLista.map((ruta) => grupoGuiasDeRuta(ruta)),
-        nombreZip: `guias-${sesion?.sucursal_nombre ?? "matriz"}`,
+        nombreZip: `guias-${sentidoGuias}-${sesion?.sucursal_nombre ?? "sucursal"}`,
       });
       toast.success("Guías descargadas.");
     } catch (error) {
@@ -820,34 +824,36 @@ export function PizarraTransferencias() {
             </BtnGestion>
             {menuGestionAbierto && (
               <MenuLista role="menu">
-                {puedeGestionar ? (
-                  <>
-                    <MenuItem
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuGestionAbierto(false);
-                        setRutaEdicion(null);
-                        setMostrarRutaModal(true);
-                      }}
-                    >
-                      Ruta
-                    </MenuItem>
-                    <MenuItem
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuGestionAbierto(false);
-                        setRutaBajarId(null);
-                        setMostrarBajarGuias(true);
-                      }}
-                    >
-                      Bajar guías
-                    </MenuItem>
-                  </>
-                ) : (
+                {puedeGestionar && (
+                  <MenuItem
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuGestionAbierto(false);
+                      setRutaEdicion(null);
+                      setMostrarRutaModal(true);
+                    }}
+                  >
+                    Ruta
+                  </MenuItem>
+                )}
+                {puedeEditarTransferencias && (
+                  <MenuItem
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuGestionAbierto(false);
+                      setRutaBajarId(null);
+                      setSentidoGuias("egresos");
+                      setMostrarBajarGuias(true);
+                    }}
+                  >
+                    Bajar guías
+                  </MenuItem>
+                )}
+                {!puedeEditarTransferencias && (
                   <MenuItem type="button" role="menuitem" disabled>
-                    Inicia sesión como matriz para crear rutas
+                    Inicia sesión como agencia o matriz para bajar guías
                   </MenuItem>
                 )}
               </MenuLista>
@@ -1253,15 +1259,28 @@ export function PizarraTransferencias() {
         />
       )}
 
-      {mostrarBajarGuias && puedeGestionar && (
+      {mostrarBajarGuias && puedeEditarTransferencias && (
         <BajarGuiasModal
-          matrizNombre={sesion?.sucursal_nombre}
-          rutas={rutasDeMatriz(sesion?.sucursal_id).map((ruta) => grupoGuiasDeRuta(ruta))}
+          sucursalNombre={sesion?.sucursal_nombre}
+          sentido={sentidoGuias}
+          onSentidoChange={setSentidoGuias}
+          rutas={rutas
+            .map((ruta) => grupoGuiasDeRuta(ruta))
+            .filter(
+              (grupo) =>
+                (grupo.guias?.length ?? 0) > 0 || mismoId(grupo.id, rutaBajarId)
+            )}
           rutaResaltadaId={rutaBajarId}
           descargando={descargandoGuias}
           onDescargarRuta={handleDescargarGuiasRuta}
           onDescargarTodas={() =>
-            handleDescargarTodasGuias(rutasDeMatriz(sesion?.sucursal_id))
+            handleDescargarTodasGuias(
+              rutas.filter(
+                (ruta) =>
+                  grupoGuiasDeRuta(ruta).guias.length > 0 ||
+                  mismoId(ruta.id, rutaBajarId)
+              )
+            )
           }
           onClose={() => {
             if (!descargandoGuias) {

@@ -11,7 +11,9 @@ function formatearFecha(fecha) {
 }
 
 export function BajarGuiasModal({
-  matrizNombre,
+  sucursalNombre,
+  sentido = "egresos",
+  onSentidoChange,
   rutas = [],
   rutaResaltadaId,
   descargando,
@@ -42,14 +44,31 @@ export function BajarGuiasModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="bajar-guias-titulo">Bajar guías</h2>
+        <CampoSentido>
+          <label htmlFor="sentido-guias">Movimiento</label>
+          <select
+            id="sentido-guias"
+            value={sentido}
+            disabled={descargando}
+            onChange={(event) => onSentidoChange?.(event.target.value)}
+          >
+            <option value="egresos">Egresos · salen a otras agencias o matriz</option>
+            <option value="ingresos">Ingresos · llegan de otras agencias o matriz</option>
+          </select>
+        </CampoSentido>
         <p>
-          Solo se descargan las guías de transferencias que subió{" "}
-          <strong>{matrizNombre}</strong>. Las que cargó una agencia no se incluyen.
+          {sentido === "ingresos"
+            ? `Guías de transferencias que entran a ${sucursalNombre || "tu sucursal"}.`
+            : `Guías de transferencias que salen de ${sucursalNombre || "tu sucursal"}.`}
         </p>
 
         <Lista>
           {rutas.length === 0 ? (
-            <Vacio>No hay rutas creadas para descargar.</Vacio>
+            <Vacio>
+              {sentido === "ingresos"
+                ? "No hay guías de ingreso para descargar."
+                : "No hay guías de egreso para descargar."}
+            </Vacio>
           ) : (
             rutas.map((ruta) => {
               const cantidad = ruta.guias?.length ?? 0;
@@ -67,8 +86,12 @@ export function BajarGuiasModal({
                     </small>
                     <em>
                       {cantidad === 0
-                        ? "Sin guías de tu matriz"
-                        : `${cantidad} guía${cantidad === 1 ? "" : "s"} de tu matriz`}
+                        ? sentido === "ingresos"
+                          ? "Sin guías de ingreso"
+                          : "Sin guías de egreso"
+                        : `${cantidad} guía${cantidad === 1 ? "" : "s"} de ${
+                            sentido === "ingresos" ? "ingreso" : "egreso"
+                          }`}
                     </em>
                     {cantidad > 0 && (
                       <NombresGuias>
@@ -146,6 +169,42 @@ const Dialog = styled.div`
     color: #666;
     font-size: 0.88rem;
     line-height: 1.45;
+  }
+`;
+
+const CampoSentido = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+
+  label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #666;
+  }
+
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #222;
+    background: #fff;
+
+    &:disabled {
+      background: #f5f5f5;
+      color: #555;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #2e7d32;
+      box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.15);
+    }
   }
 `;
 
