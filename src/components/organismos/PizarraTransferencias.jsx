@@ -246,6 +246,7 @@ export function PizarraTransferencias() {
   const [matrizAsignar, setMatrizAsignar] = useState(null);
   const [guardandoAsignar, setGuardandoAsignar] = useState(false);
   const [mostrarVisor, setMostrarVisor] = useState(false);
+  const [visorTransferenciaId, setVisorTransferenciaId] = useState(null);
   const [mostrarBajarGuias, setMostrarBajarGuias] = useState(false);
   const [rutaBajarId, setRutaBajarId] = useState(null);
   const [descargandoGuias, setDescargandoGuias] = useState(false);
@@ -632,6 +633,11 @@ export function PizarraTransferencias() {
     setRutaCarga(ruta);
     setEditarTransferenciaId(item.id);
     setMostrarCargaModal(true);
+  };
+
+  const handleAbrirVisor = (item = null) => {
+    setVisorTransferenciaId(item?.id ?? null);
+    setMostrarVisor(true);
   };
 
   const handleGuardarTransferencia = async ({
@@ -1021,7 +1027,7 @@ export function PizarraTransferencias() {
                 type="button"
                 title="Verificar transferencias"
                 aria-label="Verificar transferencias"
-                onClick={() => setMostrarVisor(true)}
+                onClick={() => handleAbrirVisor()}
               >
                 <img src={ICONO_VERIFICAR_TRANSFERENCIAS} alt="" />
                 {transferenciasDeRuta(rutaActiva.id).length > 0 && (
@@ -1049,8 +1055,10 @@ export function PizarraTransferencias() {
                           </em>
                           <a
                             href={urlArchivoTransferencia(item.transferencia)}
-                            target="_blank"
-                            rel="noreferrer"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              handleAbrirVisor(item);
+                            }}
                           >
                             Transferencia
                           </a>
@@ -1100,7 +1108,7 @@ export function PizarraTransferencias() {
                   type="button"
                   title="Verificar transferencias pendientes"
                   aria-label="Verificar transferencias pendientes"
-                  onClick={() => setMostrarVisor(true)}
+                  onClick={() => handleAbrirVisor()}
                 >
                   <img src={ICONO_VERIFICAR_TRANSFERENCIAS} alt="" />
                   {transferenciasDeMatriz.length > 0 && (
@@ -1131,8 +1139,10 @@ export function PizarraTransferencias() {
                             </em>
                             <a
                               href={urlArchivoTransferencia(item.transferencia)}
-                              target="_blank"
-                              rel="noreferrer"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                handleAbrirVisor(item);
+                              }}
                             >
                               Transferencia
                             </a>
@@ -1226,6 +1236,7 @@ export function PizarraTransferencias() {
           transferencias={
             rutaActiva ? transferenciasDeRuta(rutaActiva.id) : transferenciasDeMatriz
           }
+          transferenciaInicialId={visorTransferenciaId}
           ruta={rutaActiva ?? rutaTransitoriaActiva}
           sucursales={bodegas}
           sesion={sesion}
@@ -1235,7 +1246,10 @@ export function PizarraTransferencias() {
           }
           onEliminar={handleEliminarTransferencia}
           onDevolver={handleDevolverTransferencia}
-          onClose={() => setMostrarVisor(false)}
+          onClose={() => {
+            setMostrarVisor(false);
+            setVisorTransferenciaId(null);
+          }}
         />
       )}
 

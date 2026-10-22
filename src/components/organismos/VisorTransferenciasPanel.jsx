@@ -170,6 +170,7 @@ function PdfHoja({ path }) {
 export function VisorTransferenciasPanel({
   titulo,
   transferencias = [],
+  transferenciaInicialId = null,
   ruta,
   sucursales = [],
   sesion,
@@ -180,6 +181,7 @@ export function VisorTransferenciasPanel({
   onClose,
 }) {
   const [indice, setIndice] = useState(0);
+  const ids = transferencias.map((item) => item.id).join(",");
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -195,14 +197,10 @@ export function VisorTransferenciasPanel({
   }, [onClose]);
 
   useEffect(() => {
-    setIndice(0);
-  }, [ruta?.id]);
-
-  useEffect(() => {
-    if (indice > transferencias.length - 1) {
-      setIndice(Math.max(0, transferencias.length - 1));
-    }
-  }, [transferencias.length, indice]);
+    const lista = ids ? ids.split(",") : [];
+    const i = lista.findIndex((id) => mismoId(id, transferenciaInicialId));
+    setIndice(i >= 0 ? i : 0);
+  }, [ruta?.id, transferenciaInicialId, ids]);
 
   const actual =
     transferencias.length > 0
@@ -249,7 +247,10 @@ export function VisorTransferenciasPanel({
 
         {actual && (
           <>
-            <PdfHoja path={actual.transferencia} />
+            <PdfHoja
+              key={`${actual.id}:${actual.transferencia}`}
+              path={actual.transferencia}
+            />
 
             <Navegacion>
               <BtnNav

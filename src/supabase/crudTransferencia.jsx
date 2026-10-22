@@ -171,11 +171,19 @@ export function urlArchivoTransferencia(path) {
   const url = data?.publicUrl ?? "";
   if (!url) return "";
   const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}v=${encodeURIComponent(path.split("/").pop() ?? "pdf")}`;
+  return `${url}${sep}v=${encodeURIComponent(path)}`;
 }
 
 export async function obtenerBufferArchivoTransferencia(path) {
   if (!path) throw new Error("No hay archivo para previsualizar.");
+  const publico = urlArchivoTransferencia(path);
+  try {
+    const respuesta = await fetch(publico, { cache: "no-store" });
+    if (respuesta.ok) return await respuesta.arrayBuffer();
+  } catch (error) {
+    console.error(error);
+  }
+
   const { data, error } = await supabase.storage
     .from(BUCKET_TRANSFERENCIAS)
     .download(path);
