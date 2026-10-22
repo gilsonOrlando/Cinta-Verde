@@ -52,8 +52,8 @@ export function BajarGuiasModal({
             disabled={descargando}
             onChange={(event) => onSentidoChange?.(event.target.value)}
           >
-            <option value="egresos">Egresos · salen a otras agencias o matriz</option>
-            <option value="ingresos">Ingresos · llegan de otras agencias o matriz</option>
+            <option value="egresos">Egresos</option>
+            <option value="ingresos">Ingresos</option>
           </select>
         </CampoSentido>
         <p>
