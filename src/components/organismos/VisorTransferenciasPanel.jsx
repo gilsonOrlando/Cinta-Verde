@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
+import toast from "react-hot-toast";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
@@ -30,6 +31,44 @@ export const ICONO_VERIFICAR_TRANSFERENCIAS = "/iconos/verificar-transferencias.
 
 function mismoId(a, b) {
   return String(a ?? "") === String(b ?? "");
+}
+
+async function imprimirPdfTransferencia(path) {
+  if (!path) throw new Error("No hay PDF de transferencia para imprimir.");
+  const buffer = await obtenerBufferArchivoTransferencia(path);
+  const url = URL.createObjectURL(new Blob([buffer], { type: "application/pdf" }));
+
+  await new Promise((resolve, reject) => {
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        resolve();
+      } catch (error) {
+        reject(error);
+      } finally {
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+          iframe.remove();
+        }, 120000);
+      }
+    };
+    iframe.onerror = () => {
+      URL.revokeObjectURL(url);
+      iframe.remove();
+      reject(new Error("No se pudo abrir el PDF para imprimir."));
+    };
+    iframe.src = url;
+    document.body.appendChild(iframe);
+  });
 }
 
 function PdfHoja({ path }) {
@@ -181,6 +220,7 @@ export function VisorTransferenciasPanel({
   onClose,
 }) {
   const [indice, setIndice] = useState(0);
+  const [imprimiendo, setImprimiendo] = useState(false);
   const ids = transferencias.map((item) => item.id).join(",");
 
   useEffect(() => {
@@ -276,25 +316,40 @@ export function VisorTransferenciasPanel({
               </BtnNav>
             </Navegacion>
 
-            {puedeEditar && (puedeGestionar || puedeEliminar) && (
-              <Acciones>
-                {puedeGestionar && (
-                  <BtnAccion type="button" onClick={() => onEditar?.(actual)}>
-                    Editar
-                  </BtnAccion>
-                )}
-                {mostrarDevolver && (
-                  <BtnAccion type="button" onClick={() => onDevolver?.(actual)}>
-                    A transitorio
-                  </BtnAccion>
-                )}
-                {puedeEliminar && (
-                  <BtnAccion type="button" $peligro onClick={() => onEliminar?.(actual)}>
-                    Eliminar
-                  </BtnAccion>
-                )}
-              </Acciones>
-            )}
+            <Acciones>
+              <BtnAccion
+                type="button"
+                disabled={imprimiendo}
+                onClick={async () => {
+                  setImprimiendo(true);
+                  try {
+                    await imprimirPdfTransferencia(actual.transferencia);
+                  } catch (error) {
+                    console.error(error);
+                    toast.error(error?.message || "No se pudo imprimir la transferencia.");
+                  } finally {
+                    setImprimiendo(false);
+                  }
+                }}
+              >
+                {imprimiendo ? "Imprimiendo..." : "Imprimir"}
+              </BtnAccion>
+              {puedeEditar && puedeGestionar && (
+                <BtnAccion type="button" onClick={() => onEditar?.(actual)}>
+                  Editar
+                </BtnAccion>
+              )}
+              {puedeEditar && mostrarDevolver && (
+                <BtnAccion type="button" onClick={() => onDevolver?.(actual)}>
+                  A transitorio
+                </BtnAccion>
+              )}
+              {puedeEditar && puedeEliminar && (
+                <BtnAccion type="button" $peligro onClick={() => onEliminar?.(actual)}>
+                  Eliminar
+                </BtnAccion>
+              )}
+            </Acciones>
           </>
         )}
       </Dialog>
@@ -513,4 +568,9 @@ const BtnAccion = styled.button`
   font-weight: 700;
   font-size: 0.86rem;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
 `;
