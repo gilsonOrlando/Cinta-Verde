@@ -39,22 +39,31 @@ function tipoDeSucursal(sucursales, id) {
   ).toLowerCase();
 }
 
-function esAgenciaOMatrizDeLaRuta(id, ruta, sucursales) {
-  if (!id) return false;
-  if (mismoId(id, ruta?.origen_id)) return true;
-  if ((ruta?.destinoIds ?? []).some((destinoId) => mismoId(destinoId, id))) {
-    return true;
-  }
-  return tipoDeSucursal(sucursales, id) === "agencia";
+function idsOficialesDeRuta(ruta) {
+  return new Set(
+    [ruta?.origen_id, ...(ruta?.destinoIds ?? [])].filter(Boolean).map((id) => String(id))
+  );
+}
+
+function clasificarMovimiento(item, ruta, sucursales) {
+  const oficiales = idsOficialesDeRuta(ruta);
+  const destEnRuta = oficiales.has(String(item.sucursal_id ?? ""));
+  const origenEnRuta = oficiales.has(String(item.origen_id ?? ""));
+  const destAgencia = tipoDeSucursal(sucursales, item.sucursal_id) === "agencia";
+  const origenAgencia = tipoDeSucursal(sucursales, item.origen_id) === "agencia";
+
+  if (destEnRuta) return "ingresos";
+  if (origenEnRuta) return "egresos";
+  if (destAgencia && origenAgencia) return "egresos";
+  if (destAgencia) return "ingresos";
+  if (origenAgencia) return "egresos";
+  return "";
 }
 
 function filtrarPorMovimiento(items = [], { ruta, sucursales = [], sentido }) {
-  return items.filter((item) => {
-    if (sentido === "ingresos") {
-      return esAgenciaOMatrizDeLaRuta(item.sucursal_id, ruta, sucursales);
-    }
-    return esAgenciaOMatrizDeLaRuta(item.origen_id, ruta, sucursales);
-  });
+  return items.filter(
+    (item) => clasificarMovimiento(item, ruta, sucursales) === sentido
+  );
 }
 
 async function imprimirPdfTransferencia(path) {
@@ -347,8 +356,8 @@ export function VisorTransferenciasPanel({
           </select>
           <small>
             {sentido === "ingresos"
-              ? "Entran a agencias o a la matriz de esta ruta (destino)."
-              : "Las subieron agencias o la matriz de esta ruta (origen)."}
+              ? "Llegan a la matriz o a los destinos de esta ruta."
+              : "Salen de la matriz de esta ruta o las subió una agencia."}
           </small>
         </CampoMovimiento>
 
