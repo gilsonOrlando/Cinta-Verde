@@ -33,30 +33,13 @@ function mismoId(a, b) {
   return String(a ?? "") === String(b ?? "");
 }
 
-function idsDeLaRuta(ruta) {
-  return new Set(
-    [ruta?.origen_id, ...(ruta?.destinoIds ?? [])]
-      .filter(Boolean)
-      .map((id) => String(id))
-  );
-}
-
-function filtrarPorMovimiento(items = [], ruta, sentido) {
-  if (esRutaTransitoria(ruta)) {
-    if (sentido === "ingresos") {
-      return items.filter((item) => mismoId(item.sucursal_id, ruta?.origen_id));
-    }
-    return items.filter((item) => Boolean(item.origen_id));
+function filtrarPorMovimiento(items = [], { ruta, sesion, sentido }) {
+  const sucursalId = sesion?.sucursal_id || ruta?.origen_id;
+  if (!sucursalId) return [];
+  if (sentido === "ingresos") {
+    return items.filter((item) => mismoId(item.sucursal_id, sucursalId));
   }
-
-  const participantes = idsDeLaRuta(ruta);
-  if (participantes.size === 0) return items;
-  return items.filter((item) => {
-    if (sentido === "ingresos") {
-      return participantes.has(String(item.sucursal_id ?? ""));
-    }
-    return participantes.has(String(item.origen_id ?? ""));
-  });
+  return items.filter((item) => mismoId(item.origen_id, sucursalId));
 }
 
 async function imprimirPdfTransferencia(path) {
@@ -249,8 +232,8 @@ export function VisorTransferenciasPanel({
   const [imprimiendo, setImprimiendo] = useState(false);
   const [sentido, setSentido] = useState("ingresos");
   const visibles = useMemo(
-    () => filtrarPorMovimiento(transferencias, ruta, sentido),
-    [transferencias, ruta, sentido]
+    () => filtrarPorMovimiento(transferencias, { ruta, sesion, sentido }),
+    [transferencias, ruta, sesion, sentido]
   );
   const ids = visibles.map((item) => item.id).join(",");
 
@@ -275,9 +258,11 @@ export function VisorTransferenciasPanel({
       setSentido("ingresos");
       return;
     }
-    const enIngresos = filtrarPorMovimiento(transferencias, ruta, "ingresos").some(
-      (item) => mismoId(item.id, inicial.id)
-    );
+    const enIngresos = filtrarPorMovimiento(transferencias, {
+      ruta,
+      sesion,
+      sentido: "ingresos",
+    }).some((item) => mismoId(item.id, inicial.id));
     setSentido(enIngresos ? "ingresos" : "egresos");
   }, [ruta?.id, transferenciaInicialId]);
 
@@ -347,8 +332,8 @@ export function VisorTransferenciasPanel({
           </select>
           <small>
             {sentido === "ingresos"
-              ? "Transferencias cuyo destino es una agencia o la matriz de esta ruta."
-              : "Transferencias que subió una agencia o la matriz de esta ruta."}
+              ? "Entran a tu sucursal: tú eres el destino."
+              : "Salen de tu sucursal: las que subiste como origen."}
           </small>
         </CampoMovimiento>
 
