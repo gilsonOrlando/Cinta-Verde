@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
 import * as pdfjsLib from "pdfjs-dist";
@@ -31,6 +31,26 @@ export const ICONO_VERIFICAR_TRANSFERENCIAS = "/iconos/verificar-transferencias.
 
 function mismoId(a, b) {
   return String(a ?? "") === String(b ?? "");
+}
+
+function filtrarPorMovimiento(items, sucursalId, sentido) {
+  if (!sucursalId) return items;
+  return items.filter((item) =>
+    sentido === "ingresos"
+      ? mismoId(item.sucursal_id, sucursalId)
+      : mismoId(item.origen_id, sucursalId)
+  );
+}
+
+function sentidoInicial(items, sucursalId, transferenciaInicialId) {
+  const actual = items.find((item) => mismoId(item.id, transferenciaInicialId));
+  if (actual && sucursalId) {
+    if (mismoId(actual.sucursal_id, sucursalId)) return "ingresos";
+    if (mismoId(actual.origen_id, sucursalId)) return "egresos";
+  }
+  if (filtrarPorMovimiento(items, sucursalId, "ingresos").length) return "ingresos";
+  if (filtrarPorMovimiento(items, sucursalId, "egresos").length) return "egresos";
+  return "ingresos";
 }
 
 async function imprimirPdfTransferencia(path) {
@@ -210,6 +230,8 @@ export function VisorTransferenciasPanel({
   titulo,
   transferencias = [],
   transferenciaInicialId = null,
+  sucursalId,
+  sucursalNombre,
   ruta,
   sucursales = [],
   sesion,
@@ -219,18 +241,13 @@ export function VisorTransferenciasPanel({
   onDevolver,
   onClose,
 }) {
+  const referenciaId = sucursalId || sesion?.sucursal_id || ruta?.origen_id || "";
+  const [sentido, setSentido] = useState(() =>
+    sentidoInicial(transferencias, referenciaId, transferenciaInicialId)
+  );
   const [indice, setIndice] = useState(0);
   const [imprimiendo, setImprimiendo] = useState(false);
-  const [sentido, setSentido] = useState("ingresos");
-  const sucursalId = sesion?.sucursal_id;
-  const visibles = useMemo(() => {
-    if (!sucursalId) return transferencias;
-    return transferencias.filter((item) =>
-      sentido === "ingresos"
-        ? mismoId(item.sucursal_id, sucursalId)
-        : mismoId(item.origen_id, sucursalId)
-    );
-  }, [transferencias, sucursalId, sentido]);
+  const visibles = filtrarPorMovimiento(transferencias, referenciaId, sentido);
   const ids = visibles.map((item) => item.id).join(",");
 
   useEffect(() => {
@@ -247,28 +264,13 @@ export function VisorTransferenciasPanel({
   }, [onClose]);
 
   useEffect(() => {
-    const inicial = transferencias.find((item) =>
-      mismoId(item.id, transferenciaInicialId)
-    );
-    if (!sucursalId || !inicial) {
-      setSentido("ingresos");
-      return;
-    }
-    if (mismoId(inicial.sucursal_id, sucursalId)) setSentido("ingresos");
-    else if (mismoId(inicial.origen_id, sucursalId)) setSentido("egresos");
-    else setSentido("ingresos");
-  }, [ruta?.id, transferenciaInicialId, sucursalId]);
-
-  useEffect(() => {
     const lista = ids ? ids.split(",") : [];
     const i = lista.findIndex((id) => mismoId(id, transferenciaInicialId));
     setIndice(i >= 0 ? i : 0);
   }, [ruta?.id, transferenciaInicialId, ids]);
 
   const actual =
-    visibles.length > 0
-      ? visibles[Math.min(indice, visibles.length - 1)]
-      : null;
+    visibles.length > 0 ? visibles[Math.min(indice, visibles.length - 1)] : null;
   const origen = actual
     ? sucursales.find((item) => mismoId(item.id, actual.origen_id))?.nombre ?? "—"
     : "";
@@ -301,11 +303,9 @@ export function VisorTransferenciasPanel({
               </strong>
             ) : (
               <em>
-                {sucursalId
-                  ? sentido === "ingresos"
-                    ? "Sin ingresos de mercadería"
-                    : "Sin egresos de mercadería"
-                  : "Sin transferencias para verificar"}
+                {sentido === "ingresos"
+                  ? "Sin ingresos de mercadería en esta ruta"
+                  : "Sin egresos de mercadería en esta ruta"}
               </em>
             )}
           </div>
@@ -314,22 +314,26 @@ export function VisorTransferenciasPanel({
           </BtnCerrar>
         </Cabecera>
 
-        {sucursalId && (
-          <CampoSentido>
-            <label htmlFor="visor-sentido-mercaderia">Movimiento</label>
-            <select
-              id="visor-sentido-mercaderia"
-              value={sentido}
-              onChange={(event) => {
-                setSentido(event.target.value);
-                setIndice(0);
-              }}
-            >
-              <option value="ingresos">Ingreso de mercadería</option>
-              <option value="egresos">Egreso de mercadería</option>
-            </select>
-          </CampoSentido>
-        )}
+        <BarraSentido>
+          <label htmlFor="visor-movimiento">Movimiento</label>
+          <select
+            id="visor-movimiento"
+            value={sentido}
+            onChange={(event) => {
+              setSentido(event.target.value);
+              setIndice(0);
+            }}
+          >
+            <option value="ingresos">Ingresos de mercadería</option>
+            <option value="egresos">Egresos de mercadería</option>
+          </select>
+          <small>
+            {sentido === "ingresos"
+              ? `Entran a ${sucursalNombre || "esta sucursal"} desde agencias o matriz`
+              : `Salen de ${sucursalNombre || "esta sucursal"} hacia agencias o matriz`}
+            {` · ${visibles.length}`}
+          </small>
+        </BarraSentido>
 
         {actual ? (
           <>
@@ -398,13 +402,11 @@ export function VisorTransferenciasPanel({
             </Acciones>
           </>
         ) : (
-          <AvisoVista $claro>
-            {sucursalId
-              ? sentido === "ingresos"
-                ? "No hay ingresos de mercadería (llegan de agencias o matriz)."
-                : "No hay egresos de mercadería (salen a agencias o matriz)."
-              : "Sin transferencias para verificar"}
-          </AvisoVista>
+          <VacioPdf>
+            {sentido === "ingresos"
+              ? "No hay ingresos de mercadería en esta ruta para esta sucursal."
+              : "No hay egresos de mercadería en esta ruta para esta sucursal."}
+          </VacioPdf>
         )}
       </Dialog>
     </Overlay>
@@ -478,13 +480,14 @@ const Cabecera = styled.div`
   }
 `;
 
-const CampoSentido = styled.div`
-  display: flex;
-  flex-direction: column;
+const BarraSentido = styled.div`
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr);
   gap: 6px;
+  flex: 0 0 auto;
 
   label {
-    font-size: 0.76rem;
+    font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -493,12 +496,13 @@ const CampoSentido = styled.div`
 
   select {
     width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #ccc;
+    padding: 9px 12px;
+    border: 1px solid #cfd8dc;
     border-radius: 8px;
     font-size: 0.95rem;
-    color: #222;
-    background: #fff;
+    font-weight: 600;
+    color: #1b5e20;
+    background: #f1f8e9;
 
     &:focus {
       outline: none;
@@ -506,6 +510,26 @@ const CampoSentido = styled.div`
       box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.15);
     }
   }
+
+  small {
+    color: #6d5c50;
+    font-size: 0.76rem;
+    line-height: 1.35;
+  }
+`;
+
+const VacioPdf = styled.p`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 24px;
+  border: 1px dashed #cfd8dc;
+  border-radius: 10px;
+  color: #777;
+  font-size: 0.9rem;
+  text-align: center;
 `;
 
 const BtnCerrar = styled.button`
@@ -591,13 +615,12 @@ const Hoja = styled.div`
 
 const AvisoVista = styled.p`
   margin: auto;
-  color: ${({ $claro }) => ($claro ? "#666" : "#fff")};
+  color: #fff;
   font-size: 0.9rem;
   text-align: center;
-  ${({ $claro }) => $claro && "flex: 1; display: flex; align-items: center; justify-content: center;"}
 
   a {
-    color: ${({ $claro }) => ($claro ? "#2e7d32" : "#c8e6c9")};
+    color: #c8e6c9;
     font-weight: 700;
   }
 `;

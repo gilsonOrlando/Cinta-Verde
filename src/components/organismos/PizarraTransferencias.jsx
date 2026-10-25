@@ -1243,6 +1243,16 @@ export function PizarraTransferencias() {
             rutaActiva ? transferenciasDeRuta(rutaActiva.id) : transferenciasDeMatriz
           }
           transferenciaInicialId={visorTransferenciaId}
+          sucursalId={
+            sesion?.sucursal_id ||
+            (rutaActiva ? rutaActiva.origen_id : bodegaActiva?.id)
+          }
+          sucursalNombre={
+            sesion?.sucursal_nombre ||
+            (rutaActiva
+              ? bodegas.find((item) => mismoId(item.id, rutaActiva.origen_id))?.nombre
+              : bodegaActiva?.nombre)
+          }
           ruta={rutaActiva ?? rutaTransitoriaActiva}
           sucursales={bodegas}
           sesion={sesion}
