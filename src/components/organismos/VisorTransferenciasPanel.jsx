@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
 import * as pdfjsLib from "pdfjs-dist";
@@ -25,7 +25,7 @@ const FRACCION_VISIBLE = 0.62;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.5;
 const ZOOM_PASO = 0.2;
-const ZOOM_PREDETERMINADO = 1.4;
+const ZOOM_PREDETERMINADO = 1.6;
 
 export const ICONO_VERIFICAR_TRANSFERENCIAS = "/iconos/verificar-transferencias.png";
 
@@ -221,7 +221,17 @@ export function VisorTransferenciasPanel({
 }) {
   const [indice, setIndice] = useState(0);
   const [imprimiendo, setImprimiendo] = useState(false);
-  const ids = transferencias.map((item) => item.id).join(",");
+  const [sentido, setSentido] = useState("ingresos");
+  const sucursalId = sesion?.sucursal_id;
+  const visibles = useMemo(() => {
+    if (!sucursalId) return transferencias;
+    return transferencias.filter((item) =>
+      sentido === "ingresos"
+        ? mismoId(item.sucursal_id, sucursalId)
+        : mismoId(item.origen_id, sucursalId)
+    );
+  }, [transferencias, sucursalId, sentido]);
+  const ids = visibles.map((item) => item.id).join(",");
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -237,14 +247,27 @@ export function VisorTransferenciasPanel({
   }, [onClose]);
 
   useEffect(() => {
+    const inicial = transferencias.find((item) =>
+      mismoId(item.id, transferenciaInicialId)
+    );
+    if (!sucursalId || !inicial) {
+      setSentido("ingresos");
+      return;
+    }
+    if (mismoId(inicial.sucursal_id, sucursalId)) setSentido("ingresos");
+    else if (mismoId(inicial.origen_id, sucursalId)) setSentido("egresos");
+    else setSentido("ingresos");
+  }, [ruta?.id, transferenciaInicialId, sucursalId]);
+
+  useEffect(() => {
     const lista = ids ? ids.split(",") : [];
     const i = lista.findIndex((id) => mismoId(id, transferenciaInicialId));
     setIndice(i >= 0 ? i : 0);
   }, [ruta?.id, transferenciaInicialId, ids]);
 
   const actual =
-    transferencias.length > 0
-      ? transferencias[Math.min(indice, transferencias.length - 1)]
+    visibles.length > 0
+      ? visibles[Math.min(indice, visibles.length - 1)]
       : null;
   const origen = actual
     ? sucursales.find((item) => mismoId(item.id, actual.origen_id))?.nombre ?? "—"
@@ -277,7 +300,13 @@ export function VisorTransferenciasPanel({
                 </span>
               </strong>
             ) : (
-              <em>Sin transferencias para verificar</em>
+              <em>
+                {sucursalId
+                  ? sentido === "ingresos"
+                    ? "Sin ingresos de mercadería"
+                    : "Sin egresos de mercadería"
+                  : "Sin transferencias para verificar"}
+              </em>
             )}
           </div>
           <BtnCerrar type="button" aria-label="Cerrar" onClick={onClose}>
@@ -285,10 +314,27 @@ export function VisorTransferenciasPanel({
           </BtnCerrar>
         </Cabecera>
 
-        {actual && (
+        {sucursalId && (
+          <CampoSentido>
+            <label htmlFor="visor-sentido-mercaderia">Movimiento</label>
+            <select
+              id="visor-sentido-mercaderia"
+              value={sentido}
+              onChange={(event) => {
+                setSentido(event.target.value);
+                setIndice(0);
+              }}
+            >
+              <option value="ingresos">Ingreso de mercadería</option>
+              <option value="egresos">Egreso de mercadería</option>
+            </select>
+          </CampoSentido>
+        )}
+
+        {actual ? (
           <>
             <PdfHoja
-              key={`${actual.id}:${actual.transferencia}`}
+              key={`${actual.id}:${actual.transferencia}:${sentido}`}
               path={actual.transferencia}
             />
 
@@ -302,13 +348,13 @@ export function VisorTransferenciasPanel({
                 Atrás
               </BtnNav>
               <Contador>
-                {indice + 1} / {transferencias.length}
+                {indice + 1} / {visibles.length}
               </Contador>
               <BtnNav
                 type="button"
-                disabled={indice >= transferencias.length - 1}
+                disabled={indice >= visibles.length - 1}
                 onClick={() =>
-                  setIndice((prev) => Math.min(transferencias.length - 1, prev + 1))
+                  setIndice((prev) => Math.min(visibles.length - 1, prev + 1))
                 }
               >
                 Siguiente
@@ -351,6 +397,14 @@ export function VisorTransferenciasPanel({
               )}
             </Acciones>
           </>
+        ) : (
+          <AvisoVista $claro>
+            {sucursalId
+              ? sentido === "ingresos"
+                ? "No hay ingresos de mercadería (llegan de agencias o matriz)."
+                : "No hay egresos de mercadería (salen a agencias o matriz)."
+              : "Sin transferencias para verificar"}
+          </AvisoVista>
         )}
       </Dialog>
     </Overlay>
@@ -421,6 +475,36 @@ const Cabecera = styled.div`
   div {
     min-width: 0;
     flex: 1;
+  }
+`;
+
+const CampoSentido = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #666;
+  }
+
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #222;
+    background: #fff;
+
+    &:focus {
+      outline: none;
+      border-color: #2e7d32;
+      box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.15);
+    }
   }
 `;
 
@@ -507,12 +591,13 @@ const Hoja = styled.div`
 
 const AvisoVista = styled.p`
   margin: auto;
-  color: #fff;
+  color: ${({ $claro }) => ($claro ? "#666" : "#fff")};
   font-size: 0.9rem;
   text-align: center;
+  ${({ $claro }) => $claro && "flex: 1; display: flex; align-items: center; justify-content: center;"}
 
   a {
-    color: #c8e6c9;
+    color: ${({ $claro }) => ($claro ? "#2e7d32" : "#c8e6c9")};
     font-weight: 700;
   }
 `;
