@@ -33,13 +33,28 @@ function mismoId(a, b) {
   return String(a ?? "") === String(b ?? "");
 }
 
-function filtrarPorMovimiento(items = [], { ruta, sesion, sentido }) {
-  const sucursalId = sesion?.sucursal_id || ruta?.origen_id;
-  if (!sucursalId) return [];
-  if (sentido === "ingresos") {
-    return items.filter((item) => mismoId(item.sucursal_id, sucursalId));
+function tipoDeSucursal(sucursales, id) {
+  return String(
+    sucursales.find((item) => mismoId(item.id, id))?.tipo ?? ""
+  ).toLowerCase();
+}
+
+function esAgenciaOMatrizDeLaRuta(id, ruta, sucursales) {
+  if (!id) return false;
+  if (mismoId(id, ruta?.origen_id)) return true;
+  if ((ruta?.destinoIds ?? []).some((destinoId) => mismoId(destinoId, id))) {
+    return true;
   }
-  return items.filter((item) => mismoId(item.origen_id, sucursalId));
+  return tipoDeSucursal(sucursales, id) === "agencia";
+}
+
+function filtrarPorMovimiento(items = [], { ruta, sucursales = [], sentido }) {
+  return items.filter((item) => {
+    if (sentido === "ingresos") {
+      return esAgenciaOMatrizDeLaRuta(item.sucursal_id, ruta, sucursales);
+    }
+    return esAgenciaOMatrizDeLaRuta(item.origen_id, ruta, sucursales);
+  });
 }
 
 async function imprimirPdfTransferencia(path) {
@@ -232,8 +247,8 @@ export function VisorTransferenciasPanel({
   const [imprimiendo, setImprimiendo] = useState(false);
   const [sentido, setSentido] = useState("ingresos");
   const visibles = useMemo(
-    () => filtrarPorMovimiento(transferencias, { ruta, sesion, sentido }),
-    [transferencias, ruta, sesion, sentido]
+    () => filtrarPorMovimiento(transferencias, { ruta, sucursales, sentido }),
+    [transferencias, ruta, sucursales, sentido]
   );
   const ids = visibles.map((item) => item.id).join(",");
 
@@ -260,7 +275,7 @@ export function VisorTransferenciasPanel({
     }
     const enIngresos = filtrarPorMovimiento(transferencias, {
       ruta,
-      sesion,
+      sucursales,
       sentido: "ingresos",
     }).some((item) => mismoId(item.id, inicial.id));
     setSentido(enIngresos ? "ingresos" : "egresos");
@@ -332,8 +347,8 @@ export function VisorTransferenciasPanel({
           </select>
           <small>
             {sentido === "ingresos"
-              ? "Entran a tu sucursal: tú eres el destino."
-              : "Salen de tu sucursal: las que subiste como origen."}
+              ? "Entran a agencias o a la matriz de esta ruta (destino)."
+              : "Las subieron agencias o la matriz de esta ruta (origen)."}
           </small>
         </CampoMovimiento>
 
