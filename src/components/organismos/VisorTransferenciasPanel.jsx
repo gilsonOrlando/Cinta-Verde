@@ -43,12 +43,23 @@ function esIngresoTransferencia(item, ruta) {
   return mismoId(item?.sucursal_id, ruta?.origen_id);
 }
 
-function esEgresoTransferencia(item, ruta) {
+function tipoDeSucursal(sucursales, id) {
+  return String(
+    sucursales.find((item) => mismoId(item.id, id))?.tipo ?? ""
+  ).toLowerCase();
+}
+
+function esEgresoTransferencia(item, ruta, sucursales = []) {
   const destinos = destinosDeRuta(ruta);
   const origen = String(item?.origen_id ?? "");
+  const destino = String(item?.sucursal_id ?? "");
   if (!origen) return false;
-  if (destinos.length > 0) return destinos.includes(origen);
-  return mismoId(origen, ruta?.origen_id);
+  if (destinos.length === 0) return mismoId(origen, ruta?.origen_id);
+  if (destinos.includes(origen)) return true;
+  if (destinos.includes(destino)) return false;
+  return (
+    mismoId(destino, ruta?.origen_id) || tipoDeSucursal(sucursales, destino) === "agencia"
+  );
 }
 
 function sentidoPorDefecto({ transferencias, ruta, sesion, transferenciaInicialId }) {
@@ -259,9 +270,9 @@ export function VisorTransferenciasPanel({
       transferencias.filter((item) =>
         sentido === "ingresos"
           ? esIngresoTransferencia(item, ruta)
-          : esEgresoTransferencia(item, ruta)
+          : esEgresoTransferencia(item, ruta, sucursales)
       ),
-    [transferencias, ruta, sentido]
+    [transferencias, ruta, sucursales, sentido]
   );
   const ids = visibles.map((item) => item.id).join(",");
 
@@ -348,7 +359,7 @@ export function VisorTransferenciasPanel({
           <small>
             {sentido === "ingresos"
               ? "Mercadería que llega a las agencias o matriz destino de esta ruta."
-              : "Mercadería que suben las agencias o matrices destino de esta ruta."}
+              : "Mercadería que suben los destinos de esta ruta, u otras agencias o matrices hacia otra agencia o la matriz origen."}
           </small>
         </BarraMovimiento>
 
@@ -422,7 +433,7 @@ export function VisorTransferenciasPanel({
           <VacioVisor>
             {sentido === "ingresos"
               ? "No hay ingresos de mercadería hacia las agencias o matriz destino de esta ruta."
-              : "No hay egresos subidos por las agencias o matrices destino de esta ruta."}
+              : "No hay egresos de esta ruta."}
           </VacioVisor>
         )}
       </Dialog>
