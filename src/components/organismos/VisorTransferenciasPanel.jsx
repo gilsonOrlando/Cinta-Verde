@@ -33,37 +33,33 @@ function mismoId(a, b) {
   return String(a ?? "") === String(b ?? "");
 }
 
-function tipoDeSucursal(sucursales, id) {
-  return String(
-    sucursales.find((item) => mismoId(item.id, id))?.tipo ?? ""
-  ).toLowerCase();
+function destinosDeRuta(ruta) {
+  return [...new Set((ruta?.destinoIds ?? []).map((id) => String(id)).filter(Boolean))];
 }
 
-function idsOficialesDeRuta(ruta) {
-  return new Set(
-    [ruta?.origen_id, ...(ruta?.destinoIds ?? [])].filter(Boolean).map((id) => String(id))
-  );
+function esIngresoTransferencia(item, ruta) {
+  const destinos = destinosDeRuta(ruta);
+  if (destinos.length > 0) return destinos.includes(String(item?.sucursal_id ?? ""));
+  return mismoId(item?.sucursal_id, ruta?.origen_id);
 }
 
-function clasificarMovimiento(item, ruta, sucursales) {
-  const oficiales = idsOficialesDeRuta(ruta);
-  const destEnRuta = oficiales.has(String(item.sucursal_id ?? ""));
-  const origenEnRuta = oficiales.has(String(item.origen_id ?? ""));
-  const destAgencia = tipoDeSucursal(sucursales, item.sucursal_id) === "agencia";
-  const origenAgencia = tipoDeSucursal(sucursales, item.origen_id) === "agencia";
-
-  if (destEnRuta) return "ingresos";
-  if (origenEnRuta) return "egresos";
-  if (destAgencia && origenAgencia) return "egresos";
-  if (destAgencia) return "ingresos";
-  if (origenAgencia) return "egresos";
-  return "";
+function esEgresoTransferencia(item, ruta) {
+  if (!item?.origen_id || mismoId(item.origen_id, item.sucursal_id)) return false;
+  const destinos = destinosDeRuta(ruta);
+  if (destinos.length === 0) return mismoId(item.origen_id, ruta?.origen_id);
+  return true;
 }
 
-function filtrarPorMovimiento(items = [], { ruta, sucursales = [], sentido }) {
-  return items.filter(
-    (item) => clasificarMovimiento(item, ruta, sucursales) === sentido
-  );
+function sentidoPorDefecto({ transferencias, ruta, sesion, transferenciaInicialId }) {
+  const actual = transferencias.find((item) => mismoId(item.id, transferenciaInicialId));
+  if (sesion?.sucursal_id && actual) {
+    if (mismoId(actual.sucursal_id, sesion.sucursal_id)) return "ingresos";
+    if (mismoId(actual.origen_id, sesion.sucursal_id)) return "egresos";
+  }
+  if (sesion?.sucursal_id && destinosDeRuta(ruta).includes(String(sesion.sucursal_id))) {
+    return "ingresos";
+  }
+  return "egresos";
 }
 
 async function imprimirPdfTransferencia(path) {
@@ -254,10 +250,17 @@ export function VisorTransferenciasPanel({
 }) {
   const [indice, setIndice] = useState(0);
   const [imprimiendo, setImprimiendo] = useState(false);
-  const [sentido, setSentido] = useState("ingresos");
+  const [sentido, setSentido] = useState(() =>
+    sentidoPorDefecto({ transferencias, ruta, sesion, transferenciaInicialId })
+  );
   const visibles = useMemo(
-    () => filtrarPorMovimiento(transferencias, { ruta, sucursales, sentido }),
-    [transferencias, ruta, sucursales, sentido]
+    () =>
+      transferencias.filter((item) =>
+        sentido === "ingresos"
+          ? esIngresoTransferencia(item, ruta)
+          : esEgresoTransferencia(item, ruta)
+      ),
+    [transferencias, ruta, sentido]
   );
   const ids = visibles.map((item) => item.id).join(",");
 
@@ -275,20 +278,10 @@ export function VisorTransferenciasPanel({
   }, [onClose]);
 
   useEffect(() => {
-    const inicial = transferencias.find((item) =>
-      mismoId(item.id, transferenciaInicialId)
+    setSentido(
+      sentidoPorDefecto({ transferencias, ruta, sesion, transferenciaInicialId })
     );
-    if (!inicial) {
-      setSentido("ingresos");
-      return;
-    }
-    const enIngresos = filtrarPorMovimiento(transferencias, {
-      ruta,
-      sucursales,
-      sentido: "ingresos",
-    }).some((item) => mismoId(item.id, inicial.id));
-    setSentido(enIngresos ? "ingresos" : "egresos");
-  }, [ruta?.id, transferenciaInicialId]);
+  }, [ruta?.id, sesion?.sucursal_id, transferenciaInicialId]);
 
   useEffect(() => {
     const lista = ids ? ids.split(",") : [];
@@ -331,8 +324,8 @@ export function VisorTransferenciasPanel({
             ) : (
               <em>
                 {sentido === "ingresos"
-                  ? "Sin ingresos de mercadería en esta ruta"
-                  : "Sin egresos de mercadería en esta ruta"}
+                  ? "Sin ingresos para verificar"
+                  : "Sin egresos para verificar"}
               </em>
             )}
           </div>
@@ -341,27 +334,24 @@ export function VisorTransferenciasPanel({
           </BtnCerrar>
         </Cabecera>
 
-        <CampoMovimiento>
-          <label htmlFor="visor-movimiento">Movimiento</label>
+        <BarraMovimiento>
+          <label htmlFor="visor-sentido">Movimiento</label>
           <select
-            id="visor-movimiento"
+            id="visor-sentido"
             value={sentido}
-            onChange={(event) => {
-              setSentido(event.target.value);
-              setIndice(0);
-            }}
+            onChange={(event) => setSentido(event.target.value)}
           >
-            <option value="ingresos">Ingresos de mercadería</option>
-            <option value="egresos">Egresos de mercadería</option>
+            <option value="egresos">Egresos</option>
+            <option value="ingresos">Ingresos</option>
           </select>
           <small>
             {sentido === "ingresos"
-              ? "Llegan a la matriz o a los destinos de esta ruta."
-              : "Salen de la matriz de esta ruta o las subió una agencia."}
+              ? "Mercadería que llega a las agencias o matriz destino de esta ruta."
+              : "Mercadería que sale del origen hacia otras agencias o matrices."}
           </small>
-        </CampoMovimiento>
+        </BarraMovimiento>
 
-        {actual && (
+        {actual ? (
           <>
             <PdfHoja
               key={`${actual.id}:${actual.transferencia}:${sentido}`}
@@ -427,6 +417,12 @@ export function VisorTransferenciasPanel({
               )}
             </Acciones>
           </>
+        ) : (
+          <VacioVisor>
+            {sentido === "ingresos"
+              ? "No hay ingresos de mercadería hacia las agencias o matriz destino de esta ruta."
+              : "No hay egresos de mercadería desde el origen hacia otras agencias o matrices."}
+          </VacioVisor>
         )}
       </Dialog>
     </Overlay>
@@ -500,11 +496,11 @@ const Cabecera = styled.div`
   }
 `;
 
-const CampoMovimiento = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 0 0 auto;
+const BarraMovimiento = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(160px, 220px) 1fr;
+  align-items: center;
+  gap: 8px 12px;
 
   label {
     font-size: 0.72rem;
@@ -516,10 +512,10 @@ const CampoMovimiento = styled.div`
 
   select {
     width: 100%;
-    padding: 9px 12px;
+    padding: 8px 10px;
     border: 1px solid #ccc;
     border-radius: 8px;
-    font-size: 0.92rem;
+    font-size: 0.9rem;
     color: #222;
     background: #fff;
 
@@ -535,6 +531,28 @@ const CampoMovimiento = styled.div`
     font-size: 0.76rem;
     line-height: 1.35;
   }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+
+    label {
+      margin-bottom: -4px;
+    }
+  }
+`;
+
+const VacioVisor = styled.p`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 24px;
+  border: 1px dashed #cfd8dc;
+  border-radius: 10px;
+  color: #666;
+  font-size: 0.9rem;
+  text-align: center;
 `;
 
 const BtnCerrar = styled.button`
