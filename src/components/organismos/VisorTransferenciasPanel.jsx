@@ -44,10 +44,11 @@ function esIngresoTransferencia(item, ruta) {
 }
 
 function esEgresoTransferencia(item, ruta) {
-  if (!item?.origen_id || mismoId(item.origen_id, item.sucursal_id)) return false;
   const destinos = destinosDeRuta(ruta);
-  if (destinos.length === 0) return mismoId(item.origen_id, ruta?.origen_id);
-  return true;
+  const origen = String(item?.origen_id ?? "");
+  if (!origen) return false;
+  if (destinos.length > 0) return destinos.includes(origen);
+  return mismoId(origen, ruta?.origen_id);
 }
 
 function sentidoPorDefecto({ transferencias, ruta, sesion, transferenciaInicialId }) {
@@ -347,7 +348,7 @@ export function VisorTransferenciasPanel({
           <small>
             {sentido === "ingresos"
               ? "Mercadería que llega a las agencias o matriz destino de esta ruta."
-              : "Mercadería que sale del origen hacia otras agencias o matrices."}
+              : "Mercadería que suben las agencias o matrices destino de esta ruta."}
           </small>
         </BarraMovimiento>
 
@@ -421,7 +422,7 @@ export function VisorTransferenciasPanel({
           <VacioVisor>
             {sentido === "ingresos"
               ? "No hay ingresos de mercadería hacia las agencias o matriz destino de esta ruta."
-              : "No hay egresos de mercadería desde el origen hacia otras agencias o matrices."}
+              : "No hay egresos subidos por las agencias o matrices destino de esta ruta."}
           </VacioVisor>
         )}
       </Dialog>
