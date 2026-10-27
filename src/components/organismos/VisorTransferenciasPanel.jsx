@@ -265,7 +265,8 @@ export function VisorTransferenciasPanel({
   const [sentido, setSentido] = useState(() =>
     sentidoPorDefecto({ transferencias, ruta, sesion, transferenciaInicialId })
   );
-  const visibles = useMemo(
+  const [destinoFiltro, setDestinoFiltro] = useState("");
+  const porSentido = useMemo(
     () =>
       transferencias.filter((item) =>
         sentido === "ingresos"
@@ -274,6 +275,19 @@ export function VisorTransferenciasPanel({
       ),
     [transferencias, ruta, sucursales, sentido]
   );
+  const destinosCombo = useMemo(() => {
+    const ids = [
+      ...new Set(porSentido.map((item) => String(item.sucursal_id ?? "")).filter(Boolean)),
+    ];
+    return ids
+      .map((id) => sucursales.find((item) => mismoId(item.id, id)))
+      .filter(Boolean)
+      .sort((a, b) => String(a.nombre ?? "").localeCompare(String(b.nombre ?? ""), "es"));
+  }, [porSentido, sucursales]);
+  const visibles = useMemo(() => {
+    if (!destinoFiltro) return porSentido;
+    return porSentido.filter((item) => mismoId(item.sucursal_id, destinoFiltro));
+  }, [porSentido, destinoFiltro]);
   const ids = visibles.map((item) => item.id).join(",");
 
   useEffect(() => {
@@ -293,7 +307,17 @@ export function VisorTransferenciasPanel({
     setSentido(
       sentidoPorDefecto({ transferencias, ruta, sesion, transferenciaInicialId })
     );
+    setDestinoFiltro("");
   }, [ruta?.id, sesion?.sucursal_id, transferenciaInicialId]);
+
+  useEffect(() => {
+    if (
+      destinoFiltro &&
+      !destinosCombo.some((item) => mismoId(item.id, destinoFiltro))
+    ) {
+      setDestinoFiltro("");
+    }
+  }, [destinosCombo, destinoFiltro]);
 
   useEffect(() => {
     const lista = ids ? ids.split(",") : [];
@@ -347,26 +371,44 @@ export function VisorTransferenciasPanel({
         </Cabecera>
 
         <BarraMovimiento>
-          <label htmlFor="visor-sentido">Movimiento</label>
-          <select
-            id="visor-sentido"
-            value={sentido}
-            onChange={(event) => setSentido(event.target.value)}
-          >
-            <option value="egresos">Egresos</option>
-            <option value="ingresos">Ingresos</option>
-          </select>
-          <small>
-            {sentido === "ingresos"
-              ? "Mercadería que llega a las agencias o matriz destino de esta ruta."
-              : "Mercadería que suben los destinos de esta ruta, u otras agencias o matrices hacia otra agencia o la matriz origen."}
-          </small>
+          <CampoFiltro>
+            <label htmlFor="visor-sentido">Movimiento</label>
+            <select
+              id="visor-sentido"
+              value={sentido}
+              onChange={(event) => {
+                setSentido(event.target.value);
+                setDestinoFiltro("");
+              }}
+            >
+              <option value="egresos">Egresos</option>
+              <option value="ingresos">Ingresos</option>
+            </select>
+          </CampoFiltro>
+          <CampoFiltro>
+            <label htmlFor="visor-destino">Destino</label>
+            <select
+              id="visor-destino"
+              value={destinoFiltro}
+              onChange={(event) => setDestinoFiltro(event.target.value)}
+            >
+              <option value="">Todos</option>
+              {destinosCombo.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nombre}
+                  {String(item.tipo ?? "").toLowerCase() === "matriz"
+                    ? " (Matriz)"
+                    : " (Agencia)"}
+                </option>
+              ))}
+            </select>
+          </CampoFiltro>
         </BarraMovimiento>
 
         {actual ? (
           <>
             <PdfHoja
-              key={`${actual.id}:${actual.transferencia}:${sentido}`}
+              key={`${actual.id}:${actual.transferencia}:${sentido}:${destinoFiltro}`}
               path={actual.transferencia}
             />
 
@@ -431,9 +473,11 @@ export function VisorTransferenciasPanel({
           </>
         ) : (
           <VacioVisor>
-            {sentido === "ingresos"
-              ? "No hay ingresos de mercadería hacia las agencias o matriz destino de esta ruta."
-              : "No hay egresos de esta ruta."}
+            {destinoFiltro
+              ? "No hay transferencias para ese destino."
+              : sentido === "ingresos"
+                ? "No hay ingresos de mercadería hacia las agencias o matriz destino de esta ruta."
+                : "No hay egresos de esta ruta."}
           </VacioVisor>
         )}
       </Dialog>
@@ -510,9 +554,20 @@ const Cabecera = styled.div`
 
 const BarraMovimiento = styled.div`
   display: grid;
-  grid-template-columns: auto minmax(160px, 220px) 1fr;
-  align-items: center;
+  grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.2fr);
+  align-items: end;
   gap: 8px 12px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const CampoFiltro = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 
   label {
     font-size: 0.72rem;
@@ -535,20 +590,6 @@ const BarraMovimiento = styled.div`
       outline: none;
       border-color: #2e7d32;
       box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.15);
-    }
-  }
-
-  small {
-    color: #6d5c50;
-    font-size: 0.76rem;
-    line-height: 1.35;
-  }
-
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-
-    label {
-      margin-bottom: -4px;
     }
   }
 `;
