@@ -29,6 +29,7 @@ export function AsignarTransferenciasModal({
   guardando,
   onConfirmar,
   onEliminar,
+  onEliminarSeleccion,
   onClose,
 }) {
   const [seleccionadas, setSeleccionadas] = useState([]);
@@ -93,11 +94,24 @@ export function AsignarTransferenciasModal({
               <CabeceraCol>
                 <span>Pendientes</span>
                 {puedeMover && pendientes.length > 0 && (
-                  <button type="button" onClick={marcarTodas} disabled={guardando}>
-                    {seleccionadas.length === pendientes.length
-                      ? "Quitar todas"
-                      : "Marcar todas"}
-                  </button>
+                  <AccionesCab>
+                    <button type="button" onClick={marcarTodas} disabled={guardando}>
+                      {seleccionadas.length === pendientes.length
+                        ? "Quitar todas"
+                        : "Marcar todas"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={guardando || seleccionadas.length === 0}
+                      onClick={() =>
+                        onEliminarSeleccion?.(
+                          pendientes.filter((item) => seleccionadas.includes(item.id))
+                        )
+                      }
+                    >
+                      Eliminar selección
+                    </button>
+                  </AccionesCab>
                 )}
               </CabeceraCol>
               <Lista>
@@ -317,7 +331,22 @@ const CabeceraCol = styled.div`
     font-size: 0.78rem;
     font-weight: 700;
     cursor: pointer;
+
+    &:last-child {
+      color: #c62828;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
   }
+`;
+
+const AccionesCab = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
 `;
 
 const Lista = styled.div`

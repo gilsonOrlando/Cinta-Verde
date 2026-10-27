@@ -484,7 +484,7 @@ export function PizarraTransferencias() {
     });
     const resultado = await Swal.fire({
       title: "Descarga las guías antes de eliminar",
-      html: `La ruta de <strong>${ruta.chofer}</strong> se eliminará y las transferencias pasarán a la ruta transitorio.<br/><br/>Antes debes descargar las <strong>guías</strong> de las transferencias que subió tu matriz; sirven como evidencia.${
+      html: `La ruta de <strong>${ruta.chofer}</strong> se eliminará.<br/><br/>Solo pasan a transitorio las transferencias cuyo destino <strong>no</strong> es la matriz origen ni las agencias/matrices destino de esta ruta. Las demás se eliminan con sus PDF.<br/><br/>Antes descarga las <strong>guías</strong> de las transferencias que subió tu matriz; sirven como evidencia.${
         guiasPropias.length
           ? `<br/><br/>Hay <strong>${guiasPropias.length}</strong> guía(s) de tu matriz en esta ruta.`
           : "<br/><br/>En esta ruta no hay guías subidas por tu matriz."
@@ -508,9 +508,12 @@ export function PizarraTransferencias() {
     if (!resultado.isConfirmed) return;
 
     try {
-      const transitoria = await eliminarRuta(ruta.id, {
+      const resultadoRuta = await eliminarRuta(ruta.id, {
         sucursalId: sesion?.sucursal_id,
       });
+      const transitoria = resultadoRuta.transitoria;
+      const movidas = new Set((resultadoRuta.idsMovidas ?? []).map((id) => String(id)));
+      const borradas = new Set((resultadoRuta.idsEliminadas ?? []).map((id) => String(id)));
       setRutas((prev) => {
         const resto = prev.filter((item) => item.id !== ruta.id);
         if (transitoria && !resto.some((item) => item.id === transitoria.id)) {
@@ -519,12 +522,18 @@ export function PizarraTransferencias() {
         return resto;
       });
       setTransferencias((prev) =>
-        prev.map((item) =>
-          mismoId(item.ruta_id, ruta.id) ? { ...item, ruta_id: transitoria.id } : item
-        )
+        prev
+          .filter((item) => !borradas.has(String(item.id)))
+          .map((item) =>
+            movidas.has(String(item.id)) ? { ...item, ruta_id: transitoria.id } : item
+          )
       );
       if (seleccion === ruta.id) setSeleccion(ruta.origen_id);
-      toast.success("Ruta eliminada. Las transferencias pasaron a la ruta transitoria.");
+      toast.success(
+        `Ruta eliminada. ${movidas.size} a transitorio${
+          borradas.size ? `, ${borradas.size} eliminada(s)` : ""
+        }.`
+      );
     } catch (error) {
       console.error(error);
       toast.error(interpretarErrorSupabase(error));
@@ -694,6 +703,42 @@ export function PizarraTransferencias() {
       toast.error(interpretarErrorSupabase(error));
     } finally {
       setGuardandoCarga(false);
+    }
+  };
+
+  const handleEliminarTransferencias = async (items = []) => {
+    const lista = items.filter(Boolean);
+    if (lista.length === 0) return;
+    if (lista.length === 1) {
+      await handleEliminarTransferencia(lista[0]);
+      return;
+    }
+    const resultado = await Swal.fire({
+      title: `¿Eliminar ${lista.length} transferencias?`,
+      html: `Se borrarán los PDF y las guías de las <strong>${lista.length}</strong> transferencias seleccionadas.<br/><br/>Esta acción no se puede deshacer.`,
+      icon: "warning",
+      showCancelButton: true,
+      focusCancel: true,
+      reverseButtons: true,
+      confirmButtonText: "Sí, eliminar selección",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#c62828",
+      cancelButtonColor: "#757575",
+    });
+    if (!resultado.isConfirmed) return;
+    try {
+      for (const item of lista) {
+        await eliminarTransferencia(item, {
+          sucursalId: sesion?.sucursal_id,
+          tipoSesion: sesion?.tipo,
+        });
+      }
+      const ids = new Set(lista.map((item) => String(item.id)));
+      setTransferencias((prev) => prev.filter((actual) => !ids.has(String(actual.id))));
+      toast.success(`${lista.length} transferencias eliminadas.`);
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
     }
   };
 
@@ -1225,6 +1270,7 @@ export function PizarraTransferencias() {
           guardando={guardandoAsignar}
           onConfirmar={handleMoverPendientes}
           onEliminar={handleEliminarTransferencia}
+          onEliminarSeleccion={handleEliminarTransferencias}
           onClose={() => {
             if (!guardandoAsignar) {
               setMostrarAsignar(false);

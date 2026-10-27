@@ -202,16 +202,60 @@ export async function eliminarRuta(id, { sucursalId } = {}) {
   }
 
   const transitoria = await asegurarRutaTransitoria(ruta.origen_id);
-  const { error: errorMover } = await supabase
-    .from("transferencia")
-    .update({ ruta_id: transitoria.id })
+  const { data: destinosRuta, error: errorDestinos } = await supabase
+    .from("ruta_destino")
+    .select("sucursal_id")
     .eq("ruta_id", id);
+  if (errorDestinos) throw errorDestinos;
 
-  if (errorMover) throw errorMover;
+  const destinosOficiales = new Set([
+    String(ruta.origen_id),
+    ...(destinosRuta ?? []).map((item) => String(item.sucursal_id)),
+  ]);
+
+  const { data: items, error: errorItems } = await supabase
+    .from("transferencia")
+    .select("id, sucursal_id, transferencia, guia")
+    .eq("ruta_id", id);
+  if (errorItems) throw errorItems;
+
+  const idsMovidas = [];
+  const aEliminar = [];
+  for (const item of items ?? []) {
+    if (destinosOficiales.has(String(item.sucursal_id))) aEliminar.push(item);
+    else idsMovidas.push(item.id);
+  }
+
+  if (idsMovidas.length > 0) {
+    const { error: errorMover } = await supabase
+      .from("transferencia")
+      .update({ ruta_id: transitoria.id })
+      .in("id", idsMovidas);
+    if (errorMover) throw errorMover;
+  }
+
+  if (aEliminar.length > 0) {
+    const { error: errorBorrar } = await supabase
+      .from("transferencia")
+      .delete()
+      .in(
+        "id",
+        aEliminar.map((item) => item.id)
+      );
+    if (errorBorrar) throw errorBorrar;
+    const archivos = aEliminar.flatMap((item) => [item.transferencia, item.guia]).filter(Boolean);
+    if (archivos.length > 0) {
+      await supabase.storage.from("transferencias").remove(archivos);
+    }
+  }
 
   let consulta = supabase.from("ruta").delete().eq("id", id);
   if (sucursalId) consulta = consulta.eq("origen_id", sucursalId);
   const { error } = await consulta;
   if (error) throw error;
-  return transitoria;
+  return {
+    transitoria,
+    idsMovidas,
+    idsEliminadas: aEliminar.map((item) => item.id),
+  };
 }
