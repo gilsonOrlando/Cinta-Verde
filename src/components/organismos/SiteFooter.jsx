@@ -2,7 +2,7 @@ import { useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { RiDownloadLine, RiQrScan2Line, RiTruckFill } from "react-icons/ri";
 import cintaVerdeApk from "../../app/appCintaVerde.apk?url";
-import revisorApk from "../../app/Revision-transferencias.apk?url";
+import revisorApk from "../../app/revisor-Transferencias.apk?url";
 
 export function SiteFooter() {
   const { pathname } = useLocation();
@@ -30,7 +30,7 @@ export function SiteFooter() {
               consultar y verificar las transferencias de la pizarra.
             </CintaVerdeTexto>
 
-            <BtnDescarga href={revisorApk} download="Revision-transferencias.apk">
+            <BtnDescarga href={revisorApk} download="revisor-Transferencias.apk">
               <RiDownloadLine />
               Descargar Revisor de transferencias (APK)
             </BtnDescarga>
