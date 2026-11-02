@@ -62,16 +62,8 @@ function esEgresoTransferencia(item, ruta, sucursales = []) {
   );
 }
 
-function sentidoPorDefecto({ transferencias, ruta, sesion, transferenciaInicialId }) {
-  const actual = transferencias.find((item) => mismoId(item.id, transferenciaInicialId));
-  if (sesion?.sucursal_id && actual) {
-    if (mismoId(actual.sucursal_id, sesion.sucursal_id)) return "ingresos";
-    if (mismoId(actual.origen_id, sesion.sucursal_id)) return "egresos";
-  }
-  if (sesion?.sucursal_id && destinosDeRuta(ruta).includes(String(sesion.sucursal_id))) {
-    return "ingresos";
-  }
-  return "egresos";
+function sentidoPorDefecto() {
+  return "ingresos";
 }
 
 async function imprimirPdfTransferencia(path) {
@@ -262,9 +254,7 @@ export function VisorTransferenciasPanel({
 }) {
   const [indice, setIndice] = useState(0);
   const [imprimiendo, setImprimiendo] = useState(false);
-  const [sentido, setSentido] = useState(() =>
-    sentidoPorDefecto({ transferencias, ruta, sesion, transferenciaInicialId })
-  );
+  const [sentido, setSentido] = useState(sentidoPorDefecto);
   const [destinoFiltro, setDestinoFiltro] = useState("");
   const porSentido = useMemo(
     () =>
@@ -304,9 +294,7 @@ export function VisorTransferenciasPanel({
   }, [onClose]);
 
   useEffect(() => {
-    setSentido(
-      sentidoPorDefecto({ transferencias, ruta, sesion, transferenciaInicialId })
-    );
+    setSentido(sentidoPorDefecto());
     setDestinoFiltro("");
   }, [ruta?.id, sesion?.sucursal_id, transferenciaInicialId]);
 
@@ -381,8 +369,8 @@ export function VisorTransferenciasPanel({
                 setDestinoFiltro("");
               }}
             >
-              <option value="egresos">Egresos</option>
               <option value="ingresos">Ingresos</option>
+              <option value="egresos">Egresos</option>
             </select>
           </CampoFiltro>
           <CampoFiltro>
