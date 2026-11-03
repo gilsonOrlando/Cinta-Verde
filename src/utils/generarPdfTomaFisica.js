@@ -29,17 +29,46 @@ function esperarRenderizado(iframe) {
   });
 }
 
-function agregarCanvasEnPaginas(pdf, canvas, margen = 10) {
+function limitesDeBloque(body, canvas) {
+  const altoBody = Math.max(body.scrollHeight, 1);
+  const escala = canvas.height / altoBody;
+  const origen = body.getBoundingClientRect().top;
+  const limites = [0];
+
+  body.querySelectorAll("header, thead tr, tbody tr, footer").forEach((el) => {
+    const rect = el.getBoundingClientRect();
+    const bottom = Math.round((rect.bottom - origen) * escala);
+    if (bottom > 0 && bottom <= canvas.height) limites.push(bottom);
+  });
+
+  limites.push(canvas.height);
+  return [...new Set(limites)].sort((a, b) => a - b);
+}
+
+function altoRebanada(limites, offsetY, maxY) {
+  let corte = offsetY;
+  for (const y of limites) {
+    if (y <= offsetY) continue;
+    if (y <= maxY) corte = y;
+    else break;
+  }
+  if (corte <= offsetY) return Math.max(1, maxY - offsetY);
+  return corte - offsetY;
+}
+
+function agregarCanvasEnPaginas(pdf, canvas, body, margen = 10) {
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const contentWidth = pageWidth - margen * 2;
   const contentHeight = pageHeight - margen * 2;
   const sliceHeightPx = Math.floor((contentHeight * canvas.width) / contentWidth);
+  const limites = body ? limitesDeBloque(body, canvas) : [0, canvas.height];
 
   let offsetY = 0;
 
   while (offsetY < canvas.height) {
-    const sliceHeight = Math.min(sliceHeightPx, canvas.height - offsetY);
+    const maxY = Math.min(canvas.height, offsetY + sliceHeightPx);
+    const sliceHeight = altoRebanada(limites, offsetY, maxY);
     const pageCanvas = document.createElement("canvas");
     pageCanvas.width = canvas.width;
     pageCanvas.height = sliceHeight;
@@ -140,6 +169,10 @@ export function buildHtmlTomaFisica({ proyecto, productos, usuarios = [] }) {
       min-width: ${900 + usuarios.length * 110}px;
       border-collapse: collapse;
       font-size: 12px;
+    }
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     th, td {
       border: 1px solid #ccc;
@@ -259,7 +292,7 @@ export async function descargarPdfTomaFisica({ proyecto, productos, usuarios = [
     });
 
     const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    agregarCanvasEnPaginas(pdf, canvas);
+    agregarCanvasEnPaginas(pdf, canvas, body);
     pdf.save(nombreArchivoPdf(proyecto));
   } finally {
     iframe.remove();
