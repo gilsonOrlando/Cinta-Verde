@@ -56,11 +56,29 @@ function altoRebanada(limites, offsetY, maxY) {
   return corte - offsetY;
 }
 
+function numerarPaginas(pdf, margen = 10) {
+  const total = pdf.internal.getNumberOfPages();
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(9);
+  pdf.setTextColor(90);
+
+  for (let i = 1; i <= total; i += 1) {
+    pdf.setPage(i);
+    pdf.text(`Página ${i} de ${total}`, pageWidth / 2, pageHeight - margen + 4, {
+      align: "center",
+    });
+  }
+}
+
 function agregarCanvasEnPaginas(pdf, canvas, body, margen = 10) {
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
+  const pieMm = 8;
   const contentWidth = pageWidth - margen * 2;
-  const contentHeight = pageHeight - margen * 2;
+  const contentHeight = pageHeight - margen * 2 - pieMm;
   const sliceHeightPx = Math.floor((contentHeight * canvas.width) / contentWidth);
   const limites = body ? limitesDeBloque(body, canvas) : [0, canvas.height];
 
@@ -105,6 +123,8 @@ function agregarCanvasEnPaginas(pdf, canvas, body, margen = 10) {
       pdf.addPage();
     }
   }
+
+  numerarPaginas(pdf, margen);
 }
 
 export function buildHtmlTomaFisica({ proyecto, productos, usuarios = [] }) {
