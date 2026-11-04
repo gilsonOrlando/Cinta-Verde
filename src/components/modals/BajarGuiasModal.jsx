@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { RiDownload2Fill, RiTruckFill } from "react-icons/ri";
 import { nombreDeGuia, nombreDeTransferencia } from "../../supabase/crudTransferencia";
@@ -10,8 +10,13 @@ function formatearFecha(fecha) {
   return `${dia}/${mes}/${anio}`;
 }
 
+function mismoId(a, b) {
+  return String(a ?? "") === String(b ?? "");
+}
+
 export function BajarGuiasModal({
   sucursalNombre,
+  sucursales = [],
   sentido = "ingresos",
   onSentidoChange,
   rutas = [],
@@ -21,6 +26,8 @@ export function BajarGuiasModal({
   onDescargarTodas,
   onClose,
 }) {
+  const [destinoFiltro, setDestinoFiltro] = useState("");
+
   useEffect(() => {
     function handleKeyDown(event) {
       if (event.key === "Escape" && !descargando) onClose();
@@ -34,7 +41,51 @@ export function BajarGuiasModal({
     };
   }, [descargando, onClose]);
 
-  const totalGuias = rutas.reduce((suma, ruta) => suma + (ruta.guias?.length ?? 0), 0);
+  useEffect(() => {
+    setDestinoFiltro("");
+  }, [sentido]);
+
+  const destinosCombo = useMemo(() => {
+    const ids = [
+      ...new Set(
+        rutas.flatMap((ruta) =>
+          (ruta.guias ?? []).map((item) => String(item.sucursal_id ?? "")).filter(Boolean)
+        )
+      ),
+    ];
+    return ids
+      .map((id) => sucursales.find((item) => mismoId(item.id, id)))
+      .filter(Boolean)
+      .sort((a, b) => String(a.nombre ?? "").localeCompare(String(b.nombre ?? ""), "es"));
+  }, [rutas, sucursales]);
+
+  useEffect(() => {
+    if (destinoFiltro && !destinosCombo.some((item) => mismoId(item.id, destinoFiltro))) {
+      setDestinoFiltro("");
+    }
+  }, [destinosCombo, destinoFiltro]);
+
+  const rutasVisibles = useMemo(
+    () =>
+      rutas
+        .map((ruta) => {
+          const guias = destinoFiltro
+            ? (ruta.guias ?? []).filter((item) => mismoId(item.sucursal_id, destinoFiltro))
+            : ruta.guias ?? [];
+          return {
+            ...ruta,
+            guias,
+            items: guias,
+          };
+        })
+        .filter(
+          (ruta) =>
+            (ruta.guias?.length ?? 0) > 0 || mismoId(ruta.id, rutaResaltadaId)
+        ),
+    [rutas, destinoFiltro, rutaResaltadaId]
+  );
+
+  const totalGuias = rutasVisibles.reduce((suma, ruta) => suma + (ruta.guias?.length ?? 0), 0);
 
   return (
     <Overlay onClick={descargando ? undefined : onClose}>
@@ -44,18 +95,39 @@ export function BajarGuiasModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="bajar-guias-titulo">Bajar guías</h2>
-        <CampoSentido>
-          <label htmlFor="sentido-guias">Movimiento</label>
-          <select
-            id="sentido-guias"
-            value={sentido}
-            disabled={descargando}
-            onChange={(event) => onSentidoChange?.(event.target.value)}
-          >
-            <option value="ingresos">Ingresos</option>
-            <option value="egresos">Egresos</option>
-          </select>
-        </CampoSentido>
+        <BarraFiltros>
+          <CampoSentido>
+            <label htmlFor="sentido-guias">Movimiento</label>
+            <select
+              id="sentido-guias"
+              value={sentido}
+              disabled={descargando}
+              onChange={(event) => onSentidoChange?.(event.target.value)}
+            >
+              <option value="ingresos">Ingresos</option>
+              <option value="egresos">Egresos</option>
+            </select>
+          </CampoSentido>
+          <CampoSentido>
+            <label htmlFor="destino-guias">Destino</label>
+            <select
+              id="destino-guias"
+              value={destinoFiltro}
+              disabled={descargando}
+              onChange={(event) => setDestinoFiltro(event.target.value)}
+            >
+              <option value="">Todos</option>
+              {destinosCombo.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nombre}
+                  {String(item.tipo ?? "").toLowerCase() === "matriz"
+                    ? " (Matriz)"
+                    : " (Agencia)"}
+                </option>
+              ))}
+            </select>
+          </CampoSentido>
+        </BarraFiltros>
         <p>
           {sentido === "ingresos"
             ? `Guías de lo que envía la matriz que creó la ruta hacia otras agencias o matrices.`
@@ -63,14 +135,16 @@ export function BajarGuiasModal({
         </p>
 
         <Lista>
-          {rutas.length === 0 ? (
+          {rutasVisibles.length === 0 ? (
             <Vacio>
-              {sentido === "ingresos"
-                ? "No hay guías de ingreso para descargar."
-                : "No hay guías de egreso para descargar."}
+              {destinoFiltro
+                ? "No hay guías para ese destino."
+                : sentido === "ingresos"
+                  ? "No hay guías de ingreso para descargar."
+                  : "No hay guías de egreso para descargar."}
             </Vacio>
           ) : (
-            rutas.map((ruta) => {
+            rutasVisibles.map((ruta) => {
               const cantidad = ruta.guias?.length ?? 0;
               return (
                 <RutaCard
@@ -126,7 +200,7 @@ export function BajarGuiasModal({
           <BtnPrimario
             type="button"
             disabled={descargando || totalGuias === 0}
-            onClick={onDescargarTodas}
+            onClick={() => onDescargarTodas(rutasVisibles)}
           >
             <RiDownload2Fill />
             {descargando ? "Descargando..." : `Bajar todas (${totalGuias})`}
@@ -172,11 +246,21 @@ const Dialog = styled.div`
   }
 `;
 
+const BarraFiltros = styled.div`
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.2fr);
+  gap: 10px 12px;
+  margin-bottom: 12px;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
 const CampoSentido = styled.div`
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 12px;
 
   label {
     font-size: 0.76rem;

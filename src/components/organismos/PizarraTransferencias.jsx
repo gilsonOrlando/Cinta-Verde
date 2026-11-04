@@ -602,7 +602,7 @@ export function PizarraTransferencias() {
   const handleDescargarGuiasRuta = async (ruta) => {
     setDescargandoGuias(true);
     try {
-      const grupo = grupoGuiasDeRuta(ruta);
+      const grupo = Array.isArray(ruta?.items) ? ruta : grupoGuiasDeRuta(ruta);
       await descargarGuiasDeMatriz({
         grupos: [grupo],
         nombreZip: `guias-${sentidoGuias}-${grupo.nombre}`,
@@ -619,8 +619,11 @@ export function PizarraTransferencias() {
   const handleDescargarTodasGuias = async (rutasLista) => {
     setDescargandoGuias(true);
     try {
+      const grupos = (rutasLista ?? []).map((ruta) =>
+        Array.isArray(ruta?.items) ? ruta : grupoGuiasDeRuta(ruta)
+      );
       await descargarGuiasDeMatriz({
-        grupos: rutasLista.map((ruta) => grupoGuiasDeRuta(ruta)),
+        grupos,
         nombreZip: `guias-${sentidoGuias}-${sesion?.sucursal_nombre ?? "sucursal"}`,
       });
       toast.success("Guías descargadas.");
@@ -1308,6 +1311,7 @@ export function PizarraTransferencias() {
       {mostrarBajarGuias && puedeEditarTransferencias && (
         <BajarGuiasModal
           sucursalNombre={sesion?.sucursal_nombre}
+          sucursales={bodegas}
           sentido={sentidoGuias}
           onSentidoChange={setSentidoGuias}
           rutas={rutas
