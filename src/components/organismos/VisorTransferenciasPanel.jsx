@@ -50,6 +50,7 @@ function tipoDeSucursal(sucursales, id) {
 }
 
 function esEgresoTransferencia(item, ruta, sucursales = []) {
+  if (esIngresoTransferencia(item, ruta)) return false;
   const destinos = destinosDeRuta(ruta);
   const origen = String(item?.origen_id ?? "");
   const destino = String(item?.sucursal_id ?? "");
