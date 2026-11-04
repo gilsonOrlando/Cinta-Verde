@@ -579,6 +579,7 @@ export function PizarraTransferencias() {
     const items = guiasDeMovimiento(transferencias, {
       rutaId: ruta.id,
       ruta,
+      sucursales: bodegas,
       sentido,
     }).map((item) => ({
       ...item,
