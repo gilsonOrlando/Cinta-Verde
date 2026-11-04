@@ -130,8 +130,8 @@ export function BajarGuiasModal({
         </BarraFiltros>
         <p>
           {sentido === "ingresos"
-            ? `Guías de lo que envía la matriz que creó la ruta hacia otras agencias o matrices.`
-            : `Guías de lo que regresa desde esas agencias o matrices hacia la matriz origen.`}
+            ? "Guías de lo que llega a un destino de la ruta, desde cualquier agencia o matriz."
+            : "Guías de lo que sale desde un destino de la ruta, o cargas de otras sucursales que no van a ese destino."}
         </p>
 
         <Lista>

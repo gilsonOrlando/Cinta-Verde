@@ -498,17 +498,19 @@ export function guiasDeMovimiento(
     const dest = String(item.sucursal_id ?? "");
     if (!origen || !dest) return false;
 
-    const saleDelCreador = origen === origenRuta && dest !== origenRuta;
+    const llegaADestino =
+      destinos.size > 0 ? destinos.has(dest) : dest === origenRuta;
     const saleDesdeDestino = destinos.has(origen);
-    const regresaAlCreador = origen !== origenRuta && dest === origenRuta;
     const cargaAjena =
       origen !== origenRuta &&
       !destinos.has(origen) &&
       dest !== origen &&
+      !llegaADestino &&
       (dest === origenRuta || tipoDe(dest) === "agencia" || tipoDe(dest) === "matriz");
 
-    if (sentido === "ingresos") return saleDelCreador;
-    if (!(saleDesdeDestino || regresaAlCreador || cargaAjena)) return false;
+    if (sentido === "ingresos") return llegaADestino;
+    if (llegaADestino) return false;
+    if (!(saleDesdeDestino || cargaAjena)) return false;
     if (!esMatriz && sucursalSesion) return origen === sucursalSesion;
     return true;
   });
