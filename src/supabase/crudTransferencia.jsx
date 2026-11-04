@@ -480,15 +480,13 @@ function dispararDescarga(blob, nombre) {
 
 export function guiasDeMovimiento(
   transferencias,
-  { rutaId, ruta, sucursales = [], sentido = "ingresos" } = {}
+  { rutaId, ruta, sesion, sentido = "ingresos" } = {}
 ) {
   const origenRuta = String(ruta?.origen_id ?? "");
   if (!origenRuta) return [];
   const destinos = new Set((ruta?.destinoIds ?? []).map((id) => String(id)));
-  const tipoDe = (id) =>
-    String(
-      sucursales.find((item) => String(item.id) === String(id))?.tipo ?? ""
-    ).toLowerCase();
+  const esMatriz = String(sesion?.tipo ?? "").toLowerCase() === "matriz";
+  const sucursalSesion = String(sesion?.sucursal_id ?? "");
 
   return (transferencias ?? []).filter((item) => {
     if (!item.guia) return false;
@@ -496,19 +494,14 @@ export function guiasDeMovimiento(
 
     const origen = String(item.origen_id ?? "");
     const dest = String(item.sucursal_id ?? "");
-    if (!origen || !dest) return false;
-
     const saleDelCreador = origen === origenRuta && dest !== origenRuta;
-    const saleDesdeDestino = destinos.has(origen);
     const regresaAlCreador = origen !== origenRuta && dest === origenRuta;
-    const cargaAjenaAOtraSucursal =
-      origen !== origenRuta &&
-      !destinos.has(origen) &&
-      dest !== origen &&
-      (dest === origenRuta || tipoDe(dest) === "agencia" || tipoDe(dest) === "matriz");
+    const saleDesdeDestino = destinos.has(origen);
 
     if (sentido === "ingresos") return saleDelCreador;
-    return saleDesdeDestino || regresaAlCreador || cargaAjenaAOtraSucursal;
+    if (!(regresaAlCreador || saleDesdeDestino)) return false;
+    if (!esMatriz && sucursalSesion) return origen === sucursalSesion;
+    return true;
   });
 }
 
