@@ -38,6 +38,7 @@ import {
   moverTransferenciasARuta,
   nombreDeGuia,
   nombreDeTransferencia,
+  puedeDevolverTransferenciaATransitorio,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
   urlArchivoTransferencia,
@@ -777,6 +778,12 @@ export function PizarraTransferencias() {
   };
 
   const handleDevolverTransferencia = async (item) => {
+    const rutaDeItem =
+      rutas.find((ruta) => mismoId(ruta.id, item?.ruta_id)) ?? rutaActiva ?? rutaCarga;
+    if (!puedeDevolverTransferenciaATransitorio(sesion, item, rutaDeItem)) {
+      toast.error("Solo un usuario matriz puede pasar transferencias a transitorio.");
+      return;
+    }
     const origen = bodegas.find((s) => mismoId(s.id, item.origen_id))?.nombre ?? "origen";
     const destino = bodegas.find((s) => mismoId(s.id, item.sucursal_id))?.nombre ?? "destino";
     const resultado = await Swal.fire({
@@ -1125,7 +1132,7 @@ export function PizarraTransferencias() {
                           >
                             Guía
                           </a>
-                          {puedeGestionarItemTransferencia(sesion, item, rutaActiva) &&
+                          {puedeDevolverTransferenciaATransitorio(sesion, item, rutaActiva) &&
                             !esRutaTransitoria(rutaActiva) && (
                               <BtnLista
                                 type="button"

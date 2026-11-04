@@ -3,6 +3,7 @@ import styled from "styled-components";
 import {
   nombreDeGuia,
   nombreDeTransferencia,
+  puedeDevolverTransferenciaATransitorio,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
   urlArchivoTransferencia,
@@ -316,7 +317,7 @@ export function CargarTransferenciaModal({
                         {mismoId(editandoId, itemSeleccionado.id) ? "Editando" : "Editar"}
                       </BtnTexto>
                     )}
-                    {puedeGestionarItemTransferencia(sesion, itemSeleccionado, ruta) &&
+                    {puedeDevolverTransferenciaATransitorio(sesion, itemSeleccionado, ruta) &&
                       !esRutaTransitoria(ruta) && (
                         <BtnTexto
                           type="button"

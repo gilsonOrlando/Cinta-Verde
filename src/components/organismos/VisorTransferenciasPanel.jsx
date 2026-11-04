@@ -15,6 +15,7 @@ import {
   obtenerBufferArchivoTransferencia,
   nombreDeGuia,
   nombreDeTransferencia,
+  puedeDevolverTransferenciaATransitorio,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
 } from "../../supabase/crudTransferencia";
@@ -326,7 +327,10 @@ export function VisorTransferenciasPanel({
     : "";
   const puedeGestionar = puedeGestionarItemTransferencia(sesion, actual, ruta);
   const puedeEliminar = puedeEliminarItemTransferencia(sesion, actual, ruta);
-  const mostrarDevolver = puedeGestionar && ruta && !esRutaTransitoria(ruta);
+  const mostrarDevolver =
+    puedeDevolverTransferenciaATransitorio(sesion, actual, ruta) &&
+    ruta &&
+    !esRutaTransitoria(ruta);
 
   return (
     <Overlay onClick={onClose}>

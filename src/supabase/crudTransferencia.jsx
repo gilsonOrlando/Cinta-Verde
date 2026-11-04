@@ -129,6 +129,12 @@ export function puedeGestionarItemTransferencia(sesion, item, ruta) {
   );
 }
 
+export function puedeDevolverTransferenciaATransitorio(sesion, item, ruta) {
+  if (!sesion?.sucursal_id || !item || !ruta) return false;
+  if (String(sesion.tipo ?? "").toLowerCase() !== "matriz") return false;
+  return String(sesion.sucursal_id) === String(ruta.origen_id ?? "");
+}
+
 export function puedeEliminarItemTransferencia(sesion, item, ruta) {
   if (!sesion?.sucursal_id || !item) return false;
   if (esOrigenDeTransferencia(sesion, item)) return true;
@@ -395,7 +401,12 @@ export async function devolverTransferenciaATransitorio(item, { sucursalSesionId
   if (errorLectura) throw errorLectura;
   if (!actual?.id) throw new Error("No se encontró la transferencia a devolver.");
 
-  const ruta = await exigirPermisoGestion({ sucursalSesionId, tipoSesion, item: actual });
+  const ruta = await cargarRutaDeTransferencia(actual.ruta_id);
+  if (!ruta?.id) throw new Error("No se encontró la ruta de la transferencia.");
+  const sesion = { sucursal_id: sucursalSesionId, tipo: tipoSesion };
+  if (!puedeDevolverTransferenciaATransitorio(sesion, actual, ruta)) {
+    throw new Error("Solo un usuario matriz de esta ruta puede pasar la transferencia a transitorio.");
+  }
   if (ruta.transitorio) {
     throw new Error("Esta transferencia ya está en la ruta transitorio.");
   }
