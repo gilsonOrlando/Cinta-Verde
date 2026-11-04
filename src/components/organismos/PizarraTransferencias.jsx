@@ -249,7 +249,7 @@ export function PizarraTransferencias() {
   const [mostrarVisor, setMostrarVisor] = useState(false);
   const [visorTransferenciaId, setVisorTransferenciaId] = useState(null);
   const [mostrarBajarGuias, setMostrarBajarGuias] = useState(false);
-  const [sentidoGuias, setSentidoGuias] = useState("egresos");
+  const [sentidoGuias, setSentidoGuias] = useState("ingresos");
   const [rutaBajarId, setRutaBajarId] = useState(null);
   const [descargandoGuias, setDescargandoGuias] = useState(false);
   const menuGestionRef = useRef(null);
@@ -501,7 +501,7 @@ export function PizarraTransferencias() {
 
     if (resultado.isDenied) {
       setRutaBajarId(ruta.id);
-      setSentidoGuias("egresos");
+      setSentidoGuias("ingresos");
       setMostrarBajarGuias(true);
       return;
     }
@@ -577,8 +577,8 @@ export function PizarraTransferencias() {
 
   const grupoGuiasDeRuta = (ruta, sentido = sentidoGuias) => {
     const items = guiasDeMovimiento(transferencias, {
-      sucursalId: sesion?.sucursal_id,
       rutaId: ruta.id,
+      ruta,
       sentido,
     }).map((item) => ({
       ...item,
@@ -889,7 +889,7 @@ export function PizarraTransferencias() {
                     onClick={() => {
                       setMenuGestionAbierto(false);
                       setRutaBajarId(null);
-                      setSentidoGuias("egresos");
+                      setSentidoGuias("ingresos");
                       setMostrarBajarGuias(true);
                     }}
                   >

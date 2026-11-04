@@ -480,24 +480,36 @@ function dispararDescarga(blob, nombre) {
 
 export function guiasDeMovimiento(
   transferencias,
-  { sucursalId, rutaId, sentido = "egresos" } = {}
+  { rutaId, ruta, sentido = "ingresos" } = {}
 ) {
-  const id = String(sucursalId ?? "");
-  if (!id) return [];
+  const origenRuta = String(ruta?.origen_id ?? "");
+  if (!origenRuta) return [];
+  const destinos = new Set((ruta?.destinoIds ?? []).map((id) => String(id)));
+
   return (transferencias ?? []).filter((item) => {
     if (!item.guia) return false;
     if (rutaId && String(item.ruta_id) !== String(rutaId)) return false;
-    if (sentido === "ingresos") return String(item.sucursal_id) === id;
-    return String(item.origen_id) === id;
+
+    const origen = String(item.origen_id ?? "");
+    const dest = String(item.sucursal_id ?? "");
+    const saleDelCreador = origen === origenRuta && dest !== origenRuta;
+    const regresaAlCreador = origen !== origenRuta && dest === origenRuta;
+    const saleDesdeDestino = destinos.has(origen);
+
+    if (sentido === "ingresos") return saleDelCreador;
+    return regresaAlCreador || saleDesdeDestino;
   });
 }
 
 export function guiasSubidasPorMatriz(transferencias, { rutaId, matrizId }) {
-  return guiasDeMovimiento(transferencias, {
-    sucursalId: matrizId,
-    rutaId,
-    sentido: "egresos",
-  });
+  const id = String(matrizId ?? "");
+  if (!id) return [];
+  return (transferencias ?? []).filter(
+    (item) =>
+      Boolean(item.guia) &&
+      String(item.ruta_id) === String(rutaId) &&
+      String(item.origen_id) === id
+  );
 }
 
 export async function descargarGuiasDeMatriz({ grupos, nombreZip }) {

@@ -12,7 +12,7 @@ function formatearFecha(fecha) {
 
 export function BajarGuiasModal({
   sucursalNombre,
-  sentido = "egresos",
+  sentido = "ingresos",
   onSentidoChange,
   rutas = [],
   rutaResaltadaId,
@@ -52,14 +52,14 @@ export function BajarGuiasModal({
             disabled={descargando}
             onChange={(event) => onSentidoChange?.(event.target.value)}
           >
-            <option value="egresos">Egresos</option>
             <option value="ingresos">Ingresos</option>
+            <option value="egresos">Egresos</option>
           </select>
         </CampoSentido>
         <p>
           {sentido === "ingresos"
-            ? `Guías de transferencias que entran a ${sucursalNombre || "tu sucursal"}.`
-            : `Guías de transferencias que salen de ${sucursalNombre || "tu sucursal"}.`}
+            ? `Guías de lo que envía la matriz que creó la ruta hacia otras agencias o matrices.`
+            : `Guías de lo que regresa desde esas agencias o matrices hacia la matriz origen.`}
         </p>
 
         <Lista>
