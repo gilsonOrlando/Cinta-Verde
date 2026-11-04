@@ -580,6 +580,7 @@ export function PizarraTransferencias() {
       rutaId: ruta.id,
       ruta,
       sesion,
+      sucursales: bodegas,
       sentido,
     }).map((item) => ({
       ...item,

@@ -53,12 +53,14 @@ function esEgresoTransferencia(item, ruta, sucursales = []) {
   const destinos = destinosDeRuta(ruta);
   const origen = String(item?.origen_id ?? "");
   const destino = String(item?.sucursal_id ?? "");
-  if (!origen) return false;
-  if (destinos.length === 0) return mismoId(origen, ruta?.origen_id);
+  const origenRuta = String(ruta?.origen_id ?? "");
+  if (!origen || mismoId(origen, destino)) return false;
   if (destinos.includes(origen)) return true;
-  if (destinos.includes(destino)) return false;
+  if (mismoId(origen, origenRuta)) return false;
   return (
-    mismoId(destino, ruta?.origen_id) || tipoDeSucursal(sucursales, destino) === "agencia"
+    mismoId(destino, origenRuta) ||
+    tipoDeSucursal(sucursales, destino) === "agencia" ||
+    tipoDeSucursal(sucursales, destino) === "matriz"
   );
 }
 
