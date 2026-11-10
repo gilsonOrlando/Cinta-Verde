@@ -260,14 +260,17 @@ export function VisorTransferenciasPanel({
   const [imprimiendo, setImprimiendo] = useState(false);
   const [sentido, setSentido] = useState(sentidoPorDefecto);
   const [destinoFiltro, setDestinoFiltro] = useState("");
+  const esTransitorio = esRutaTransitoria(ruta);
   const porSentido = useMemo(
     () =>
-      transferencias.filter((item) =>
-        sentido === "ingresos"
-          ? esIngresoTransferencia(item, ruta)
-          : esEgresoTransferencia(item, ruta, sucursales)
-      ),
-    [transferencias, ruta, sucursales, sentido]
+      esTransitorio
+        ? transferencias
+        : transferencias.filter((item) =>
+            sentido === "ingresos"
+              ? esIngresoTransferencia(item, ruta)
+              : esEgresoTransferencia(item, ruta, sucursales)
+          ),
+    [transferencias, ruta, sucursales, sentido, esTransitorio]
   );
   const destinosCombo = useMemo(() => {
     const ids = [
@@ -354,9 +357,11 @@ export function VisorTransferenciasPanel({
               </strong>
             ) : (
               <em>
-                {sentido === "ingresos"
-                  ? "Sin ingresos para verificar"
-                  : "Sin egresos para verificar"}
+                {esTransitorio
+                  ? "Sin transferencias para verificar"
+                  : sentido === "ingresos"
+                    ? "Sin ingresos para verificar"
+                    : "Sin egresos para verificar"}
               </em>
             )}
           </div>
@@ -365,21 +370,23 @@ export function VisorTransferenciasPanel({
           </BtnCerrar>
         </Cabecera>
 
-        <BarraMovimiento>
-          <CampoFiltro>
-            <label htmlFor="visor-sentido">Movimiento</label>
-            <select
-              id="visor-sentido"
-              value={sentido}
-              onChange={(event) => {
-                setSentido(event.target.value);
-                setDestinoFiltro("");
-              }}
-            >
-              <option value="ingresos">Ingresos</option>
-              <option value="egresos">Egresos</option>
-            </select>
-          </CampoFiltro>
+        <BarraMovimiento $soloDestino={esTransitorio}>
+          {!esTransitorio && (
+            <CampoFiltro>
+              <label htmlFor="visor-sentido">Movimiento</label>
+              <select
+                id="visor-sentido"
+                value={sentido}
+                onChange={(event) => {
+                  setSentido(event.target.value);
+                  setDestinoFiltro("");
+                }}
+              >
+                <option value="ingresos">Ingresos</option>
+                <option value="egresos">Egresos</option>
+              </select>
+            </CampoFiltro>
+          )}
           <CampoFiltro>
             <label htmlFor="visor-destino">Destino</label>
             <select
@@ -470,9 +477,11 @@ export function VisorTransferenciasPanel({
           <VacioVisor>
             {destinoFiltro
               ? "No hay transferencias para ese destino."
-              : sentido === "ingresos"
-                ? "No hay ingresos de mercadería hacia las agencias o matriz destino de esta ruta."
-                : "No hay egresos de esta ruta."}
+              : esTransitorio
+                ? "No hay transferencias pendientes en transitorio."
+                : sentido === "ingresos"
+                  ? "No hay ingresos de mercadería hacia las agencias o matriz destino de esta ruta."
+                  : "No hay egresos de esta ruta."}
           </VacioVisor>
         )}
       </Dialog>
@@ -549,7 +558,8 @@ const Cabecera = styled.div`
 
 const BarraMovimiento = styled.div`
   display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.2fr);
+  grid-template-columns: ${({ $soloDestino }) =>
+    $soloDestino ? "minmax(180px, 1fr)" : "minmax(140px, 1fr) minmax(180px, 1.2fr)"};
   align-items: end;
   gap: 8px 12px;
 
