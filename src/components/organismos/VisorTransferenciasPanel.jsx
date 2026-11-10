@@ -346,7 +346,7 @@ export function VisorTransferenciasPanel({
           <img src={ICONO_VERIFICAR_TRANSFERENCIAS} alt="" />
           <div>
             <h2 id="visor-transferencias-titulo">{titulo}</h2>
-            <p>Selecciona y ver</p>
+            <p>Selecciona y ver.</p>
             {actual ? (
               <strong>
                 {nombreDeTransferencia(actual)}
