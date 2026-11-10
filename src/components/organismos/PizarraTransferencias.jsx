@@ -228,7 +228,6 @@ function BotonVisorTransferencias({ cantidad = 0, etiqueta, onClick }) {
   return (
     <BtnVerificar type="button" title={etiqueta} aria-label={etiqueta} onClick={onClick}>
       <strong>Visor de transferencias</strong>
-      <span>Selecciona y ver</span>
       <MarcoIconoVisor>
         <img src={ICONO_VERIFICAR_TRANSFERENCIAS} alt="" />
         {cantidad > 0 && <BadgeVerificar>{cantidad}</BadgeVerificar>}
