@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import { RiFilePdfFill, RiTruckFill } from "react-icons/ri";
+import { RiAddLine, RiFilePdfFill, RiTruckFill } from "react-icons/ri";
 import {
   nombreDeGuia,
   nombreDeTransferencia,
@@ -30,6 +30,7 @@ export function AsignarTransferenciasModal({
   onConfirmar,
   onEliminar,
   onEliminarSeleccion,
+  onAgregar,
   onClose,
 }) {
   const [seleccionadas, setSeleccionadas] = useState([]);
@@ -93,24 +94,33 @@ export function AsignarTransferenciasModal({
             <Columna>
               <CabeceraCol>
                 <span>Pendientes</span>
-                {puedeMover && pendientes.length > 0 && (
+                {puedeMover && (
                   <AccionesCab>
-                    <button type="button" onClick={marcarTodas} disabled={guardando}>
-                      {seleccionadas.length === pendientes.length
-                        ? "Quitar todas"
-                        : "Marcar todas"}
+                    <button type="button" disabled={guardando} onClick={() => onAgregar?.()}>
+                      <RiAddLine />
+                      Agregar a transitorio
                     </button>
-                    <button
-                      type="button"
-                      disabled={guardando || seleccionadas.length === 0}
-                      onClick={() =>
-                        onEliminarSeleccion?.(
-                          pendientes.filter((item) => seleccionadas.includes(item.id))
-                        )
-                      }
-                    >
-                      Eliminar selección
-                    </button>
+                    {pendientes.length > 0 && (
+                      <>
+                        <button type="button" onClick={marcarTodas} disabled={guardando}>
+                          {seleccionadas.length === pendientes.length
+                            ? "Quitar todas"
+                            : "Marcar todas"}
+                        </button>
+                        <button
+                          type="button"
+                          data-peligro="true"
+                          disabled={guardando || seleccionadas.length === 0}
+                          onClick={() =>
+                            onEliminarSeleccion?.(
+                              pendientes.filter((item) => seleccionadas.includes(item.id))
+                            )
+                          }
+                        >
+                          Eliminar selección
+                        </button>
+                      </>
+                    )}
                   </AccionesCab>
                 )}
               </CabeceraCol>
@@ -325,6 +335,9 @@ const CabeceraCol = styled.div`
   }
 
   button {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
     border: none;
     background: transparent;
     color: #2e7d32;
@@ -332,13 +345,18 @@ const CabeceraCol = styled.div`
     font-weight: 700;
     cursor: pointer;
 
-    &:last-child {
-      color: #c62828;
+    svg {
+      width: 16px;
+      height: 16px;
     }
 
     &:disabled {
       opacity: 0.45;
       cursor: not-allowed;
+    }
+
+    &[data-peligro="true"] {
+      color: #c62828;
     }
   }
 `;

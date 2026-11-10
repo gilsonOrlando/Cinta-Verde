@@ -541,6 +541,30 @@ export function PizarraTransferencias() {
     }
   };
 
+  const handleAgregarATransitorio = async () => {
+    if (!puedeGestionarRutas(sesion) || !mismoId(sesion?.sucursal_id, matrizAsignar?.id)) {
+      toast.error("Solo un usuario matriz puede agregar a transitorio.");
+      return;
+    }
+    try {
+      let transitoria = transitoriaDe(matrizAsignar.id);
+      if (!transitoria) {
+        transitoria = await asegurarRutaTransitoria(matrizAsignar.id);
+        setRutas((prev) =>
+          prev.some((ruta) => String(ruta.id) === String(transitoria.id))
+            ? prev
+            : [...prev, transitoria]
+        );
+      }
+      setRutaCarga(transitoria);
+      setEditarTransferenciaId(null);
+      setMostrarCargaModal(true);
+    } catch (error) {
+      console.error(error);
+      toast.error(interpretarErrorSupabase(error));
+    }
+  };
+
   const handleAbrirAsignar = (bodega, event) => {
     event.stopPropagation();
     event.preventDefault();
@@ -1283,6 +1307,7 @@ export function PizarraTransferencias() {
           onConfirmar={handleMoverPendientes}
           onEliminar={handleEliminarTransferencia}
           onEliminarSeleccion={handleEliminarTransferencias}
+          onAgregar={handleAgregarATransitorio}
           onClose={() => {
             if (!guardandoAsignar) {
               setMostrarAsignar(false);
