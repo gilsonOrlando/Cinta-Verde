@@ -579,12 +579,31 @@ export function PizarraTransferencias() {
       toast.error("Solo un usuario matriz puede pasar estas transferencias.");
       return;
     }
+    const rutaDestino = rutas.find((ruta) => mismoId(ruta.id, rutaId));
+    const participa =
+      rutaDestino &&
+      (mismoId(rutaDestino.origen_id, matrizAsignar.id) ||
+        (rutaDestino.destinoIds ?? []).some((id) => mismoId(id, matrizAsignar.id)));
+    if (!participa) {
+      toast.error("Solo puedes pasar pendientes a una ruta de tu matriz o a una ruta entre matrices en la que participas.");
+      return;
+    }
+    const transitoriaId = transitoriaDe(matrizAsignar.id)?.id;
+    const idsPropias = (ids ?? []).filter((id) =>
+      transferencias.some(
+        (item) => mismoId(item.id, id) && mismoId(item.ruta_id, transitoriaId)
+      )
+    );
+    if (idsPropias.length === 0) {
+      toast.error("Selecciona transferencias de tu ruta transitorio.");
+      return;
+    }
     setGuardandoAsignar(true);
     try {
-      await moverTransferenciasARuta({ ids, rutaId });
+      await moverTransferenciasARuta({ ids: idsPropias, rutaId });
       setTransferencias((prev) =>
         prev.map((item) =>
-          ids.some((id) => String(id) === String(item.id))
+          idsPropias.some((id) => String(id) === String(item.id))
             ? { ...item, ruta_id: rutaId }
             : item
         )
@@ -865,7 +884,11 @@ export function PizarraTransferencias() {
   const puedeGestionar = puedeGestionarRutas(sesion);
   const puedeEditarTransferencias = puedeCrudTransferencias(sesion);
   const rutasDeMatriz = (matrizId) =>
-    rutasVisibles.filter((ruta) => mismoId(ruta.origen_id, matrizId));
+    rutasVisibles.filter(
+      (ruta) =>
+        mismoId(ruta.origen_id, matrizId) ||
+        (ruta.destinoIds ?? []).some((id) => mismoId(id, matrizId))
+    );
   const transitoriaDe = (matrizId) =>
     rutas.find(
       (item) => esRutaTransitoria(item) && mismoId(item.origen_id, matrizId)

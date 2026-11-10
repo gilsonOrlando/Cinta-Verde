@@ -86,7 +86,7 @@ export function AsignarTransferenciasModal({
         <h2 id="asignar-transferencias-titulo">Pasar pendientes a ruta</h2>
         <p>
           Transferencias de la ruta transitorio de <strong>{matriz?.nombre}</strong>. Elige
-          los PDF y una ruta (agencia o matriz), o arrástralos sobre la ruta.
+          los PDF y una ruta propia o entre matrices, o arrástralos sobre la ruta.
         </p>
 
         <Form onSubmit={handleSubmit}>
@@ -196,11 +196,11 @@ export function AsignarTransferenciasModal({
 
             <Columna>
               <CabeceraCol>
-                <span>Rutas de la matriz</span>
+                <span>Rutas propias y entre matrices</span>
               </CabeceraCol>
               <Lista>
                 {rutasDestino.length === 0 ? (
-                  <Vacio>Crea primero una ruta hacia una agencia o la otra matriz.</Vacio>
+                  <Vacio>No hay rutas propias ni rutas entre matrices para esta matriz.</Vacio>
                 ) : (
                   rutasDestino.map((ruta) => (
                     <RutaCard
