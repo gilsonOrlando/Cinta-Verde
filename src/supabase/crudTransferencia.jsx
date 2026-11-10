@@ -129,10 +129,17 @@ export function puedeGestionarItemTransferencia(sesion, item, ruta) {
   );
 }
 
+export function sesionEsMatrizDeRuta(sesion, ruta) {
+  if (!sesion?.sucursal_id || !ruta) return false;
+  if (String(sesion.tipo ?? "").toLowerCase() !== "matriz") return false;
+  const id = String(sesion.sucursal_id);
+  if (id === String(ruta.origen_id ?? "")) return true;
+  return (ruta.destinoIds ?? []).some((destinoId) => String(destinoId) === id);
+}
+
 export function puedeDevolverTransferenciaATransitorio(sesion, item, ruta) {
   if (!sesion?.sucursal_id || !item || !ruta) return false;
-  if (String(sesion.tipo ?? "").toLowerCase() !== "matriz") return false;
-  return String(sesion.sucursal_id) === String(ruta.origen_id ?? "");
+  return sesionEsMatrizDeRuta(sesion, ruta);
 }
 
 export function puedeEliminarItemTransferencia(sesion, item, ruta) {
@@ -143,14 +150,18 @@ export function puedeEliminarItemTransferencia(sesion, item, ruta) {
 }
 
 async function cargarRutaDeTransferencia(rutaId) {
-  const { data, error } = await supabase
-    .from("ruta")
-    .select("id, origen_id, transitorio")
-    .eq("id", rutaId)
-    .maybeSingle();
+  const [{ data, error }, { data: destinos, error: errorDestinos }] = await Promise.all([
+    supabase.from("ruta").select("id, origen_id, transitorio").eq("id", rutaId).maybeSingle(),
+    supabase.from("ruta_destino").select("sucursal_id").eq("ruta_id", rutaId),
+  ]);
 
   if (error) throw error;
-  return data;
+  if (errorDestinos) throw errorDestinos;
+  if (!data) return data;
+  return {
+    ...data,
+    destinoIds: (destinos ?? []).map((item) => item.sucursal_id),
+  };
 }
 
 async function exigirPermisoGestion({ sucursalSesionId, tipoSesion, item }) {
@@ -405,13 +416,15 @@ export async function devolverTransferenciaATransitorio(item, { sucursalSesionId
   if (!ruta?.id) throw new Error("No se encontró la ruta de la transferencia.");
   const sesion = { sucursal_id: sucursalSesionId, tipo: tipoSesion };
   if (!puedeDevolverTransferenciaATransitorio(sesion, actual, ruta)) {
-    throw new Error("Solo un usuario matriz de esta ruta puede pasar la transferencia a transitorio.");
+    throw new Error(
+      "Solo la matriz origen o una matriz destino de esta ruta pueden pasar la transferencia a su transitorio."
+    );
   }
   if (ruta.transitorio) {
     throw new Error("Esta transferencia ya está en la ruta transitorio.");
   }
 
-  const transitoria = await asegurarRutaTransitoria(ruta.origen_id);
+  const transitoria = await asegurarRutaTransitoria(sucursalSesionId);
   if (String(transitoria.id) === String(actual.ruta_id)) {
     throw new Error("Esta transferencia ya está en la ruta transitorio.");
   }

@@ -805,14 +805,14 @@ export function PizarraTransferencias() {
     const rutaDeItem =
       rutas.find((ruta) => mismoId(ruta.id, item?.ruta_id)) ?? rutaActiva ?? rutaCarga;
     if (!puedeDevolverTransferenciaATransitorio(sesion, item, rutaDeItem)) {
-      toast.error("Solo un usuario matriz puede pasar transferencias a transitorio.");
+      toast.error("Solo la matriz origen o una matriz destino de esta ruta pueden enviar a su transitorio.");
       return;
     }
     const origen = bodegas.find((s) => mismoId(s.id, item.origen_id))?.nombre ?? "origen";
     const destino = bodegas.find((s) => mismoId(s.id, item.sucursal_id))?.nombre ?? "destino";
     const resultado = await Swal.fire({
       title: "¿Enviar a transitorio?",
-      html: `La transferencia <strong>${nombreDeTransferencia(item)}</strong> (${origen} → ${destino}) saldrá de esta ruta y quedará pendiente en la ruta transitorio de la matriz.`,
+      html: `La transferencia <strong>${nombreDeTransferencia(item)}</strong> (${origen} → ${destino}) saldrá de esta ruta y quedará pendiente en la ruta transitorio de tu matriz.`,
       icon: "question",
       showCancelButton: true,
       focusCancel: true,
@@ -842,7 +842,7 @@ export function PizarraTransferencias() {
             : [...prev, resultado.transitoria]
         );
       }
-      toast.success("Transferencia regresada a la ruta transitorio.");
+      toast.success("Transferencia enviada a la ruta transitorio de tu matriz.");
     } catch (error) {
       console.error(error);
       toast.error(interpretarErrorSupabase(error));
