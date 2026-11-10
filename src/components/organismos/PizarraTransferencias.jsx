@@ -224,6 +224,19 @@ function formatearFecha(fecha) {
   return `${dia}/${mes}/${anio}`;
 }
 
+function BotonVisorTransferencias({ cantidad = 0, etiqueta, onClick }) {
+  return (
+    <BtnVerificar type="button" title={etiqueta} aria-label={etiqueta} onClick={onClick}>
+      <strong>Visor de transferencias</strong>
+      <span>Selecciona y ver</span>
+      <MarcoIconoVisor>
+        <img src={ICONO_VERIFICAR_TRANSFERENCIAS} alt="" />
+        {cantidad > 0 && <BadgeVerificar>{cantidad}</BadgeVerificar>}
+      </MarcoIconoVisor>
+    </BtnVerificar>
+  );
+}
+
 export function PizarraTransferencias() {
   const tableroRef = useRef(null);
   const arrastreRef = useRef(null);
@@ -1133,17 +1146,11 @@ export function PizarraTransferencias() {
                     .join(", ") || "—"}
                 </span>
               </Atributo>
-              <BtnVerificar
-                type="button"
-                title="Verificar transferencias"
-                aria-label="Verificar transferencias"
+              <BotonVisorTransferencias
+                cantidad={transferenciasDeRuta(rutaActiva.id).length}
+                etiqueta="Visor de transferencias. Selecciona y ver"
                 onClick={() => handleAbrirVisor()}
-              >
-                <img src={ICONO_VERIFICAR_TRANSFERENCIAS} alt="" />
-                {transferenciasDeRuta(rutaActiva.id).length > 0 && (
-                  <BadgeVerificar>{transferenciasDeRuta(rutaActiva.id).length}</BadgeVerificar>
-                )}
-              </BtnVerificar>
+              />
               <ListaPanel>
                 <span>Transferencias</span>
                 <ListaScroll>
@@ -1214,17 +1221,11 @@ export function PizarraTransferencias() {
                 <span>{bodegaActiva.nombre}</span>
               </NombreSucursal>
               {esMatriz(bodegaActiva.tipo) && (
-                <BtnVerificar
-                  type="button"
-                  title="Verificar transferencias pendientes"
-                  aria-label="Verificar transferencias pendientes"
+                <BotonVisorTransferencias
+                  cantidad={transferenciasDeMatriz.length}
+                  etiqueta="Visor de transferencias. Selecciona y ver"
                   onClick={() => handleAbrirVisor()}
-                >
-                  <img src={ICONO_VERIFICAR_TRANSFERENCIAS} alt="" />
-                  {transferenciasDeMatriz.length > 0 && (
-                    <BadgeVerificar>{transferenciasDeMatriz.length}</BadgeVerificar>
-                  )}
-                </BtnVerificar>
+                />
               )}
               {esMatriz(bodegaActiva.tipo) && (
                 <ListaPanel>
@@ -1342,9 +1343,7 @@ export function PizarraTransferencias() {
 
       {mostrarVisor && (rutaActiva || (bodegaActiva && esMatriz(bodegaActiva.tipo))) && (
         <VisorTransferenciasPanel
-          titulo={
-            rutaActiva ? "Verificar transferencias" : "Ruta transitorio · pendientes"
-          }
+          titulo="Visor de transferencias"
           transferencias={
             rutaActiva ? transferenciasDeRuta(rutaActiva.id) : transferenciasDeMatriz
           }
@@ -1848,13 +1847,29 @@ const Atributo = styled.p`
 `;
 
 const BtnVerificar = styled.button`
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   align-self: center;
   margin-top: 8px;
   border: none;
   background: transparent;
   padding: 0;
   cursor: pointer;
+
+  strong {
+    color: #3e2723;
+    font-size: 0.92rem;
+    line-height: 1.2;
+  }
+
+  span {
+    color: #6d4c41;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
 
   img {
     display: block;
@@ -1866,6 +1881,12 @@ const BtnVerificar = styled.button`
   &:hover img {
     transform: scale(1.04);
   }
+`;
+
+const MarcoIconoVisor = styled.span`
+  position: relative;
+  display: inline-block;
+  margin-top: 4px;
 `;
 
 const ListaPanel = styled.div`
