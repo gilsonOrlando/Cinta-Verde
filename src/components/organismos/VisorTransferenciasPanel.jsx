@@ -8,6 +8,7 @@ import {
   RiArrowLeftSLine,
   RiArrowRightSLine,
   RiCloseLine,
+  RiSearchLine,
   RiSubtractLine,
 } from "react-icons/ri";
 import { esRutaTransitoria } from "../../supabase/crudRuta";
@@ -346,6 +347,10 @@ export function VisorTransferenciasPanel({
           <img src={ICONO_VERIFICAR_TRANSFERENCIAS} alt="" />
           <div>
             <h2 id="visor-transferencias-titulo">{titulo}</h2>
+            <Subtitulo>
+              <RiSearchLine aria-hidden="true" />
+              Selecciona y ver
+            </Subtitulo>
             {actual ? (
               <strong>
                 {nombreDeTransferencia(actual)}
@@ -553,6 +558,22 @@ const Cabecera = styled.div`
   div {
     min-width: 0;
     flex: 1;
+  }
+`;
+
+const Subtitulo = styled.p`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  color: #2e7d32;
+  font-size: 0.86rem;
+  font-weight: 700;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
   }
 `;
 
