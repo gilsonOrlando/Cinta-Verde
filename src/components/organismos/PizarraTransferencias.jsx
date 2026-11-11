@@ -1018,15 +1018,6 @@ export function PizarraTransferencias() {
               </MenuLista>
             )}
           </MenuGestion>
-          <BtnActualizar
-            type="button"
-            disabled={cargando || actualizando}
-            title="Actualizar pizarra"
-            aria-label="Actualizar pizarra"
-            onClick={() => refrescarPizarra({ avisar: true })}
-          >
-            <RiRefreshLine data-girando={cargando || actualizando ? "true" : undefined} />
-          </BtnActualizar>
         </Acciones>
       </Cabecera>
 
@@ -1168,6 +1159,19 @@ export function PizarraTransferencias() {
                 </Nodo>
               );
             })}
+            <BtnActualizar
+              type="button"
+              disabled={cargando || actualizando}
+              title="Actualizar pizarra"
+              aria-label="Actualizar pizarra"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                refrescarPizarra({ avisar: true });
+              }}
+            >
+              <RiRefreshLine data-girando={cargando || actualizando ? "true" : undefined} />
+            </BtnActualizar>
           </Tablero>
         </Marco>
 
@@ -1508,7 +1512,7 @@ const Layout = styled.section`
 const Cabecera = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 16px;
   flex-wrap: wrap;
 `;
@@ -1544,20 +1548,25 @@ const Acciones = styled.div`
 `;
 
 const BtnActualizar = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 8;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border: 1px solid #2e7d32;
-  background: #fff;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(46, 125, 50, 0.45);
+  background: rgba(255, 255, 255, 0.92);
   color: #2e7d32;
-  border-radius: 8px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(62, 39, 35, 0.12);
   cursor: pointer;
 
   svg {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
 
   svg[data-girando="true"] {
@@ -1566,11 +1575,12 @@ const BtnActualizar = styled.button`
 
   &:hover:not(:disabled) {
     background: #2e7d32;
+    border-color: #2e7d32;
     color: #fff;
   }
 
   &:disabled {
-    opacity: 0.65;
+    opacity: 0.7;
     cursor: wait;
   }
 `;
