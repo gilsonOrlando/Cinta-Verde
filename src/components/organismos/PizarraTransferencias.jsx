@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -10,6 +10,7 @@ import {
   RiKey2Fill,
   RiMapPinFill,
   RiMenuLine,
+  RiRefreshLine,
   RiSteeringFill,
   RiStore2Fill,
   RiTruckFill,
@@ -245,6 +246,8 @@ export function PizarraTransferencias() {
   const [rutas, setRutas] = useState([]);
   const [seleccion, setSeleccion] = useState(originalesRef.current[0]?.id ?? null);
   const [cargando, setCargando] = useState(true);
+  const [actualizando, setActualizando] = useState(false);
+  const actualizandoRef = useRef(false);
   const [menuGestionAbierto, setMenuGestionAbierto] = useState(false);
   const [mostrarRutaModal, setMostrarRutaModal] = useState(false);
   const [rutaEdicion, setRutaEdicion] = useState(null);
@@ -268,72 +271,109 @@ export function PizarraTransferencias() {
   const [descargandoGuias, setDescargandoGuias] = useState(false);
   const menuGestionRef = useRef(null);
 
-  useEffect(() => {
-    let activo = true;
+  const refrescarPizarra = useCallback(async ({ inicial = false, avisar = false } = {}) => {
+    if (!supabaseConfigurado) {
+      setCargando(false);
+      return;
+    }
+    if (actualizandoRef.current) return;
+    actualizandoRef.current = true;
+    if (inicial) setCargando(true);
+    else setActualizando(true);
 
-    async function cargar() {
-      if (!supabaseConfigurado) {
-        setCargando(false);
-        return;
-      }
+    try {
+      const sucursales = await listarSucursales();
+      if (sucursales.length === 0) return;
+
+      const ubicadas = conPosicion(sucursales);
+      setBodegas((prev) => {
+        if (inicial || prev.length === 0) {
+          originalesRef.current = ubicadas;
+          return ubicadas;
+        }
+        const porId = new Map(prev.map((item) => [String(item.id), item]));
+        const mezcladas = ubicadas.map((item) => {
+          const actual = porId.get(String(item.id));
+          return actual && Number.isFinite(Number(actual.x))
+            ? { ...item, x: actual.x, y: actual.y }
+            : item;
+        });
+        originalesRef.current = mezcladas;
+        return mezcladas;
+      });
+      if (inicial) setSeleccion(ubicadas[0]?.id ?? null);
 
       try {
-        const sucursales = await listarSucursales();
-        if (!activo || sucursales.length === 0) return;
-
-        const ubicadas = conPosicion(sucursales);
-        originalesRef.current = ubicadas;
-        setBodegas(ubicadas);
-        setSeleccion(ubicadas[0]?.id ?? null);
-
-        try {
-          let rutasDb = await listarRutas();
-          if (!activo) return;
-          const matrices = sucursales.filter((item) => esMatriz(item.tipo));
-          for (const matriz of matrices) {
-            await asegurarRutaTransitoria(matriz.id);
-          }
-          rutasDb = await listarRutas();
-          if (!activo) return;
-          const rutasConPosicion = [];
+        const matrices = sucursales.filter((item) => esMatriz(item.tipo));
+        for (const matriz of matrices) {
+          await asegurarRutaTransitoria(matriz.id);
+        }
+        const rutasDb = await listarRutas();
+        setRutas((prev) => {
+          const prevPorId = new Map(prev.map((item) => [String(item.id), item]));
+          const resultado = [];
           for (const ruta of rutasDb) {
             if (esRutaTransitoria(ruta)) {
-              rutasConPosicion.push(ruta);
+              resultado.push(ruta);
               continue;
             }
-            rutasConPosicion.push({
+            const anterior = prevPorId.get(String(ruta.id));
+            if (
+              anterior &&
+              Number.isFinite(Number(anterior.x)) &&
+              Number.isFinite(Number(anterior.y))
+            ) {
+              resultado.push({ ...ruta, x: anterior.x, y: anterior.y });
+              continue;
+            }
+            resultado.push({
               ...ruta,
               ...posicionLibreRuta({
                 sucursales: ubicadas,
-                rutas: rutasConPosicion,
+                rutas: resultado,
                 origenId: ruta.origen_id,
               }),
             });
           }
-          setRutas(rutasConPosicion);
-          try {
-            const cargadas = await listarTransferencias();
-            if (activo) setTransferencias(cargadas);
-            const conNombres = await completarNombresTransferencias(cargadas);
-            if (activo) setTransferencias(conNombres);
-          } catch (errorTransferencias) {
-            console.error(errorTransferencias);
-          }
-        } catch (errorRutas) {
-          console.error(errorRutas);
+          return resultado;
+        });
+        try {
+          const cargadas = await listarTransferencias();
+          setTransferencias(cargadas);
+          const conNombres = await completarNombresTransferencias(cargadas);
+          setTransferencias(conNombres);
+        } catch (errorTransferencias) {
+          console.error(errorTransferencias);
+          if (avisar) toast.error(interpretarErrorSupabase(errorTransferencias));
+          return;
         }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        if (activo) setCargando(false);
+      } catch (errorRutas) {
+        console.error(errorRutas);
+        if (avisar) toast.error(interpretarErrorSupabase(errorRutas));
+        return;
       }
+      if (avisar) toast.success("Pizarra actualizada.");
+    } catch (error) {
+      console.error(error);
+      if (avisar) toast.error(interpretarErrorSupabase(error));
+    } finally {
+      actualizandoRef.current = false;
+      setCargando(false);
+      setActualizando(false);
     }
-
-    cargar();
-    return () => {
-      activo = false;
-    };
   }, []);
+
+  useEffect(() => {
+    refrescarPizarra({ inicial: true });
+  }, [refrescarPizarra]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (document.hidden) return;
+      refrescarPizarra({ inicial: false, avisar: false });
+    }, 5 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [refrescarPizarra]);
 
   useEffect(() => {
     function handleClickFuera(event) {
@@ -916,7 +956,9 @@ export function PizarraTransferencias() {
           <Subtitulo>
             {cargando
               ? "Cargando sucursales…"
-              : "Las líneas son el recorrido del camión. Cada matriz tiene un color propio y las agencias usan crema."}
+              : actualizando
+                ? "Actualizando transferencias…"
+                : "Las líneas son el recorrido del camión. Cada matriz tiene un color propio y las agencias usan crema. Se actualiza cada 5 minutos."}
           </Subtitulo>
         </div>
         <Acciones>
@@ -976,6 +1018,15 @@ export function PizarraTransferencias() {
               </MenuLista>
             )}
           </MenuGestion>
+          <BtnActualizar
+            type="button"
+            disabled={cargando || actualizando}
+            title="Actualizar pizarra"
+            aria-label="Actualizar pizarra"
+            onClick={() => refrescarPizarra({ avisar: true })}
+          >
+            <RiRefreshLine data-girando={cargando || actualizando ? "true" : undefined} />
+          </BtnActualizar>
         </Acciones>
       </Cabecera>
 
@@ -1443,12 +1494,21 @@ const Layout = styled.section`
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  @keyframes girar-pizarra {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
 `;
 
 const Cabecera = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
 `;
@@ -1481,6 +1541,38 @@ const Acciones = styled.div`
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+`;
+
+const BtnActualizar = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #2e7d32;
+  background: #fff;
+  color: #2e7d32;
+  border-radius: 8px;
+  cursor: pointer;
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  svg[data-girando="true"] {
+    animation: girar-pizarra 0.8s linear infinite;
+  }
+
+  &:hover:not(:disabled) {
+    background: #2e7d32;
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
 `;
 
 const BtnCredencial = styled.button`
