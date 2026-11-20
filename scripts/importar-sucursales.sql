@@ -5,7 +5,9 @@ insert into public.sucursal (nombre, tipo) values ('LOJA', 'agencia')
 on conflict (nombre) do update set tipo = excluded.tipo;
 insert into public.sucursal (nombre, tipo) values ('ZAMORA', 'agencia')
 on conflict (nombre) do update set tipo = excluded.tipo;
-insert into public.sucursal (nombre, tipo) values ('CATAMAYO', 'matriz')
+insert into public.sucursal (nombre, tipo) values ('CATAMAYO', 'agencia')
+on conflict (nombre) do update set tipo = excluded.tipo;
+insert into public.sucursal (nombre, tipo) values ('ZONAL LOJA ZAMORA', 'matriz')
 on conflict (nombre) do update set tipo = excluded.tipo;
 insert into public.sucursal (nombre, tipo) values ('CARIAMANGA', 'agencia')
 on conflict (nombre) do update set tipo = excluded.tipo;

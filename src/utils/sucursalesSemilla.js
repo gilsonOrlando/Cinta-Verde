@@ -13,7 +13,8 @@ export function claveUsuarioTransferencia(nombre, anio = new Date().getFullYear(
 export const SUCURSALES_SEMILLA = [
   { nombre: "LOJA", tipo: "agencia" },
   { nombre: "ZAMORA", tipo: "agencia" },
-  { nombre: "CATAMAYO", tipo: "matriz" },
+  { nombre: "CATAMAYO", tipo: "agencia" },
+  { nombre: "ZONAL LOJA ZAMORA", tipo: "matriz" },
   { nombre: "CARIAMANGA", tipo: "agencia" },
   { nombre: "GONZANAMA", tipo: "agencia" },
   { nombre: "CATACOCHA", tipo: "agencia" },
