@@ -226,6 +226,13 @@ function formatearFecha(fecha) {
   return `${dia}/${mes}/${anio}`;
 }
 
+function fechaHoyLocal() {
+  const hoy = new Date();
+  const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoy.getDate()).padStart(2, "0");
+  return `${hoy.getFullYear()}-${mes}-${dia}`;
+}
+
 function BotonVisorTransferencias({ cantidad = 0, etiqueta, onClick }) {
   return (
     <BtnVerificar type="button" title={etiqueta} aria-label={etiqueta} onClick={onClick}>
@@ -950,21 +957,51 @@ export function PizarraTransferencias() {
     rutas.find(
       (item) => esRutaTransitoria(item) && mismoId(item.origen_id, matrizId)
     );
+  const hoyIso = fechaHoyLocal();
+  const rutasDelDia = rutasVisibles.filter(
+    (ruta) => String(ruta.fecha ?? "").slice(0, 10) === hoyIso
+  );
 
   return (
     <Layout>
       <Cabecera>
-        <div>
+        <BloqueTitulo>
           <Kicker>Mapa de rutas</Kicker>
-          <Titulo>Transferencias entre bodegas</Titulo>
-          <Subtitulo>
-            {cargando
-              ? "Cargando sucursales…"
-              : actualizando
-                ? "Actualizando transferencias…"
-                : "Las líneas son el recorrido del camión. Cada matriz tiene un color propio y las agencias usan crema. Se actualiza cada 5 minutos."}
-          </Subtitulo>
-        </div>
+          <Titulo>
+            <FechaActual>
+              <RiCalendarFill />
+              <span>{formatearFecha(hoyIso)}</span>
+            </FechaActual>
+            Transferencias entre bodegas
+          </Titulo>
+          <CamionHeader
+            src="/iconos/camion-transferencias.jpg"
+            alt="Camión de transferencias"
+          />
+          <ListaRutasHoy>
+            {cargando ? (
+              <em>Cargando sucursales…</em>
+            ) : actualizando ? (
+              <em>Actualizando transferencias…</em>
+            ) : rutasDelDia.length === 0 ? (
+              <em>No hay rutas para hoy.</em>
+            ) : (
+              rutasDelDia.map((ruta) => (
+                <FilaRutaHoy
+                  key={ruta.id}
+                  type="button"
+                  $activo={seleccion === ruta.id}
+                  onClick={() => setSeleccion(ruta.id)}
+                >
+                  <RiMapPinFill />
+                  <span>
+                    {nombresAgencias(ruta) || "Sin destino"} · {ruta.chofer}
+                  </span>
+                </FilaRutaHoy>
+              ))
+            )}
+          </ListaRutasHoy>
+        </BloqueTitulo>
         <Acciones>
           <BtnCredencial
             type="button"
@@ -1505,7 +1542,7 @@ const Layout = styled.section`
 const Cabecera = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
 `;
@@ -1519,18 +1556,80 @@ const Kicker = styled.p`
   color: #2e7d32;
 `;
 
+const BloqueTitulo = styled.div`
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+`;
+
 const Titulo = styled.h1`
-  margin: 0 0 6px;
+  margin: 0 0 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
   font-size: 1.55rem;
   color: #1b5e20;
 `;
 
-const Subtitulo = styled.p`
+const FechaActual = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #1565c0;
+  font-size: 1.05rem;
+  font-weight: 800;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+`;
+
+const CamionHeader = styled.img`
+  display: block;
+  width: min(100%, 340px);
+  height: auto;
+  margin: 2px 0 8px;
+  object-fit: contain;
+`;
+
+const ListaRutasHoy = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 420px;
+
+  em {
+    font-style: normal;
+    color: #888;
+    font-size: 0.86rem;
+  }
+`;
+
+const FilaRutaHoy = styled.button`
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   margin: 0;
-  max-width: 640px;
-  color: #555;
-  font-size: 0.92rem;
-  line-height: 1.45;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: ${({ $activo }) => ($activo ? "#1565c0" : "#4e342e")};
+  font-size: 0.86rem;
+  font-weight: ${({ $activo }) => ($activo ? 700 : 600)};
+  line-height: 1.3;
+  cursor: pointer;
+
+  svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    width: 16px;
+    height: 16px;
+    color: #c62828;
+  }
 `;
 
 const Acciones = styled.div`
