@@ -4,7 +4,7 @@ import { RiAddLine, RiFilePdfFill, RiTruckFill } from "react-icons/ri";
 import {
   nombreDeGuia,
   nombreDeTransferencia,
-  urlArchivoTransferencia,
+  atributosEnlacePdf,
 } from "../../supabase/crudTransferencia";
 
 function nombreDe(nombres, id) {
@@ -160,18 +160,16 @@ export function AsignarTransferenciasModal({
                           {nombreDe(nombresSucursal, item.sucursal_id)}
                         </em>
                         <a
-                          href={urlArchivoTransferencia(item.transferencia)}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(event) => event.stopPropagation()}
+                          {...atributosEnlacePdf(item.transferencia, {
+                            onClick: (event) => event.stopPropagation(),
+                          })}
                         >
                           Transferencia
                         </a>
                         <a
-                          href={urlArchivoTransferencia(item.guia)}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(event) => event.stopPropagation()}
+                          {...atributosEnlacePdf(item.guia, {
+                            onClick: (event) => event.stopPropagation(),
+                          })}
                         >
                           Guía
                         </a>

@@ -42,6 +42,7 @@ import {
   puedeDevolverTransferenciaATransitorio,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
+  atributosEnlacePdf,
   urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
 import { interpretarErrorSupabase } from "../../utils/interpretarErrorSupabase";
@@ -247,6 +248,7 @@ export function PizarraTransferencias() {
   const [seleccion, setSeleccion] = useState(originalesRef.current[0]?.id ?? null);
   const [cargando, setCargando] = useState(true);
   const [actualizando, setActualizando] = useState(false);
+  const [versionArchivos, setVersionArchivos] = useState(() => Date.now());
   const actualizandoRef = useRef(false);
   const [menuGestionAbierto, setMenuGestionAbierto] = useState(false);
   const [mostrarRutaModal, setMostrarRutaModal] = useState(false);
@@ -360,6 +362,7 @@ export function PizarraTransferencias() {
       actualizandoRef.current = false;
       setCargando(false);
       setActualizando(false);
+      setVersionArchivos(Date.now());
     }
   }, []);
 
@@ -751,6 +754,7 @@ export function PizarraTransferencias() {
   };
 
   const handleAbrirVisor = (item = null) => {
+    setVersionArchivos(Date.now());
     setVisorTransferenciaId(item?.id ?? null);
     setMostrarVisor(true);
   };
@@ -1226,7 +1230,7 @@ export function PizarraTransferencias() {
                               ?.nombre ?? "—"}
                           </em>
                           <a
-                            href={urlArchivoTransferencia(item.transferencia)}
+                            href={urlArchivoTransferencia(item.transferencia) || "#"}
                             onClick={(event) => {
                               event.preventDefault();
                               handleAbrirVisor(item);
@@ -1234,13 +1238,7 @@ export function PizarraTransferencias() {
                           >
                             Transferencia
                           </a>
-                          <a
-                            href={urlArchivoTransferencia(item.guia)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Guía
-                          </a>
+                          <a {...atributosEnlacePdf(item.guia)}>Guía</a>
                           {puedeDevolverTransferenciaATransitorio(sesion, item, rutaActiva) &&
                             !esRutaTransitoria(rutaActiva) && (
                               <BtnLista
@@ -1304,7 +1302,7 @@ export function PizarraTransferencias() {
                               )?.nombre ?? "—"}
                             </em>
                             <a
-                              href={urlArchivoTransferencia(item.transferencia)}
+                              href={urlArchivoTransferencia(item.transferencia) || "#"}
                               onClick={(event) => {
                                 event.preventDefault();
                                 handleAbrirVisor(item);
@@ -1312,13 +1310,7 @@ export function PizarraTransferencias() {
                             >
                               Transferencia
                             </a>
-                            <a
-                              href={urlArchivoTransferencia(item.guia)}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Guía
-                            </a>
+                            <a {...atributosEnlacePdf(item.guia)}>Guía</a>
                             {(esUsuarioMatriz(sesion) &&
                               mismoId(sesion?.sucursal_id, bodegaActiva.id)) ||
                             puedeEliminarItemTransferencia(
@@ -1412,6 +1404,7 @@ export function PizarraTransferencias() {
           }
           onEliminar={handleEliminarTransferencia}
           onDevolver={handleDevolverTransferencia}
+          versionArchivos={versionArchivos}
           onClose={() => {
             setMostrarVisor(false);
             setVisorTransferenciaId(null);

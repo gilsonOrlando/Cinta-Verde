@@ -108,7 +108,7 @@ async function imprimirPdfTransferencia(path) {
   });
 }
 
-function PdfHoja({ path }) {
+function PdfHoja({ path, version }) {
   const marcoRef = useRef(null);
   const lienzoRef = useRef(null);
   const bufferRef = useRef(null);
@@ -156,7 +156,7 @@ function PdfHoja({ path }) {
     return () => {
       cancelado = true;
     };
-  }, [path]);
+  }, [path, version]);
 
   useEffect(() => {
     const canvas = lienzoRef.current;
@@ -255,6 +255,7 @@ export function VisorTransferenciasPanel({
   onEliminar,
   onDevolver,
   onClose,
+  versionArchivos = 0,
 }) {
   const [indice, setIndice] = useState(0);
   const [imprimiendo, setImprimiendo] = useState(false);
@@ -410,8 +411,9 @@ export function VisorTransferenciasPanel({
         {actual ? (
           <>
             <PdfHoja
-              key={`${actual.id}:${actual.transferencia}:${sentido}:${destinoFiltro}`}
+              key={`${actual.id}:${actual.transferencia}:${sentido}:${destinoFiltro}:${versionArchivos}`}
               path={actual.transferencia}
+              version={versionArchivos}
             />
 
             <Navegacion>

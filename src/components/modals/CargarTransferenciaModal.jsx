@@ -6,7 +6,7 @@ import {
   puedeDevolverTransferenciaATransitorio,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
-  urlArchivoTransferencia,
+  atributosEnlacePdf,
 } from "../../supabase/crudTransferencia";
 import {
   inspeccionarPdf,
@@ -356,18 +356,16 @@ export function CargarTransferenciaModal({
                     </em>
                     <Enlaces>
                       <a
-                        href={urlArchivoTransferencia(item.transferencia)}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(event) => event.stopPropagation()}
+                        {...atributosEnlacePdf(item.transferencia, {
+                          onClick: (event) => event.stopPropagation(),
+                        })}
                       >
                         Transferencia
                       </a>
                       <a
-                        href={urlArchivoTransferencia(item.guia)}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(event) => event.stopPropagation()}
+                        {...atributosEnlacePdf(item.guia, {
+                          onClick: (event) => event.stopPropagation(),
+                        })}
                       >
                         Guía
                       </a>

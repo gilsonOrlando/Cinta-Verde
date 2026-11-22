@@ -188,24 +188,44 @@ export function urlArchivoTransferencia(path) {
   const url = data?.publicUrl ?? "";
   if (!url) return "";
   const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}v=${encodeURIComponent(path)}`;
+  return `${url}${sep}t=${Date.now()}`;
+}
+
+export function atributosEnlacePdf(path, extras = {}) {
+  const href = urlArchivoTransferencia(path) || "#";
+  return {
+    href,
+    target: "_blank",
+    rel: "noreferrer",
+    ...extras,
+    onPointerDown: (event) => {
+      extras.onPointerDown?.(event);
+      if (path) event.currentTarget.setAttribute("href", urlArchivoTransferencia(path));
+    },
+  };
 }
 
 export async function obtenerBufferArchivoTransferencia(path) {
   if (!path) throw new Error("No hay archivo para previsualizar.");
-  const publico = urlArchivoTransferencia(path);
-  try {
-    const respuesta = await fetch(publico, { cache: "no-store" });
-    if (respuesta.ok) return await respuesta.arrayBuffer();
-  } catch (error) {
-    console.error(error);
-  }
 
   const { data, error } = await supabase.storage
     .from(BUCKET_TRANSFERENCIAS)
     .download(path);
+  if (!error && data) return await data.arrayBuffer();
+
+  const publico = urlArchivoTransferencia(path);
+  try {
+    const respuesta = await fetch(publico, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+    });
+    if (respuesta.ok) return await respuesta.arrayBuffer();
+  } catch (fallo) {
+    console.error(fallo);
+  }
+
   if (error) throw error;
-  return await data.arrayBuffer();
+  throw new Error("No se pudo leer el PDF.");
 }
 
 export async function listarTransferencias(rutaId) {
@@ -233,6 +253,7 @@ export async function listarTransferencias(rutaId) {
 async function subirPdf(path, file) {
   const { error } = await supabase.storage.from(BUCKET_TRANSFERENCIAS).upload(path, file, {
     contentType: "application/pdf",
+    cacheControl: "0",
     upsert: false,
   });
   if (error) throw error;
@@ -331,6 +352,7 @@ export async function actualizarTransferencia({
     .from(BUCKET_TRANSFERENCIAS)
     .upload(pathTransferencia, par.archivoTransferencia, {
       contentType: "application/pdf",
+      cacheControl: "0",
       upsert: false,
     });
   if (errorT) throw errorT;
@@ -339,6 +361,7 @@ export async function actualizarTransferencia({
     .from(BUCKET_TRANSFERENCIAS)
     .upload(pathGuia, par.archivoGuia, {
       contentType: "application/pdf",
+      cacheControl: "0",
       upsert: false,
     });
   if (errorG) {
@@ -564,9 +587,8 @@ export async function descargarGuiasDeMatriz({ grupos, nombreZip }) {
     const carpeta = lista.length > 1 ? zip.folder(slugArchivo(grupo.nombre) || "ruta") : zip;
     for (let i = 0; i < grupo.items.length; i += 1) {
       const item = grupo.items[i];
-      const respuesta = await fetch(urlArchivoTransferencia(item.guia));
-      if (!respuesta.ok) throw new Error("No se pudo descargar una de las guías.");
-      const blob = await respuesta.blob();
+      const buffer = await obtenerBufferArchivoTransferencia(item.guia);
+      const blob = new Blob([buffer], { type: "application/pdf" });
       const etiqueta = item.etiqueta || `guia-${i + 1}`;
       carpeta.file(`${slugArchivo(etiqueta)}.pdf`, blob);
     }
