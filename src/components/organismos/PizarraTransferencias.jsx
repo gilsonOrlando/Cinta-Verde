@@ -968,16 +968,12 @@ export function PizarraTransferencias() {
         <BloqueTitulo>
           <Kicker>Mapa de rutas</Kicker>
           <Titulo>
+            Transferencias entre bodegas
             <FechaActual>
               <RiCalendarFill />
               <span>{formatearFecha(hoyIso)}</span>
             </FechaActual>
-            Transferencias entre bodegas
           </Titulo>
-          <CamionHeader
-            src="/iconos/camion-transferencias.jpg"
-            alt="Camión de transferencias"
-          />
           <ListaRutasHoy>
             {cargando ? (
               <em>Cargando sucursales…</em>
@@ -1585,14 +1581,6 @@ const FechaActual = styled.span`
     width: 22px;
     height: 22px;
   }
-`;
-
-const CamionHeader = styled.img`
-  display: block;
-  width: min(100%, 340px);
-  height: auto;
-  margin: 2px 0 8px;
-  object-fit: contain;
 `;
 
 const ListaRutasHoy = styled.div`
