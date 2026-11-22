@@ -208,11 +208,6 @@ export function atributosEnlacePdf(path, extras = {}) {
 export async function obtenerBufferArchivoTransferencia(path) {
   if (!path) throw new Error("No hay archivo para previsualizar.");
 
-  const { data, error } = await supabase.storage
-    .from(BUCKET_TRANSFERENCIAS)
-    .download(path);
-  if (!error && data) return await data.arrayBuffer();
-
   const publico = urlArchivoTransferencia(path);
   try {
     const respuesta = await fetch(publico, {
@@ -224,6 +219,10 @@ export async function obtenerBufferArchivoTransferencia(path) {
     console.error(fallo);
   }
 
+  const { data, error } = await supabase.storage
+    .from(BUCKET_TRANSFERENCIAS)
+    .download(path);
+  if (!error && data) return await data.arrayBuffer();
   if (error) throw error;
   throw new Error("No se pudo leer el PDF.");
 }

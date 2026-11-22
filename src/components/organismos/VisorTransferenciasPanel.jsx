@@ -18,6 +18,7 @@ import {
   puedeDevolverTransferenciaATransitorio,
   puedeEliminarItemTransferencia,
   puedeGestionarItemTransferencia,
+  urlArchivoTransferencia,
 } from "../../supabase/crudTransferencia";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -457,6 +458,20 @@ export function VisorTransferenciasPanel({
                 }}
               >
                 {imprimiendo ? "Imprimiendo..." : "Imprimir"}
+              </BtnAccion>
+              <BtnAccion
+                type="button"
+                disabled={!actual.guia}
+                onClick={() => {
+                  const url = urlArchivoTransferencia(actual.guia);
+                  if (!url) {
+                    toast.error("No hay guía para esta transferencia.");
+                    return;
+                  }
+                  window.open(url, "_blank", "noopener,noreferrer");
+                }}
+              >
+                Guía
               </BtnAccion>
               {puedeEditar && puedeGestionar && (
                 <BtnAccion type="button" onClick={() => onEditar?.(actual)}>
