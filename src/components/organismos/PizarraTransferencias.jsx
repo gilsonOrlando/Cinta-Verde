@@ -475,6 +475,17 @@ export function PizarraTransferencias() {
       .filter(Boolean)
       .join(" · ");
 
+  const destinosConTipo = (ruta) =>
+    (ruta.destinoIds ?? [])
+      .map((id) => {
+        const sucursal = mapa[id];
+        if (!sucursal?.nombre) return "";
+        const tipo = esMatriz(sucursal.tipo) ? "matriz" : "AGENCIA";
+        return `${sucursal.nombre} (${tipo})`;
+      })
+      .filter(Boolean)
+      .join(" · ");
+
   const handleGuardarRuta = async ({ origenId, fecha, chofer, destinoIds }) => {
     setGuardandoRuta(true);
     try {
@@ -991,7 +1002,7 @@ export function PizarraTransferencias() {
                 >
                   <RiMapPinFill />
                   <span>
-                    {nombresAgencias(ruta) || "Sin destino"} · {ruta.chofer}
+                    {destinosConTipo(ruta) || "Sin destino"} · {ruta.chofer}
                   </span>
                 </FilaRutaHoy>
               ))
